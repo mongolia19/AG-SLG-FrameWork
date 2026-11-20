@@ -1,0 +1,27 @@
+id: "drawing_room"
+title: "阴暗会客室"
+background: "/assets/scenes/drawing_room.png"
+music: "/assets/bgm/clock_tick.mp3"
+
+description: |
+  厚重的红丝绒窗帘紧闭，壁炉里的炭火几乎熄灭，只余微弱红光。
+  墙上的老式摆钟发出单调的滴答声，桌上摆着一杯尚有余温的红茶。
+
+npcs: []
+
+actions:
+  - id: "search_desk"
+    label: "搜查书桌上的信件"
+    type: "check"
+    skill: "intelligence"
+    difficulty: 10
+    on_success:
+      gain_item: "torn_letter"
+      message: "你在抽屉夹层中找到了一封被撕毁一角的家书。"
+    on_failure:
+      message: "除了普通账本外一无所获。"
+
+  - id: "return_entrance"
+    label: "返回玄关大厅"
+    type: "transition"
+    target_scene: "manor_entrance"

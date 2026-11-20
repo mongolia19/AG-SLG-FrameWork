@@ -1,0 +1,36 @@
+id: "manor_entrance"
+title: "公馆大门玄关"
+background: "/assets/scenes/entrance.png"
+music: "/assets/bgm/rain_night.mp3"
+
+description: |
+  大门在你们身后沉重地合上，隔绝了暴风雨的咆哮。
+  挑高的大厅中央悬挂着一盏摇摇晃晃的黄铜吊灯，管家格林手持烛台，面色苍白地立在阴影中。
+
+npcs:
+  - id: "butler_grim"
+    name: "管家格林"
+    avatar: "/assets/characters/butler.png"
+    greeting: "尊敬的调查员，这么晚冒雨造访，主人早已歇息了……"
+
+actions:
+  - id: "talk_to_butler"
+    label: "询问今晚发生的异响"
+    type: "interact"
+    target_npc: "butler_grim"
+
+  - id: "inspect_coat_rack"
+    label: "调查衣帽架旁滴水的雨衣"
+    type: "check"
+    skill: "intelligence"
+    difficulty: 12
+    on_success:
+      gain_item: "silver_key"
+      transition_scene: "manor_foyer"
+    on_failure:
+      message: "只是一件普通的湿透雨衣，并没有发现特别之处。"
+
+  - id: "explore_hall"
+    label: "穿过门厅前往会客室"
+    type: "transition"
+    target_scene: "drawing_room"

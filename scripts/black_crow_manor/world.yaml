@@ -1,0 +1,22 @@
+id: "black_crow_manor"
+title: "黑鸦公馆的雨夜"
+version: "1.0.0"
+author: "AI Lab & Agent"
+initial_scene: "manor_entrance"
+
+initial_player_state:
+  name: "调查员亚伦"
+  hp: 100
+  san: 80
+  gold: 50
+  attributes:
+    strength: 12
+    agility: 14
+    intelligence: 16
+  inventory:
+    - id: "magnifying_glass"
+      name: "复古放大镜"
+      desc: "用于观察细微线索"
+  variables:
+    discovered_secret_passage: false
+    butler_trust: 10

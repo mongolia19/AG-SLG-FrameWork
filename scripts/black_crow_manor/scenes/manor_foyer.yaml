@@ -1,0 +1,32 @@
+id: "manor_foyer"
+title: "门厅走廊"
+background: "/assets/scenes/foyer.png"
+music: "/assets/bgm/distant_thunder.mp3"
+
+description: |
+  昏暗的长廊两侧挂着历代庄园主人的油画肖像，画中人物的双眼仿佛在随着你的脚步移动。
+  空气中弥漫着淡淡的福尔马林与老旧木料混合的怪味，前方隐约能看到会客室与通往二楼的旋转木梯。
+
+npcs: []
+
+actions:
+  - id: "enter_drawing_room"
+    label: "进入会客室"
+    type: "transition"
+    target_scene: "drawing_room"
+
+  - id: "inspect_portrait"
+    label: "审视中央家主的肖像油画"
+    type: "check"
+    skill: "intelligence"
+    difficulty: 11
+    on_success:
+      gain_item: "manor_blueprint_fragment"
+      message: "在画框右下角你发现了一张泛黄的公馆平面图残片！"
+    on_failure:
+      message: "肖像画看起来有些年头了，画布边缘有些发霉。"
+
+  - id: "return_entrance"
+    label: "退回大门玄关"
+    type: "transition"
+    target_scene: "manor_entrance"

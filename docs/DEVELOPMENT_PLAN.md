@@ -46,18 +46,19 @@ flowchart TD
 ### 阶段二：SLG 沉浸运行端 (Play Mode)
 **目标**：构建类 SillyTavern 视觉小说体验的 Web 交互界面，实现剧情流式渲染、HUD 数值联动、选项与自由动作。
 
-- [ ] **2.1 游戏主视窗与剧情流 (`web/src/components/play/StoryStream.tsx`)**
-  - 接入 `@ag-ui/client` 的 `HttpAgent`，订阅 `onTextMessageContentEvent` 实现打字机逐字渲染。
+- [x] **2.1 游戏主视窗与剧情流 (`web/src/components/play/StoryStream.tsx`)**
+  - 接入 AG-UI SSE 流，实现打字机逐字渲染。
   - 角色对话框：区分 NPC 台词、系统旁白提示与玩家内心独白。
-  - 背景与立绘图层（支持占位与本地素材映射）。
-- [ ] **2.2 状态栏与实时 HUD (`web/src/components/play/GameHUD.tsx`)**
-  - 订阅 `onStateDeltaEvent`，实时响应玩家生命 HP、精神/理智 SAN、金币、当前场景名变化。
+  - 背景与立绘图层（支持占位与场景动态关联）。
+- [x] **2.2 状态栏与实时 HUD (`web/src/components/play/GameHUD.tsx`)**
+  - 订阅 `StateDeltaEvent`，实时响应玩家生命 HP、精神/理智 SAN、金币、当前场景名变化。
   - 简易道具栏（Inventory 弹窗与悬浮提示）。
-- [ ] **2.3 动态动作与决策面板 (`web/src/components/play/ActionPanel.tsx`)**
+- [x] **2.3 动态动作与决策面板 (`web/src/components/play/ActionPanel.tsx`)**
   - 快速行动按钮组（场景配置内的既定动作）。
   - 自由文本动作输入栏（允许玩家输入任何非预设行为）。
   - 检定与骰子交互反馈（展示 D20 检定或属性比对结果卡片）。
-- **阶段二验证标准**：在浏览器打开 Play 界面，可流畅推进至少 3 轮剧情分支，状态栏数值随 Agent 剧情判定实时增减。
+- **阶段二验证标准**：在浏览器打开 Play 界面，可流畅推进至少 3 轮剧情分支，状态栏数值随 Agent 剧情判定实时增减。已通过端到端 3 轮分支推进测试（`tests/test_play_flow.py`）与 Vite 生产打包验证通过。
+
 
 ---
 

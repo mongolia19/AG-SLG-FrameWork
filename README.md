@@ -43,6 +43,6 @@ FastAPI 桥接中枢 (ag-ui-protocol)
 
 按照开发计划，项目按 4 个阶段有序推进：
 - [x] 阶段一：本地 Agent CLI 适配器与 AG-UI 协议桥接 (Core Bridge)
-- [ ] 阶段二：SLG 沉浸运行端 (Play Mode)
+- [x] 阶段二：SLG 沉浸运行端 (Play Mode)
 - [ ] 阶段三：剧本编辑与本地 Agent 调试工作台 (Studio Mode)
 - [ ] 阶段四：完整实战剧本与端到端交付 (Delivery & Verification)

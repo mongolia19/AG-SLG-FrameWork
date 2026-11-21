@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/main.tsx"],"version":"5.9.3"}
+{"root":["./src/app.tsx","./src/main.tsx","./src/types.ts","./src/components/play/actionpanel.tsx","./src/components/play/gamehud.tsx","./src/components/play/playview.tsx","./src/components/play/storystream.tsx"],"version":"5.9.3"}

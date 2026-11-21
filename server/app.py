@@ -121,6 +121,14 @@ async def run_studio(input_data: RunAgentInput):
     )
 
 
+# Mount web/dist static files if built
+DIST_DIR = BASE_DIR / "web" / "dist"
+if DIST_DIR.exists():
+    from fastapi.staticfiles import StaticFiles
+    app.mount("/", StaticFiles(directory=str(DIST_DIR), html=True), name="static")
+
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("server.app:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("server.app:app", host="127.0.0.1", port=8001, reload=True)
+

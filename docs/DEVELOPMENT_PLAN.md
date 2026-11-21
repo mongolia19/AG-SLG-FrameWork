@@ -65,19 +65,22 @@ flowchart TD
 ### 阶段三：剧本编辑与本地 Agent 调试工作台 (Studio Mode)
 **目标**：提供开箱即用的可视化剧本管理器，并集成 Studio Co-pilot 编剧 Agent 拥有真实写盘与自动调试能力。
 
-- [ ] **3.1 剧本可视化管理树 (`web/src/components/studio/ScenarioTree.tsx`)**
+- [x] **3.1 剧本可视化管理树 (`web/src/components/studio/ScenarioTree.tsx`)**
   - 树形展示当前剧本的世界设定、角色列表、场景分支流向。
   - 单场景详情查看与表单编辑（YAML 源码模式与结构化表单模式双向切换）。
-- [ ] **3.2 编剧 Agent 协创侧边栏 (`web/src/components/studio/AuthoringChat.tsx`)**
+  - 支持视觉资产与多图层配置（Background 背景底图、Foreground 前景立绘、Hero Image 场景核心特写主图）。
+- [x] **3.2 编剧 Agent 协创侧边栏 (`web/src/components/studio/AuthoringChat.tsx`)**
   - 创作者输入自然语言指令（例如：“帮我补齐地牢场景，需要敏捷 14 才能潜行通过”）。
-  - 本地 Agent 直接调动 `write_file` / `edit_file` 原生能力在磁盘创建/修改 YAML 场景文件。
+  - 本地 Agent 直接调动 `scene_yaml` 原生写盘机制在磁盘创建/修改 YAML 场景文件。
   - 编辑器实时捕获文件系统变化并热重载更新场景树。
-- [ ] **3.3 剧本 Lint 与逻辑体检器 (`server/script_linter.py`)**
+- [x] **3.3 剧本 Lint 与逻辑体检器 (`server/script_linter.py`)**
   - 检查悬空跳转（引用了未定义的 `target_scene`）。
   - 检查未分配初始值的变量或不存在的角色 ID。
-- [ ] **3.4 自动化 Agent 模拟试玩 (`web/src/components/studio/PlaytestRunner.tsx`)**
+  - 暴露 `GET /api/scenarios/{id}/lint` 并在 Studio 顶栏实时提示连通性状态。
+- [x] **3.4 自动化 Agent 模拟试玩 (`web/src/components/studio/PlaytestRunner.tsx`)**
   - 一键启动模拟测试：后台拉起一个虚拟玩家 Agent，自主推进 5 步剧情并输出调试日志与卡点预警。
-- **阶段三验证标准**：通过 Studio 对话窗让 Agent 现场扩写一个新场景，该场景自动写入本地 YAML 文件，并在 Play 模式中立即可以游玩。
+- **阶段三验证标准**：通过 Studio 对话窗让 Agent 现场扩写一个新场景，该场景自动写入本地 YAML 文件，并在 Play 模式中立即可以游玩。全量单元测试与端到端 UI 已全部通过。
+
 
 ---
 

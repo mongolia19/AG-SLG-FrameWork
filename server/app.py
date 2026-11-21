@@ -10,7 +10,7 @@ from ag_ui.core import RunAgentInput
 
 from server.agent_driver import AgyDriver, CodexDriver, MockAgentDriver, BaseAgentDriver
 from server.agui_bridge import AGUIBridge
-from server.scenario_manager import ScenarioManager
+from server.scenario_manager import ScenarioManager, SceneNode
 
 app = FastAPI(title="AG-SLG-FrameWork Bridge Server", version="0.1.0")
 
@@ -57,6 +57,27 @@ def get_scenario(scenario_id: str):
         return spec.model_dump()
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Scenario not found")
+
+
+@app.post("/api/scenarios/{scenario_id}/scenes")
+def update_or_create_scene(scenario_id: str, scene: SceneNode):
+    try:
+        saved_path = scenario_manager.save_scene(scenario_id, scene)
+        return {"status": "ok", "scene_id": scene.id, "path": str(saved_path)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/scenarios/{scenario_id}/lint")
+def lint_scenario_endpoint(scenario_id: str):
+    from server.script_linter import ScriptLinter
+    try:
+        spec = scenario_manager.load_scenario(scenario_id)
+        report = ScriptLinter.lint_scenario(spec)
+        return report.model_dump()
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Scenario not found")
+
 
 
 @app.get("/api/session/{thread_id}/state")

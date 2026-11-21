@@ -49,14 +49,25 @@ class ActionOption(BaseModel):
     on_failure: Optional[Dict[str, Any]] = None
 
 
+class VisualLayer(BaseModel):
+    background: str = ""
+    foreground: str = ""
+    hero_image: str = ""
+    atmosphere: str = ""
+
+
 class SceneNode(BaseModel):
     id: str
     title: str
     background: str = ""
+    foreground: str = ""
+    hero_image: str = ""
     music: str = ""
     description: str = ""
+    visuals: Optional[VisualLayer] = None
     npcs: List[NPC] = Field(default_factory=list)
     actions: List[ActionOption] = Field(default_factory=list)
+
 
 
 class ScenarioSpec(BaseModel):

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import PlayView from './components/play/PlayView';
+import StudioView from './components/studio/StudioView';
+
 
 export default function App() {
   const [mode, setMode] = useState<'play' | 'studio'>('play');
@@ -48,15 +50,10 @@ export default function App() {
         {mode === 'play' ? (
           <PlayView scenarioId={selectedScenario} />
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 text-slate-400">
-            <div className="text-5xl mb-3">✍️</div>
-            <div className="text-base font-semibold text-slate-200">Studio Mode 剧本编排调试端</div>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm text-center">
-              支持可视化剧本节点树与 Studio Co-pilot 本地 Agent 协创编辑（将于阶段三开放）。
-            </p>
-          </div>
+          <StudioView scenarioId={selectedScenario} />
         )}
       </main>
+
     </div>
   );
 }

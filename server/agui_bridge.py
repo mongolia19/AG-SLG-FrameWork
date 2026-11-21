@@ -70,7 +70,11 @@ class GameSession:
                 self.player_state.inventory.append(item)
                 patches.append({"op": "add", "path": "/inventory/-", "value": item})
 
+        if "visuals" in delta and isinstance(delta["visuals"], dict):
+            patches.append({"op": "replace", "path": "/visuals", "value": delta["visuals"]})
+
         return patches
+
 
 
 class AGUIBridge:
@@ -127,18 +131,24 @@ class AGUIBridge:
 请作为 DM 进行剧情演绎并返回：
 1. 生动而具沉浸感的叙事文本，推进剧情，如有 NPC 对话则以符合角色性格的方式回复。
 2. 如涉及属性检定或骰子投掷，请合理进行判断并叙述。
-3. 若玩家行为导致场景转移、数值变化（生命/理智/金币）、获得物品或剧情变量变更，请在回复的最末尾附带一个且仅一个 ```state_delta 代码块，格式如下：
+3. 若玩家行为导致场景转移、数值变化、获得物品、剧情变量变更，或者你想为玩家呈现特定情境插图/立绘/背景切换（视觉组织），请在回复的最末尾附带一个且仅一个 ```state_delta 代码块，格式如下：
 ```state_delta
 {{
   "current_scene": "目标场景ID（若发生转移）",
   "hp_delta": -5,
   "san_delta": 0,
   "add_inventory": [{{"id": "item_id", "name": "道具名", "desc": "描述"}}],
-  "variables": {{"variable_key": "variable_value"}}
+  "variables": {{"variable_key": "variable_value"}},
+  "visuals": {{
+    "hero_image": "/assets/illustrations/xxx.png 或 视觉描述标签（如'雨夜古宅特写'）",
+    "foreground": "/assets/characters/xxx.png",
+    "background": "/assets/scenes/xxx.png"
+  }}
 }}
 ```
-注意：如果状态没有任何变化，无需输出 state_delta 代码块。
+注意：如果状态与画面没有任何变化，无需输出 state_delta 代码块。
 """
+
         return prompt
 
     async def stream_play(self, input_data: RunAgentInput) -> AsyncIterator[str]:
@@ -243,12 +253,31 @@ class AGUIBridge:
             elif isinstance(last_msg, dict):
                 user_text = str(last_msg.get("content", ""))
 
-        prompt = f"""你是一名专业的游戏剧本设计与代码协作者（AG-SLG Studio Co-pilot）。
-当前剧本资产目录位于当前工作区的 scripts/ 下。
-用户需求：{user_text}
+        full_studio_response = ""
+        scenario_id = "black_crow_manor"
+        if input_data.forwarded_props and isinstance(input_data.forwarded_props, dict):
+            scenario_id = input_data.forwarded_props.get("scenario_id", scenario_id)
 
-请分析需求，指导或直接对剧本文件（YAML 格式）进行构思与修改建议。
-输出清晰、结构化的剧本编排建议或直接给出完整的场景配置。"""
+        prompt = f"""你是一名专业的游戏剧本设计与代码协作者（AG-SLG Studio Co-pilot）。
+当前剧本资产目录位于当前工作区的 scripts/{scenario_id}/ 下。
+用户创作需求：{user_text}
+
+你可以直接输出剧本构思与建议。如果你构思了一个完整的场景节点或更新了场景，请在回复中包含如下格式的代码块，以便系统自动将其写盘生效：
+```scene_yaml:场景ID
+id: "场景ID"
+title: "场景标题"
+background: "/assets/scenes/xxx.png"
+music: "/assets/bgm/xxx.mp3"
+description: |
+  场景描述文本...
+npcs: []
+actions:
+  - id: "action_1"
+    label: "行动名称"
+    type: "transition"
+    target_scene: "manor_entrance"
+```
+"""
 
         yield self.encoder.encode(RunStartedEvent(run_id=run_id, thread_id=thread_id))
         yield self.encoder.encode(TextMessageStartEvent(message_id=message_id, role="assistant"))
@@ -260,9 +289,27 @@ class AGUIBridge:
         ):
             if event.event_type == "text_delta":
                 delta = event.data.get("text", "")
+                full_studio_response += delta
                 yield self.encoder.encode(
                     TextMessageContentEvent(message_id=message_id, delta=delta)
                 )
 
         yield self.encoder.encode(TextMessageEndEvent(message_id=message_id))
+
+        # 检查是否包含可以直接落盘的 scene_yaml
+        import yaml
+        yaml_matches = re.findall(
+            r"```scene_yaml:([a-zA-Z0-9_\-]+)\s*\n([\s\S]*?)```", full_studio_response
+        )
+        for s_id, s_content in yaml_matches:
+            try:
+                data = yaml.safe_load(s_content) or {}
+                if "id" not in data:
+                    data["id"] = s_id
+                node = SceneNode(**data)
+                self.scenario_mgr.save_scene(scenario_id, node)
+            except Exception:
+                pass
+
         yield self.encoder.encode(RunFinishedEvent(run_id=run_id, thread_id=thread_id))
+

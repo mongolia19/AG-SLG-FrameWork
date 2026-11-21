@@ -16,10 +16,11 @@ else
     source .venv/bin/activate
 fi
 
-# 2. 启动 FastAPI 后端 (8000)
-echo "启动 AG-UI 桥接后端 (http://127.0.0.1:8000)..."
-python -m uvicorn server.app:app --host 127.0.0.1 --port 8000 &
+# 2. 启动 FastAPI 后端 (8001)
+echo "启动 AG-UI 桥接后端 (http://127.0.0.1:8001)..."
+python -m uvicorn server.app:app --host 127.0.0.1 --port 8001 &
 SERVER_PID=$!
+
 
 # 3. 启动前端 Vite (5173)
 if [ -d "web" ]; then

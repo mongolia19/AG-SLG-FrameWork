@@ -37,30 +37,66 @@ export default function AuthoringChat({
     timestamp: Date.now(),
   };
 
-  const [messages, setMessages] = useState<AuthoringMessage[]>([defaultWelcomeMessage]);
-  const [inputText, setInputText] = useState('');
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [streamingText, setStreamingText] = useState('');
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  // 加载已保存的协创对话
-  useEffect(() => {
+  const loadCachedMessages = (sid: string): AuthoringMessage[] => {
     try {
-      const saved = localStorage.getItem(`ag_slg_studio_chat_${scenarioId}`);
+      const saved = localStorage.getItem(`ag_slg_studio_chat_${sid}`);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setMessages(parsed);
-          return;
+          return parsed;
         }
       }
     } catch (e) {
       console.warn('Failed to load studio chat cache:', e);
     }
-    setMessages([defaultWelcomeMessage]);
+    return [defaultWelcomeMessage];
+  };
+
+  const [messages, setMessages] = useState<AuthoringMessage[]>(() =>
+    loadCachedMessages(scenarioId)
+  );
+
+  const [inputText, setInputText] = useState<string>(() => {
+    try {
+      return localStorage.getItem(`ag_slg_studio_draft_${scenarioId}`) || '';
+    } catch {
+      return '';
+    }
+  });
+
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingText, setStreamingText] = useState('');
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const prevScenarioIdRef = useRef(scenarioId);
+
+  // 当切换剧本时，切换对应剧本的会话与草稿
+  useEffect(() => {
+    if (prevScenarioIdRef.current !== scenarioId) {
+      prevScenarioIdRef.current = scenarioId;
+      setMessages(loadCachedMessages(scenarioId));
+      try {
+        const draft = localStorage.getItem(`ag_slg_studio_draft_${scenarioId}`) || '';
+        setInputText(draft);
+      } catch {
+        setInputText('');
+      }
+    }
   }, [scenarioId]);
 
-  // 对话更新时自动写入缓存
+  // 草稿输入变更时持久化
+  useEffect(() => {
+    try {
+      if (inputText.trim()) {
+        localStorage.setItem(`ag_slg_studio_draft_${scenarioId}`, inputText);
+      } else {
+        localStorage.removeItem(`ag_slg_studio_draft_${scenarioId}`);
+      }
+    } catch (e) {
+      console.warn('Failed to save studio draft:', e);
+    }
+  }, [scenarioId, inputText]);
+
+  // 消息发生变动时持久化
   useEffect(() => {
     if (messages.length > 0) {
       try {
@@ -88,8 +124,20 @@ export default function AuthoringChat({
       content: prompt,
       timestamp: Date.now(),
     };
-    setMessages((prev) => [...prev, userMsg]);
+
+    // 立即保存用户发送的消息，并清理草稿
+    setMessages((prev) => {
+      const next = [...prev, userMsg];
+      try {
+        localStorage.setItem(`ag_slg_studio_chat_${scenarioId}`, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
     setInputText('');
+    try {
+      localStorage.removeItem(`ag_slg_studio_draft_${scenarioId}`);
+    } catch {}
+
     setIsStreaming(true);
     setStreamingText('');
 
@@ -149,16 +197,20 @@ export default function AuthoringChat({
       }
 
       if (accumulated.trim()) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `agent-${Date.now()}`,
-            sender: 'agent',
-            content: accumulated.trim(),
-            timestamp: Date.now(),
-          },
-        ]);
-        // 触发父级剧本树刷新（若 Agent 输出了 scene_yaml 自动写入）
+        const agentMsg: AuthoringMessage = {
+          id: `agent-${Date.now()}`,
+          sender: 'agent',
+          content: accumulated.trim(),
+          timestamp: Date.now(),
+        };
+        setMessages((prev) => {
+          const next = [...prev, agentMsg];
+          try {
+            localStorage.setItem(`ag_slg_studio_chat_${scenarioId}`, JSON.stringify(next));
+          } catch {}
+          return next;
+        });
+        // 触发父级剧本树静默刷新（若 Agent 输出了 scene_yaml 自动写入）
         onScenarioUpdated();
       }
     } catch (err: any) {
@@ -214,13 +266,17 @@ export default function AuthoringChat({
                 </span>
                 <button
                   onClick={(e) => handleCopy(m.id, m.content, e)}
-                  className="opacity-40 group-hover:opacity-100 p-0.5 rounded hover:bg-slate-800/80 transition"
+                  className={`opacity-60 group-hover:opacity-100 p-0.5 rounded transition ${
+                    m.sender === 'user'
+                      ? 'hover:bg-amber-700/80 text-amber-100 hover:text-white'
+                      : 'hover:bg-slate-800/80 text-slate-400 hover:text-slate-200'
+                  }`}
                   title="复制消息内容"
                 >
                   {copiedId === m.id ? (
-                    <Check className="w-3 h-3 text-emerald-400" />
+                    <Check className={`w-3 h-3 ${m.sender === 'user' ? 'text-emerald-300' : 'text-emerald-400'}`} />
                   ) : (
-                    <Copy className="w-3 h-3 text-slate-400 hover:text-slate-200" />
+                    <Copy className="w-3 h-3" />
                   )}
                 </button>
               </div>
@@ -242,7 +298,7 @@ export default function AuthoringChat({
               <Bot className="w-3.5 h-3.5" />
             </div>
             <div className="p-3 rounded-xl max-w-[85%] bg-slate-900 border border-indigo-500/50 text-slate-200 rounded-tl-none font-mono text-[11px] leading-relaxed">
-              <div className="whitespace-pre-wrap">
+              <div className="whitespace-pre-wrap select-text">
                 {streamingText}
                 <span className="inline-block w-1.5 h-3 ml-1 bg-indigo-400 animate-pulse align-middle" />
               </div>

@@ -386,7 +386,7 @@ export default function StoryStream({
                 <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
                 <span>DM 正在推演剧情与场景视觉...</span>
               </div>
-              <div className="leading-relaxed whitespace-pre-wrap font-serif text-slate-100">
+              <div className="leading-relaxed whitespace-pre-wrap font-serif text-slate-100 select-text">
                 {streamingText}
                 <span className="inline-block w-1.5 h-4 ml-1 bg-amber-400 animate-pulse align-middle" />
               </div>

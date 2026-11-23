@@ -13,11 +13,16 @@ export default function StudioView({ scenarioId = 'black_crow_manor' }: StudioVi
   const [scenario, setScenario] = useState<ScenarioSpec | null>(null);
   const [selectedSceneId, setSelectedSceneId] = useState<string>('');
   const [lintReport, setLintReport] = useState<LintReport | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isReloading, setIsReloading] = useState(false);
 
   // 加载剧本数据与 Lint 报告
-  const loadScenarioData = async () => {
-    setIsLoading(true);
+  const loadScenarioData = async (silent = false) => {
+    if (!silent && !scenario) {
+      setIsInitialLoading(true);
+    } else {
+      setIsReloading(true);
+    }
     try {
       const res = await fetch(`/api/scenarios/${scenarioId}`);
       if (!res.ok) throw new Error('Failed to load scenario');
@@ -36,12 +41,13 @@ export default function StudioView({ scenarioId = 'black_crow_manor' }: StudioVi
     } catch (err) {
       console.error(err);
     } finally {
-      setIsLoading(false);
+      setIsInitialLoading(false);
+      setIsReloading(false);
     }
   };
 
   useEffect(() => {
-    loadScenarioData();
+    loadScenarioData(false);
   }, [scenarioId]);
 
   // 保存场景修改
@@ -53,14 +59,14 @@ export default function StudioView({ scenarioId = 'black_crow_manor' }: StudioVi
         body: JSON.stringify(scene),
       });
       if (res.ok) {
-        await loadScenarioData();
+        await loadScenarioData(true);
       }
     } catch (err) {
       console.error(err);
     }
   };
 
-  if (isLoading || !scenario) {
+  if (isInitialLoading || !scenario) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
         <RefreshCw className="w-6 h-6 animate-spin text-indigo-500 mb-2" />
@@ -104,10 +110,10 @@ export default function StudioView({ scenarioId = 'black_crow_manor' }: StudioVi
 
         <div className="flex items-center gap-2">
           <button
-            onClick={loadScenarioData}
+            onClick={() => loadScenarioData(true)}
             className="flex items-center gap-1 text-slate-400 hover:text-slate-200 text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 transition"
           >
-            <RefreshCw className="w-3 h-3" />
+            <RefreshCw className={`w-3 h-3 ${isReloading ? 'animate-spin text-indigo-400' : ''}`} />
             <span>热重载剧本</span>
           </button>
         </div>
@@ -123,7 +129,7 @@ export default function StudioView({ scenarioId = 'black_crow_manor' }: StudioVi
               selectedSceneId={selectedSceneId}
               onSelectScene={(id) => setSelectedSceneId(id)}
               onSaveScene={handleSaveScene}
-              onRefresh={loadScenarioData}
+              onRefresh={() => loadScenarioData(true)}
             />
           </div>
 
@@ -136,7 +142,7 @@ export default function StudioView({ scenarioId = 'black_crow_manor' }: StudioVi
         {/* 右侧：Studio Co-pilot 编剧助手 */}
         <AuthoringChat
           scenarioId={scenarioId}
-          onScenarioUpdated={loadScenarioData}
+          onScenarioUpdated={() => loadScenarioData(true)}
         />
       </div>
     </div>

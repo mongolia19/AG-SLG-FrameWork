@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ScenarioSpec, SceneNode, LintReport } from '../../types';
 import ScenarioTree from './ScenarioTree';
 import AuthoringChat from './AuthoringChat';
 import PlaytestRunner from './PlaytestRunner';
-import { AlertCircle, CheckCircle, RefreshCw, ShieldCheck } from 'lucide-react';
+import { AlertCircle, CheckCircle, RefreshCw, ShieldCheck, Download, Upload } from 'lucide-react';
 
 interface StudioViewProps {
   scenarioId?: string;
@@ -66,6 +66,34 @@ export default function StudioView({ scenarioId = 'black_crow_manor' }: StudioVi
     }
   };
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExportBundle = () => {
+    window.open(`/api/scenarios/${scenarioId}/export`, '_blank');
+  };
+
+  const handleImportBundle = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const res = await fetch('/api/scenarios/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/zip' },
+        body: file,
+      });
+      if (res.ok) {
+        await loadScenarioData(false);
+      } else {
+        const err = await res.json();
+        alert(`导入剧本包失败: ${err.detail || '未知原因'}`);
+      }
+    } catch (err: any) {
+      alert(`导入异常: ${err.message}`);
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   if (isInitialLoading || !scenario) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
@@ -109,6 +137,31 @@ export default function StudioView({ scenarioId = 'black_crow_manor' }: StudioVi
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={handleExportBundle}
+            className="flex items-center gap-1 text-slate-300 hover:text-white text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 transition"
+            title="一键导出包含世界设定、场景节点与场景素材的完整 ZIP 剧本包"
+          >
+            <Download className="w-3 h-3 text-emerald-400" />
+            <span>导出剧本包</span>
+          </button>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".zip"
+            onChange={handleImportBundle}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-1 text-slate-300 hover:text-white text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 transition"
+            title="导入外部 .zip 格式完整剧本包"
+          >
+            <Upload className="w-3 h-3 text-cyan-400" />
+            <span>导入剧本包</span>
+          </button>
+
           <button
             onClick={() => loadScenarioData(true)}
             className="flex items-center gap-1 text-slate-400 hover:text-slate-200 text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 transition"

@@ -1,228 +1,299 @@
-id: "beach"
-title: "孤岛沙滩"
-background: "/assets/scenes/island_beach.png"
-hero_image: "/assets/illustrations/wreckage.png"
-music: "/assets/bgm/ocean_waves.mp3"
+id: beach
+title: 孤岛沙滩
+background: /assets/scenes/island_beach.png
+foreground: ''
+hero_image: /assets/illustrations/wreckage.png
+music: /assets/bgm/ocean_waves.mp3
+description: '狂暴的海浪在白色沙滩上留下层层泡沫，海风卷着咸涩的水汽扑面而来。
 
-description: |
-  狂暴的海浪在白色沙滩上留下层层泡沫，海风卷着咸涩的水汽扑面而来。
   你从剧烈的撞击与昏迷中苏醒，身后是一望无际的碧蓝大海，身前则是险峻荒凉的热带岛屿。
+
   沙滩上散落着失事客机残骸与被冲上岸的浮木残片。烈日悬空，必须尽快寻找物资与生火工具以防夜间失温。
 
+  '
 visuals:
-  background: "/assets/scenes/island_beach.png"
-  foreground: ""
-  hero_image: "/assets/illustrations/wreckage.png"
-  atmosphere: "海浪咆哮、烈日灼烤、危机四伏"
+  background: /assets/scenes/island_beach.png
+  foreground: ''
+  hero_image: /assets/illustrations/wreckage.png
+  atmosphere: 海浪咆哮、烈日灼烤、危机四伏
   decorations:
-    - id: "palm_beach"
-      name: "海风椰林"
-      image: "/assets/props/palmtree.png"
-      side: "left"
-      caption: "高耸椰树"
-      tooltip: "海风拂动的椰子树，上面挂满青椰"
-    - id: "crab_beach"
-      name: "敏捷沙蟹"
-      image: "/assets/props/crab.png"
-      side: "left"
-      caption: "爬行红蟹"
-      tooltip: "在潮湿沙滩上飞速爬行的海蟹"
-    - id: "shell_beach"
-      name: "五彩海贝"
-      image: "/assets/props/seashell.png"
-      side: "right"
-      caption: "天然贝壳"
-      tooltip: "潮汐卷上沙滩的坚硬海螺与贝壳"
-    - id: "rock_beach"
-      name: "潮间黑礁"
-      image: "/assets/props/rocks.png"
-      side: "right"
-      caption: "海蚀礁石"
-      tooltip: "被海浪冲刷千百年的火山岩礁石"
-
+  - id: palm_beach
+    name: 海风椰林
+    image: /assets/props/palmtree.png
+    side: left
+    caption: 高耸椰树
+    tooltip: 海风拂动的椰子树，上面挂满青椰
+  - id: crab_beach
+    name: 敏捷沙蟹
+    image: /assets/props/crab.png
+    side: left
+    caption: 爬行红蟹
+    tooltip: 在潮湿沙滩上飞速爬行的海蟹
+  - id: shell_beach
+    name: 五彩海贝
+    image: /assets/props/seashell.png
+    side: right
+    caption: 天然贝壳
+    tooltip: 潮汐卷上沙滩的坚硬海螺与贝壳
+  - id: rock_beach
+    name: 潮间黑礁
+    image: /assets/props/rocks.png
+    side: right
+    caption: 海蚀礁石
+    tooltip: 被海浪冲刷千百年的火山岩礁石
+decorations: []
 npcs: []
-
 actions:
-  - id: "pick_seashell"
-    label: "挑选潮线边缘的大号海螺与贝壳"
-    type: "interact"
-    condition:
-      not_has_item: "seashell"
-    on_success:
-      gain_item: "seashell"
-      attributes_delta:
-        stamina: -3
-        hydration: -2
-      message: "你从细沙中挖出了一枚泛着珍珠光泽的大海螺与坚硬贝壳，不仅边缘锋利可作切割，螺肉还能应急！"
-  - id: "search_luggage"
-    label: "搜查半掩在沙里的防水金属盒"
-    type: "check"
-    skill: "perception"
-    difficulty: 10
-    condition:
-      variables:
-        found_lighter: false
-    on_success:
-      gain_item: "lighter"
-      variables:
-        found_lighter: true
-      attributes_delta:
-        stamina: -5
-        hydration: -5
-        fullness: -4
-      time_cost: 1
-      message: "你在锈蚀的金属盒内发现了一只保存完好的军用防风打火机！机油尚足，火花清脆。"
-    on_failure:
-      attributes_delta:
-        stamina: -6
-        hydration: -6
-        fullness: -4
-      time_cost: 1
-      message: "盒内灌满了细沙与海水，翻找许久只倒出一把湿透的泥浆。"
-
-  - id: "scavenge_bottle"
-    label: "拾取漂浮在礁石边缘的透明玻璃瓶"
-    type: "check"
-    skill: "agility"
-    difficulty: 8
-    condition:
-      variables:
-        found_bottle: false
-    on_success:
-      gain_item: "glass_bottle"
-      variables:
-        found_bottle: true
-      attributes_delta:
-        stamina: -6
-        hydration: -4
-        fullness: -4
-      time_cost: 1
-      message: "你顶着浪花迅速伸手，捞起了一只完好的厚壁玻璃瓶。清洗干净后它是绝佳的储水与煮水容器！"
-    on_failure:
-      attributes_delta:
-        stamina: -7
-        hydration: -5
-        fullness: -4
-      time_cost: 1
-      message: "浪头打来，脚下一滑险些摔在礁石上，暂时没能抓住漂流物。"
-
-  - id: "catch_shore_crab"
-    label: "在退潮礁石缝隙抓捕海蟹"
-    type: "check"
-    skill: "perception"
-    difficulty: 9
-    condition:
-      time_slot_in: ["清晨", "上午", "下午", "黄昏"]
-      not_has_item: "raw_crab"
-    on_success:
-      gain_item: "raw_crab"
-      attributes_delta:
-        stamina: -8
-        hydration: -6
-        fullness: -5
-      time_cost: 1
-      message: "你掀开湿滑的礁石，敏捷地按住了一只肥硕的青蟹装进背包。带回篝火烤熟会是最好的补给！"
-    on_failure:
-      attributes_delta:
-        stamina: -8
-        hydration: -6
-        fullness: -5
-      time_cost: 1
-      message: "螃蟹受惊钻进了深不见底的石缝，暂时扑了个空。"
-
-  - id: "night_beach_forage"
-    label: "借着月光在浅滩摸索夜行贝类（夜间风险）"
-    type: "check"
-    skill: "survival"
-    difficulty: 11
-    condition:
-      time_slot_in: ["夜晚", "深夜"]
-      not_has_item: "raw_crab"
-    on_success:
-      gain_item: "raw_crab"
-      attributes_delta:
-        stamina: -10
-        hydration: -4
-        fullness: -5
-        temperature: -1
-      time_cost: 1
-      message: "冷冽的海风中，你借着微弱星光摸到了一只搁浅的礁蟹。"
-    on_failure:
-      hp_delta: -5
-      san_delta: -5
-      attributes_delta:
-        stamina: -10
-        temperature: -1
-      time_cost: 1
-      message: "黑暗中踩中锋利的珊瑚碎石划伤了脚踝，寒意顺着浪花袭来。"
-
-  - id: "gather_driftwood"
-    label: "捡拾沙滩高处的干燥树枝与浮木"
-    type: "interact"
-    condition:
-      not_has_item: "branches"
-    on_success:
-      gain_item: "branches"
-      attributes_delta:
-        stamina: -5
-        hydration: -5
-        fullness: -4
-      time_cost: 1
-      message: "你抱回了一捆经过烈日暴晒的干燥树枝，是生火和搭建庇护所的必备基础素材。"
-
-  - id: "eat_raw_crab"
-    label: "迫不得已：直接敲开生海蟹充饥（有肠胃风险）"
-    type: "check"
-    skill: "constitution"
-    difficulty: 11
-    condition:
-      has_item: "raw_crab"
-      attributes:
-        fullness:
-          lt: 95
-    on_success:
-      consume_item: "raw_crab"
-      attributes_delta:
-        fullness: 22
-        stamina: 8
-        hydration: -3
-      time_cost: 1
-      message: "你强忍腥味吞下蟹肉，虽然有些反胃，但饱食度明显回升了。"
-    on_failure:
-      consume_item: "raw_crab"
-      hp_delta: -8
-      san_delta: -5
-      attributes_delta:
-        fullness: 10
-        hydration: -12
-        stamina: -5
-      time_cost: 1
-      message: "生蟹肉引发了剧烈的腹痛与反胃，勉强垫了点肚子却消耗了宝贵水分。"
-
-  - id: "drink_fresh_water_beach"
-    label: "饮用瓶中的天然甘泉解渴"
-    type: "interact"
-    condition:
-      has_item: "fresh_water_bottle"
-      attributes:
-        hydration:
-          lt: 95
-    on_success:
-      consume_item: "fresh_water_bottle"
-      gain_item: "glass_bottle"
-      attributes_delta:
-        hydration: 35
-        stamina: 10
-      san_delta: 3
-      message: "清冽的泉水滑入干渴的喉咙，你长舒一口气，将空玻璃瓶小心收好。"
-
-  - id: "enter_coastal_jungle"
-    label: "离开沙滩，向海边丛林前进"
-    type: "transition"
-    target_scene: "coastal_jungle"
-    effects:
-      attributes_delta:
-        stamina: -4
-        hydration: -4
-        fullness: -3
-      time_cost: 1
+- id: pick_seashell
+  label: 挑选潮线边缘的大号海螺与贝壳
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    not_has_item: seashell
+  effects: null
+  source: null
+  on_success:
+    gain_item: seashell
+    attributes_delta:
+      stamina: -3
+      hydration: -2
+    message: 你从细沙中挖出了一枚泛着珍珠光泽的大海螺与坚硬贝壳，不仅边缘锋利可作切割，螺肉还能应急！
+  on_failure: null
+- id: pickup_metal_box
+  label: 捡起半掩在沙里的防水金属盒，洗去泥沙收好
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    not_has_item: metal_box
+    variables:
+      found_metal_box: false
+  effects: null
+  source: null
+  on_success:
+    gain_item: metal_box
+    variables:
+      found_metal_box: true
+    attributes_delta:
+      stamina: -3
+      hydration: -2
+    time_cost: 1
+    message: 你将半掩在沙里的防水金属盒挖了出来，用海水仔细冲刷掉外壳粘连的泥沙与盐垢后擦干收进背包。厚实的航空铝合金盒体卡扣依然严密，既能当容器储物，也能架在火上烧水。
+  on_failure: null
+- id: search_luggage
+  label: 撬开卡扣，搜查防水金属盒内部
+  type: check
+  target_npc: null
+  target_scene: null
+  skill: perception
+  difficulty: 10
+  condition:
+    variables:
+      found_lighter: false
+  effects: null
+  source: null
+  on_success:
+    gain_item: lighter
+    variables:
+      found_lighter: true
+    attributes_delta:
+      stamina: -5
+      hydration: -5
+      fullness: -4
+    time_cost: 1
+    message: 你用力撬开金属盒的密封卡扣，在干燥的内衬海绵中发现了一只保存完好的军用防风打火机！机油尚足，火花清脆。
+  on_failure:
+    attributes_delta:
+      stamina: -6
+      hydration: -6
+      fullness: -4
+    time_cost: 1
+    message: 盒盖卡扣被盐分咬得很死，费力撬开一条缝隙后里面满是受潮沙砾，暂时没能翻出能用的工具。
+- id: scavenge_bottle
+  label: 拾取漂浮在礁石边缘的透明玻璃瓶
+  type: check
+  target_npc: null
+  target_scene: null
+  skill: agility
+  difficulty: 8
+  condition:
+    variables:
+      found_bottle: false
+  effects: null
+  source: null
+  on_success:
+    gain_item: glass_bottle
+    variables:
+      found_bottle: true
+    attributes_delta:
+      stamina: -6
+      hydration: -4
+      fullness: -4
+    time_cost: 1
+    message: 你顶着浪花迅速伸手，捞起了一只完好的厚壁玻璃瓶。清洗干净后它是绝佳的储水与煮水容器！
+  on_failure:
+    attributes_delta:
+      stamina: -7
+      hydration: -5
+      fullness: -4
+    time_cost: 1
+    message: 浪头打来，脚下一滑险些摔在礁石上，暂时没能抓住漂流物。
+- id: catch_shore_crab
+  label: 在退潮礁石缝隙抓捕海蟹
+  type: check
+  target_npc: null
+  target_scene: null
+  skill: perception
+  difficulty: 9
+  condition:
+    time_slot_in:
+    - 清晨
+    - 上午
+    - 下午
+    - 黄昏
+    not_has_item: raw_crab
+  effects: null
+  source: null
+  on_success:
+    gain_item: raw_crab
+    attributes_delta:
+      stamina: -8
+      hydration: -6
+      fullness: -5
+    time_cost: 1
+    message: 你掀开湿滑的礁石，敏捷地按住了一只肥硕的青蟹装进背包。带回篝火烤熟会是最好的补给！
+  on_failure:
+    attributes_delta:
+      stamina: -8
+      hydration: -6
+      fullness: -5
+    time_cost: 1
+    message: 螃蟹受惊钻进了深不见底的石缝，暂时扑了个空。
+- id: night_beach_forage
+  label: 借着月光在浅滩摸索夜行贝类（夜间风险）
+  type: check
+  target_npc: null
+  target_scene: null
+  skill: survival
+  difficulty: 11
+  condition:
+    time_slot_in:
+    - 夜晚
+    - 深夜
+    not_has_item: raw_crab
+  effects: null
+  source: null
+  on_success:
+    gain_item: raw_crab
+    attributes_delta:
+      stamina: -10
+      hydration: -4
+      fullness: -5
+      temperature: -1
+    time_cost: 1
+    message: 冷冽的海风中，你借着微弱星光摸到了一只搁浅的礁蟹。
+  on_failure:
+    hp_delta: -5
+    san_delta: -5
+    attributes_delta:
+      stamina: -10
+      temperature: -1
+    time_cost: 1
+    message: 黑暗中踩中锋利的珊瑚碎石划伤了脚踝，寒意顺着浪花袭来。
+- id: gather_driftwood
+  label: 捡拾沙滩高处的干燥树枝与浮木
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    not_has_item: branches
+  effects: null
+  source: null
+  on_success:
+    gain_item: branches
+    attributes_delta:
+      stamina: -5
+      hydration: -5
+      fullness: -4
+    time_cost: 1
+    message: 你抱回了一捆经过烈日暴晒的干燥树枝，是生火和搭建庇护所的必备基础素材。
+  on_failure: null
+- id: eat_raw_crab
+  label: 迫不得已：直接敲开生海蟹充饥（有肠胃风险）
+  type: check
+  target_npc: null
+  target_scene: null
+  skill: constitution
+  difficulty: 11
+  condition:
+    has_item: raw_crab
+    attributes:
+      fullness:
+        lt: 95
+  effects: null
+  source: null
+  on_success:
+    consume_item: raw_crab
+    attributes_delta:
+      fullness: 22
+      stamina: 8
+      hydration: -3
+    time_cost: 1
+    message: 你强忍腥味吞下蟹肉，虽然有些反胃，但饱食度明显回升了。
+  on_failure:
+    consume_item: raw_crab
+    hp_delta: -8
+    san_delta: -5
+    attributes_delta:
+      fullness: 10
+      hydration: -12
+      stamina: -5
+    time_cost: 1
+    message: 生蟹肉引发了剧烈的腹痛与反胃，勉强垫了点肚子却消耗了宝贵水分。
+- id: drink_fresh_water_beach
+  label: 饮用瓶中的天然甘泉解渴
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    has_item: fresh_water_bottle
+    attributes:
+      hydration:
+        lt: 95
+  effects: null
+  source: null
+  on_success:
+    consume_item: fresh_water_bottle
+    gain_item: glass_bottle
+    attributes_delta:
+      hydration: 35
+      stamina: 10
+    san_delta: 3
+    message: 清冽的泉水滑入干渴的喉咙，你长舒一口气，将空玻璃瓶小心收好。
+  on_failure: null
+- id: enter_coastal_jungle
+  label: 离开沙滩，向海边丛林前进
+  type: transition
+  target_npc: null
+  target_scene: coastal_jungle
+  skill: null
+  difficulty: null
+  condition: null
+  effects:
+    attributes_delta:
+      stamina: -4
+      hydration: -4
+      fullness: -3
+    time_cost: 1
+  source: null
+  on_success: null
+  on_failure: null

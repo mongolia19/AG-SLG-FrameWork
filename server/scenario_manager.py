@@ -1,7 +1,9 @@
 """Scenario data models and file system loader/saver for AG-SLG-FrameWork."""
 
 from pathlib import Path
+import shutil
 from typing import Any, Dict, List, Optional
+import zipfile
 import yaml
 from pydantic import BaseModel, Field
 
@@ -270,3 +272,104 @@ class ScenarioManager:
         with open(target, "w", encoding="utf-8") as f:
             yaml.safe_dump(world.model_dump(), f, allow_unicode=True, sort_keys=False)
         return target
+
+    def get_scenario_dir(self, scenario_id: str) -> Path:
+        return self.base_dir / scenario_id
+
+    def get_scenario_assets_dir(self, scenario_id: str) -> Path:
+        assets_dir = self.base_dir / scenario_id / "assets"
+        assets_dir.mkdir(parents=True, exist_ok=True)
+        return assets_dir
+
+    def export_scenario_bundle(self, scenario_id: str, target_zip: Optional[Path] = None) -> Path:
+        """Export a scenario folder (world.yaml, scenes/, assets/) into a portable .zip bundle."""
+        scenario_dir = self.base_dir / scenario_id
+        if not scenario_dir.exists() or not (scenario_dir / "world.yaml").exists():
+            raise FileNotFoundError(f"Scenario not found for export: {scenario_id}")
+
+        if target_zip is None:
+            target_zip = self.base_dir / f"{scenario_id}.zip"
+
+        with zipfile.ZipFile(target_zip, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+            for file_path in scenario_dir.rglob("*"):
+                if file_path.is_file() and not file_path.name.startswith("."):
+                    rel_path = file_path.relative_to(scenario_dir)
+                    zf.write(file_path, arcname=str(rel_path))
+
+        return target_zip
+
+    def import_scenario_bundle(self, zip_path: Path, scenario_id: Optional[str] = None) -> str:
+        """Import a scenario .zip bundle into self.base_dir / scenario_id."""
+        if not zip_path.exists():
+            raise FileNotFoundError(f"Archive not found: {zip_path}")
+
+        with zipfile.ZipFile(zip_path, "r") as zf:
+            names = zf.namelist()
+            world_entry = None
+            has_nested_root = False
+            nested_folder = ""
+
+            for name in names:
+                parts = Path(name).parts
+                if len(parts) == 1 and parts[0] == "world.yaml":
+                    world_entry = name
+                    break
+                elif len(parts) == 2 and parts[1] == "world.yaml":
+                    world_entry = name
+                    has_nested_root = True
+                    nested_folder = parts[0]
+                    break
+
+            if not world_entry:
+                raise ValueError("Invalid scenario bundle: 'world.yaml' not found in archive")
+
+            target_id = scenario_id or (nested_folder if has_nested_root else zip_path.stem)
+            target_dir = self.base_dir / target_id
+            target_dir.mkdir(parents=True, exist_ok=True)
+
+            for member in zf.infolist():
+                if member.is_dir():
+                    continue
+                member_path = Path(member.filename)
+                if ".." in member_path.parts:
+                    continue
+
+                if has_nested_root and member_path.parts[0] == nested_folder:
+                    rel_parts = member_path.parts[1:]
+                else:
+                    rel_parts = member_path.parts
+
+                if not rel_parts:
+                    continue
+
+                dest_file = target_dir.joinpath(*rel_parts)
+                dest_file.parent.mkdir(parents=True, exist_ok=True)
+                with zf.open(member) as src, open(dest_file, "wb") as dst:
+                    shutil.copyfileobj(src, dst)
+
+        return target_id
+
+    def find_asset_path(self, subpath: str, scenario_id: Optional[str] = None) -> Optional[Path]:
+        """Intelligently resolve an asset subpath from co-located scenario assets or public fallback."""
+        clean_subpath = subpath.lstrip("/")
+        # 1. Check specific scenario assets
+        if scenario_id:
+            candidate = self.base_dir / scenario_id / "assets" / clean_subpath
+            if candidate.exists() and candidate.is_file():
+                return candidate
+
+        # 2. Search across all scenarios' assets/
+        if self.base_dir.exists():
+            for s_dir in self.base_dir.iterdir():
+                if s_dir.is_dir():
+                    candidate = s_dir / "assets" / clean_subpath
+                    if candidate.exists() and candidate.is_file():
+                        return candidate
+
+        # 3. Check web/public/assets fallback
+        public_candidate = self.base_dir.parent / "web" / "public" / "assets" / clean_subpath
+        if public_candidate.exists() and public_candidate.is_file():
+            return public_candidate
+
+        return None
+

@@ -25,6 +25,7 @@ initial_player_state:
     weather: "晴朗炎热"
     fire_started: false
     water_purified: false
+    found_metal_box: false
     found_lighter: false
     found_rope: false
     found_bottle: false

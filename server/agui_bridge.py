@@ -27,6 +27,7 @@ from server.scenario_manager import (
     PlayerState,
     SceneNode,
     ActionOption,
+    evaluate_action_condition,
     resolve_scene_actions,
 )
 
@@ -70,6 +71,11 @@ def extract_message_text(content: Any) -> str:
 
 
 ITEM_META = {
+    "metal_box": {
+        "name": "防水金属盒",
+        "icon": "",
+        "desc": "从沙滩拾获并洗净的航空铝合金防水盒，密封严密，既可收纳物资也可充当容器盛水烧水。",
+    },
     "lighter": {
         "name": "防风打火机",
         "icon": "/assets/items/lighter.png",
@@ -253,9 +259,9 @@ class GameSession:
                     meta = ITEM_META[item_id]
                     if not item.get("name") or item["name"] == item_id:
                         item["name"] = meta["name"]
-                    if not item.get("icon"):
+                    if not item.get("icon") and meta.get("icon"):
                         item["icon"] = meta["icon"]
-                    if not item.get("desc"):
+                    if not item.get("desc") and meta.get("desc"):
                         item["desc"] = meta["desc"]
                 self.player_state.inventory.append(item)
                 added_items.append(item)
@@ -314,6 +320,15 @@ class AGUIBridge:
             for item in session.player_state.inventory
         ]
 
+        history_block = ""
+        if session.history:
+            recent = session.history[-6:]
+            history_lines = [
+                f"- {'玩家' if h.get('role') == 'user' else 'DM'}: {h.get('content', '')}"
+                for h in recent
+            ]
+            history_block = "\n近期剧情回溯：\n" + "\n".join(history_lines) + "\n"
+
         prompt = f"""你是一款高沉浸感文字跑团（TRPG / SLG）的地下城主（DM / Game Master）兼视觉导演（遵循 ag-slg-director 规范）。
 当前世界观：{scenario.world.title} (ID: {scenario.world.id})
 玩家当前状态：
@@ -336,23 +351,27 @@ class AGUIBridge:
 场景中存在的人物：
 {scene_npcs or '无'}
 
-当前可用行动选项：
+当前可用行动选项（仅供参考，非强制限制）：
 {scene_actions or '无'}
-
+{history_block}
 玩家执行了以下行动：
 "{user_input}"
 
 请作为 DM 进行剧情演绎与多图层视觉编排：
-1. 叙事文本与对话分明：生动叙述环境与行动结果，NPC 发言请以 角色名: “对话内容” 格式清晰表达。严禁在叙述文本中直接泄漏具体图片文件路径。
-2. 视觉舞台导演原则（ag-slg-director）：
+1. 玩家意图忠实原则（最高优先级）：
+   - 仔细分辨玩家输入的具体动词与目标，严格按玩家当前行动的字面意图推进，切勿强行套用无关的预设选项结局！
+   - 例如：若玩家自由输入“捡起防水金属盒，洗干净带走”，其目的是**获得并随身携带金属盒本身**，必须如实描写捡起并清洗金属盒，并在 `add_inventory` 中加入 `metal_box`（防水金属盒），绝不要在玩家未要求打开/搜查盒内物品时擅自改为“在盒里翻找打火机”。
+   - 凡玩家明确拾取、清洗带走、制作或获得的实体物品，都必须在 `state_delta.add_inventory` 中准确写入物品（包含 `id`、`name`、`desc`），确保背包栏真实同步。
+2. 叙事文本与对话分明：生动叙述环境与行动结果，NPC 发言请以 角色名: “对话内容” 格式清晰表达。严禁在叙述文本中直接泄漏具体图片文件路径。
+3. 视觉舞台导演原则（ag-slg-director）：
    - 背景稳定性：不要在普通的对话轮换背景；仅在发生场景转移或环境巨变时更新 visuals.background。
    - 角色立绘调度：与具体 NPC 对话时，设置 visuals.foreground 为其立绘；玩家独处检定或离开时置空。
-   - 焦点特写镜头：当玩家成功发现关键线索、搜查物品或遭遇高潮事件时，在 visuals.hero_image 给出特写插图路径或语义描述（如“【证物特写】雕花银钥匙”）。
-3. 数值与动态选项演算（非常重要）：
+   - 焦点特写镜头：当玩家成功发现关键线索、拾获或搜查物品、或遭遇高潮事件时，在 visuals.hero_image 给出特写插图路径或语义描述（如“【物品特写】洗净泥沙的防水金属盒”）。
+4. 数值与动态选项演算（非常重要）：
    - 若玩家进食、饮水、休息、劳作或受环境影响，务必在 state_delta 中通过 `attributes_delta` 真实更新对应属性（如 `fullness` 饱食度、`hydration` 水分、`stamina` 体力、`temperature` 体温），消耗掉的食材/饮水通过 `remove_inventory` 列出道具 id 移除。
    - 行动耗时可通过 `time_cost`（整数，如 1 表示推进一个时段：清晨→上午→下午→黄昏→夜晚→深夜）推进时间。
    - 如因剧情变化衍生出新的临时行动选项，可通过 `available_actions` 提供动态选项列表；预设场景选项也会随状态与时间自动刷新。
-4. 若产生场景转移、数值变化、道具增减、时间推进或视觉变更，在回复最末尾附带一个 ```state_delta 代码块：
+5. 若产生场景转移、数值变化、道具增减、时间推进或视觉变更，在回复最末尾附带一个 ```state_delta 代码块：
 ```state_delta
 {{
   "current_scene": "目标场景ID（若发生转移）",
@@ -548,6 +567,8 @@ class AGUIBridge:
                 delta = dict(matched_action.on_success or {})
                 if "gain_item" in delta:
                     delta["add_inventory"] = [{"id": delta["gain_item"]}]
+                if matched_action.id == "pickup_metal_box" and "visuals" not in delta:
+                    delta["visuals"] = {"hero_image": "【物品特写】洗净泥沙的防水金属盒"}
                 if "time_cost" not in delta:
                     delta["time_cost"] = 1
             elif matched_action.type == "transition":
@@ -595,6 +616,87 @@ class AGUIBridge:
         formatted = f"{narration}\n\n```state_delta\n{json.dumps(delta, ensure_ascii=False, indent=2)}\n```\n"
         return formatted, delta
 
+    @staticmethod
+    def _match_freeform_action(
+        scene: Optional[SceneNode],
+        user_text: str,
+        player_state: PlayerState,
+    ) -> tuple[Optional[ActionOption], bool]:
+        """Match free-form player text to an eligible scene action without hijacking distinct intents.
+
+        Returns (matched_action, is_exact_label_match).
+        """
+        if not scene or not scene.actions:
+            return None, False
+
+        clean_input = re.sub(r"^【.*?】", "", user_text).strip()
+        clean_input = re.sub(r"\[检定数据:.*?\]", "", clean_input).strip()
+        if not clean_input:
+            return None, False
+
+        eligible_actions = [
+            a for a in scene.actions if evaluate_action_condition(a.condition, player_state)
+        ]
+        if not eligible_actions:
+            return None, False
+
+        # 1. Exact or full-label match
+        for a in eligible_actions:
+            if clean_input == a.label or a.label in clean_input:
+                return a, True
+
+        # 2. Intent-aware disambiguation for metal box / luggage actions
+        box_nouns = ("金属盒", "铁盒", "铝盒", "防水盒", "盒子")
+        if any(noun in clean_input for noun in box_nouns):
+            search_verbs = ("搜", "翻", "找", "撬", "打开", "拆开", "里面", "内里", "夹层", "打火机")
+            pickup_verbs = ("捡", "拾", "拿", "洗", "冲", "擦", "带走", "收", "装")
+            wants_search = any(v in clean_input for v in search_verbs)
+            wants_pickup = any(v in clean_input for v in pickup_verbs)
+            if wants_search:
+                for target_id in ("search_luggage", "open_metal_box_coastal", "open_metal_box_in_jungle"):
+                    act = next((a for a in eligible_actions if a.id == target_id), None)
+                    if act:
+                        return act, False
+                return None, False
+            if wants_pickup:
+                act = next((a for a in eligible_actions if a.id == "pickup_metal_box"), None)
+                if act:
+                    return act, False
+                return None, False
+            # Ambiguous reference to the box (e.g. "把金属盒当锅烧水"): let LLM handle freely
+            if "烧水" in clean_input or "煮水" in clean_input:
+                act = next((a for a in eligible_actions if a.id == "boil_water_in_metal_box"), None)
+                if act:
+                    return act, False
+            return None, False
+
+        # 3. Substring or domain keyword match across eligible actions
+        kw_map = {
+            "scavenge_bottle": ["玻璃瓶", "瓶子", "漂流瓶"],
+            "search_luggage": ["行李", "打火机"],
+            "pick_seashell": ["贝壳", "海螺", "螺"],
+            "catch_shore_crab": ["螃蟹", "海蟹", "抓蟹", "红蟹"],
+            "gather_driftwood": ["干柴", "树枝", "浮木", "捡柴"],
+            "cut_vines": ["藤蔓", "老藤", "割藤"],
+            "collect_fresh_water": ["泉水", "甘泉", "装水", "打水"],
+            "gather_coconuts": ["椰子", "采摘椰子", "摘椰子"],
+            "craft_campfire": ["生火", "点火", "篝火", "升火"],
+            "light_campfire": ["生火", "点火", "篝火", "升火"],
+            "craft_rope": ["搓绳", "编织绳索", "做绳子", "编绳"],
+            "cook_meal": ["烤肉", "烤蟹", "做饭", "烹饪"],
+            "cook_food_on_fire": ["烤肉", "烤蟹", "做饭", "热食"],
+            "rest_by_fire": ["休息", "睡觉", "过夜"],
+            "rest_by_campfire": ["休息", "睡觉", "过夜"],
+        }
+        for a in eligible_actions:
+            if len(clean_input) >= 2 and clean_input in a.label:
+                return a, False
+            kws = kw_map.get(a.id, [])
+            if any(kw in clean_input for kw in kws):
+                return a, False
+
+        return None, False
+
     async def stream_play(self, input_data: RunAgentInput) -> AsyncIterator[str]:
         """Stream play mode game turn conforming to AG-UI Protocol."""
         thread_id = input_data.thread_id or str(uuid.uuid4())
@@ -626,34 +728,14 @@ class AGUIBridge:
         pre_scene_id = session.player_state.current_scene
         pre_scene = self.scenario_mgr.get_scene(scenario_id, pre_scene_id) if pre_scene_id else None
         matched_action: Optional[ActionOption] = None
+        explicit_action = False
         if action_id and pre_scene and pre_scene.actions:
             matched_action = next((a for a in pre_scene.actions if a.id == action_id), None)
+            explicit_action = matched_action is not None
         elif not matched_action and pre_scene and pre_scene.actions:
-            # Fuzzy match user_text against scene actions
-            clean_input = re.sub(r"^【.*?】", "", user_text).strip()
-            clean_input = re.sub(r"\[检定数据:.*?\]", "", clean_input).strip()
-            kw_map = {
-                "scavenge_bottle": ["玻璃瓶", "瓶子", "瓶", "漂流瓶"],
-                "search_luggage": ["金属盒", "行李", "打火机", "箱子"],
-                "pick_seashell": ["贝壳", "海螺", "螺"],
-                "catch_shore_crab": ["螃蟹", "海蟹", "抓蟹", "红蟹"],
-                "gather_driftwood": ["干柴", "树枝", "浮木", "捡柴"],
-                "cut_vines": ["藤蔓", "老藤", "割藤"],
-                "collect_fresh_water": ["泉水", "甘泉", "装水", "打水"],
-                "gather_coconuts": ["椰子", "采摘椰子", "摘椰子"],
-                "craft_campfire": ["生火", "点火", "篝火", "升火"],
-                "craft_rope": ["搓绳", "编织绳索", "做绳子", "编绳"],
-                "cook_meal": ["烤肉", "烤蟹", "做饭", "煮水", "烹饪"],
-                "rest_by_fire": ["休息", "睡觉", "过夜"],
-            }
-            for a in pre_scene.actions:
-                if a.label in clean_input or (len(clean_input) >= 2 and clean_input in a.label):
-                    matched_action = a
-                    break
-                kws = kw_map.get(a.id, [])
-                if any(kw in clean_input for kw in kws):
-                    matched_action = a
-                    break
+            matched_action, explicit_action = self._match_freeform_action(
+                pre_scene, user_text, session.player_state
+            )
 
         if matched_action and matched_action.type == "check" and check_passed is None:
             import random
@@ -707,9 +789,11 @@ class AGUIBridge:
                     session.agent_conversation_id = event.data["conversation_id"]
 
         delta_dict: Dict[str, Any] = {}
+        used_fallback = False
 
         # If driver emitted empty text (credits 0, rate-limit, offline), activate Fallback SLG Director
         if not full_text_buffer.strip():
+            used_fallback = True
             fallback_text, fallback_delta = self.generate_fallback_turn(
                 session=session,
                 user_text=user_text,
@@ -744,10 +828,17 @@ class AGUIBridge:
                 except Exception:
                     delta_dict = {}
 
-        if matched_action is not None:
+        if matched_action is not None and (explicit_action or used_fallback or not delta_dict):
             delta_dict = self._merge_action_effects(
                 delta_dict, matched_action, check_passed, session.player_state
             )
+
+        clean_narrator_text = re.sub(r"```state_delta[\s\S]*?```", "", full_text_buffer).strip()
+        session.history.append({"role": "user", "content": user_text})
+        if clean_narrator_text:
+            session.history.append({"role": "assistant", "content": clean_narrator_text[:400]})
+        if len(session.history) > 12:
+            session.history = session.history[-12:]
 
         if delta_dict:
             patches = session.apply_delta(delta_dict)

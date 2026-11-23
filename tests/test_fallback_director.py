@@ -80,3 +80,51 @@ async def test_fallback_director_seashell_custom_input():
     combined = "".join(events)
     assert "TEXT_MESSAGE_CONTENT" in combined
     assert "STATE_DELTA" in combined
+
+
+@pytest.mark.asyncio
+async def test_fallback_director_pickup_metal_box_not_hijacked_to_lighter():
+    """Picking up and washing the waterproof metal box must grant metal_box, not search for lighter."""
+    mgr = ScenarioManager()
+    driver = EmptyMockDriver()
+    bridge = AGUIBridge(scenario_mgr=mgr, driver=driver)
+
+    inp = RunAgentInput(
+        thread_id="test_pickup_metal_box_fallback",
+        run_id="run_metal_box_1",
+        messages=[
+            {
+                "id": "msg-box-1",
+                "role": "user",
+                "content": [{"type": "text", "text": "捡起防水金属盒，洗干净带走"}],
+            }
+        ],
+        forwarded_props={"scenario_id": "island_survival"},
+    )
+
+    events = []
+    async for raw in bridge.stream_play(inp):
+        events.append(raw)
+
+    import json
+    narrative_parts = []
+    for raw in events:
+        for line in raw.strip().split("\n"):
+            if line.startswith("data: "):
+                payload = json.loads(line[6:])
+                if payload.get("type") == "TEXT_MESSAGE_CONTENT":
+                    narrative_parts.append(payload.get("delta", ""))
+    narrative_text = "".join(narrative_parts)
+
+    combined = "".join(events)
+    assert "STATE_DELTA" in combined
+    assert "metal_box" in combined
+    assert "防水金属盒" in narrative_text
+    assert "打火机" not in narrative_text
+
+    session = bridge.sessions["test_pickup_metal_box_fallback"]
+    inv_ids = [item.get("id") for item in session.player_state.inventory]
+    assert "metal_box" in inv_ids
+    assert "lighter" not in inv_ids
+    assert session.player_state.variables.get("found_metal_box") is True
+    assert session.player_state.variables.get("found_lighter") is False

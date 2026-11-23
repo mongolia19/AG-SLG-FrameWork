@@ -38,25 +38,29 @@ def test_island_survival_scenario_spec():
 
 
 def test_island_survival_assets_exist():
-    """Verify that background, item, and scenic decoration assets physically exist in web/public/assets."""
+    """Verify that background, item, and scenic decoration assets exist both in co-located scenario assets and web/public/assets."""
     base = Path(__file__).resolve().parent.parent / "web" / "public" / "assets"
-    # 3 scene backgrounds
-    assert (base / "scenes" / "island_beach.png").exists()
-    assert (base / "scenes" / "coastal_jungle.png").exists()
-    assert (base / "scenes" / "deep_jungle.png").exists()
+    co_located = Path(__file__).resolve().parent.parent / "scripts" / "island_survival" / "assets"
 
-    # Item icons
-    assert (base / "items" / "lighter.png").exists()
-    assert (base / "items" / "rope.png").exists()
-    assert (base / "items" / "glass_bottle.png").exists()
-    assert (base / "items" / "branches.png").exists()
+    for root_dir in (base, co_located):
+        # 3 scene backgrounds
+        assert (root_dir / "scenes" / "island_beach.png").exists()
+        assert (root_dir / "scenes" / "coastal_jungle.png").exists()
+        assert (root_dir / "scenes" / "deep_jungle.png").exists()
 
-    # 5 margin scenery props requested by user: seashell, crab, palmtree, vines, rocks
-    assert (base / "props" / "seashell.png").exists()
-    assert (base / "props" / "crab.png").exists()
-    assert (base / "props" / "palmtree.png").exists()
-    assert (base / "props" / "vines.png").exists()
-    assert (base / "props" / "rocks.png").exists()
+        # Item icons
+        assert (root_dir / "items" / "lighter.png").exists()
+        assert (root_dir / "items" / "rope.png").exists()
+        assert (root_dir / "items" / "glass_bottle.png").exists()
+        assert (root_dir / "items" / "branches.png").exists()
+
+        # 5 margin scenery props requested by user: seashell, crab, palmtree, vines, rocks
+        assert (root_dir / "props" / "seashell.png").exists()
+        assert (root_dir / "props" / "crab.png").exists()
+        assert (root_dir / "props" / "palmtree.png").exists()
+        assert (root_dir / "props" / "vines.png").exists()
+        assert (root_dir / "props" / "rocks.png").exists()
+
 
 
 def test_island_survival_decorations_and_margin_props():
@@ -328,3 +332,54 @@ async def test_eating_updates_fullness_and_dynamic_options():
         # Daytime foraging hidden at night; DM dynamic action present
         assert "forage_food" not in action_ids_3
         assert "inspect_signal_flare" in action_ids_3
+
+
+@pytest.mark.asyncio
+async def test_custom_pickup_metal_box_with_llm_preserves_intent():
+    """Free-form '捡起防水金属盒，洗干净带走' must keep LLM's metal_box inventory delta without forcing lighter."""
+    mock_responses = [
+        (
+            "你弯腰将半掩在沙砾中的防水金属盒刨了出来，提着它走到浅浪处仔细冲洗掉外壳泥沙，擦干后收入背包。\n\n"
+            "```state_delta\n"
+            "{\n"
+            '  "add_inventory": [{"id": "metal_box", "name": "防水金属盒"}],\n'
+            '  "variables": {"found_metal_box": true},\n'
+            '  "attributes_delta": {"stamina": -3, "hydration": -2},\n'
+            '  "time_cost": 1,\n'
+            '  "visuals": {"background": "/assets/scenes/island_beach.png", "foreground": "", "hero_image": "【物品特写】洗净泥沙的防水金属盒"}\n'
+            "}\n"
+            "```"
+        )
+    ]
+    bridge.driver = MockAgentDriver(mock_responses=mock_responses)
+    thread_id = "test-custom-metal-box-llm"
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        res = await ac.post(
+            "/api/play/run",
+            json={
+                "thread_id": thread_id,
+                "run_id": "run-box-llm-1",
+                "messages": [{"id": "m1", "role": "user", "content": [{"type": "text", "text": "捡起防水金属盒，洗干净带走"}]}],
+                "forwarded_props": {"scenario_id": "island_survival"},
+            },
+        )
+        assert res.status_code == 200
+        state = (await ac.get(f"/api/session/{thread_id}/state")).json()
+        inv_ids = [i["id"] for i in state["player_state"]["inventory"]]
+        assert "metal_box" in inv_ids
+        assert "lighter" not in inv_ids
+        metal_box = next(i for i in state["player_state"]["inventory"] if i["id"] == "metal_box")
+        assert metal_box["name"] == "防水金属盒"
+        assert "铝合金" in metal_box["desc"]
+
+        avail_ids = [a["id"] for a in state["available_actions"]]
+        assert "pickup_metal_box" not in avail_ids
+        assert "search_luggage" in avail_ids
+
+    # Verify history was recorded for subsequent turns
+    session = bridge.sessions[thread_id]
+    assert len(session.history) == 2
+    next_prompt = bridge.build_play_prompt(session, "打开金属盒看看里面有什么")
+    assert "近期剧情回溯" in next_prompt
+    assert "玩家意图忠实原则" in next_prompt

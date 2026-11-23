@@ -2,10 +2,12 @@
 
 import os
 from pathlib import Path
+import tempfile
+import time
 from typing import Any, Dict, Optional
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from ag_ui.core import RunAgentInput
 
 from server.agent_driver import AgyDriver, CodexDriver, MockAgentDriver, BaseAgentDriver
@@ -77,6 +79,61 @@ def lint_scenario_endpoint(scenario_id: str):
         return report.model_dump()
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Scenario not found")
+
+
+@app.get("/api/scenarios/{scenario_id}/export")
+def export_scenario_endpoint(scenario_id: str):
+    try:
+        tmp_dir = Path(tempfile.gettempdir()) / "ag_slg_exports"
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+        zip_path = tmp_dir / f"{scenario_id}.zip"
+        scenario_manager.export_scenario_bundle(scenario_id, target_zip=zip_path)
+        return FileResponse(
+            path=str(zip_path),
+            filename=f"{scenario_id}.zip",
+            media_type="application/zip",
+        )
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Scenario not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/scenarios/import")
+async def import_scenario_endpoint(request: Request):
+    try:
+        tmp_dir = Path(tempfile.gettempdir()) / "ag_slg_imports"
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+        tmp_zip = tmp_dir / f"import_{int(time.time())}.zip"
+
+        content = await request.body()
+        if not content:
+            raise HTTPException(status_code=400, detail="Empty file payload")
+
+        tmp_zip.write_bytes(content)
+        scenario_id = scenario_manager.import_scenario_bundle(tmp_zip)
+        return {"status": "ok", "scenario_id": scenario_id}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to import scenario bundle: {str(e)}")
+
+
+
+@app.get("/scenarios/{scenario_id}/assets/{subpath:path}")
+@app.get("/api/scenarios/{scenario_id}/assets/{subpath:path}")
+def get_scenario_asset(scenario_id: str, subpath: str):
+    asset_file = scenario_manager.find_asset_path(subpath, scenario_id=scenario_id)
+    if asset_file and asset_file.exists():
+        return FileResponse(str(asset_file))
+    raise HTTPException(status_code=404, detail="Asset not found")
+
+
+@app.get("/assets/{subpath:path}")
+def get_co_located_asset(subpath: str):
+    asset_file = scenario_manager.find_asset_path(subpath)
+    if asset_file and asset_file.exists():
+        return FileResponse(str(asset_file))
+    raise HTTPException(status_code=404, detail="Asset not found")
+
 
 
 

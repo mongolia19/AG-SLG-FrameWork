@@ -43,6 +43,32 @@ def _clamp_attr(key: str, value: int) -> int:
     return value
 
 
+def extract_message_text(content: Any) -> str:
+    """Extract clean text content from string, list of parts, or structured objects."""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for part in content:
+            if isinstance(part, str):
+                parts.append(part)
+            elif isinstance(part, dict):
+                if "text" in part:
+                    parts.append(str(part["text"]))
+                elif "content" in part:
+                    parts.append(str(part["content"]))
+                else:
+                    parts.append(str(part))
+            elif hasattr(part, "text"):
+                parts.append(str(part.text))
+            elif hasattr(part, "content"):
+                parts.append(str(part.content))
+            else:
+                parts.append(str(part))
+        return "\n".join(parts)
+    return str(content or "")
+
+
 ITEM_META = {
     "lighter": {
         "name": "防风打火机",
@@ -76,17 +102,32 @@ ITEM_META = {
     },
     "raw_crab": {
         "name": "鲜活礁石海蟹",
-        "icon": "",
+        "icon": "/assets/props/crab.png",
         "desc": "刚抓获的肥硕海蟹，生吃有腹泻风险，在篝火上烤熟味道极佳。",
+    },
+    "seashell": {
+        "name": "坚硬海螺与贝壳",
+        "icon": "/assets/props/seashell.png",
+        "desc": "在沙滩拾取的厚壳海螺，边缘锋利，螺肉可食用，外壳可用于挖掘与盛水。",
+    },
+    "vines": {
+        "name": "野生韧皮藤蔓",
+        "icon": "/assets/props/vines.png",
+        "desc": "从丛林灌木中割取的柔韧藤蔓，是编织绳索与固定遮蔽所的基础耗材。",
+    },
+    "driftwood": {
+        "name": "干燥海滩浮木",
+        "icon": "/assets/items/branches.png",
+        "desc": "被海浪冲上岸经太阳炙烤干燥的浮木枝干，是极好的引火木料与营地建材。",
     },
     "coconut": {
         "name": "新鲜青椰",
-        "icon": "",
+        "icon": "/assets/props/palmtree.png",
         "desc": "沉甸甸的热带青椰，同时富含清甜椰汁与饱腹椰肉。",
     },
     "cooked_food": {
         "name": "炭烤海鲜与坚果拼盘",
-        "icon": "",
+        "icon": "/assets/items/branches.png",
         "desc": "散发出诱人焦香的熟食，能大幅恢复饱食度与体力。",
     },
 }
@@ -435,6 +476,125 @@ class AGUIBridge:
 
         return merged
 
+    def generate_fallback_turn(
+        self,
+        session: GameSession,
+        user_text: str,
+        matched_action: Optional[ActionOption],
+        check_passed: Optional[bool],
+        current_scene: Optional[SceneNode],
+    ) -> tuple[str, Dict[str, Any]]:
+        """Fallback local SLG Director: generates vivid narrative and state delta when external agent is unavailable."""
+        clean_action = re.sub(r"^【.*?】", "", user_text).strip()
+        clean_action = re.sub(r"\[检定数据:.*?\]", "", clean_action).strip()
+        delta: Dict[str, Any] = {}
+
+        if matched_action:
+            if matched_action.type == "check":
+                if check_passed is None:
+                    import random
+                    roll = random.randint(1, 20)
+                    dc = matched_action.difficulty or 10
+                    check_passed = (roll >= dc)
+
+                if check_passed:
+                    succ_msg = ""
+                    if matched_action.on_success and isinstance(matched_action.on_success, dict):
+                        succ_msg = matched_action.on_success.get("message", "")
+                    if not succ_msg:
+                        succ_msg = f"你动作沉着敏捷，成功【{matched_action.label}】！"
+
+                    narration = (
+                        f"你屏住呼吸，眼神死死锁定着目标。瞅准浪潮翻滚与光影交错的绝佳间隙，你敏捷地跨步探身，果断出手！\n\n"
+                        f"【检定判定通过】{succ_msg}\n\n"
+                        f"你将所获之物紧紧攥入掌心，咸涩的海风呼啸而过，严峻的生存挑战中终于迎来了宝贵的生机。"
+                    )
+                    delta = dict(matched_action.on_success or {})
+                    if "gain_item" in delta:
+                        delta["add_inventory"] = [{"id": delta["gain_item"]}]
+                    if "variables" not in delta and matched_action.id == "scavenge_bottle":
+                        delta["variables"] = {"found_bottle": True}
+                    if "time_cost" not in delta:
+                        delta["time_cost"] = 1
+                else:
+                    fail_msg = ""
+                    if matched_action.on_failure and isinstance(matched_action.on_failure, dict):
+                        fail_msg = matched_action.on_failure.get("message", "")
+                    if not fail_msg:
+                        fail_msg = f"环境恶劣，你这次未能成功【{matched_action.label}】。"
+
+                    narration = (
+                        f"你试图强行出手，然而自然险峻的威力超乎想象。迎面拍来的一股冷冽浪花猛地撞上你的脚踝，湿滑的砂石让你身形一晃！\n\n"
+                        f"【检定判定未通过】{fail_msg}\n\n"
+                        f"你踉跄着后退两步，粗砺的碎石在你的手背上留下了一道微浅的红痕。你稳住呼吸，冷静地重新审视着眼前的局面。"
+                    )
+                    delta = dict(matched_action.on_failure or {})
+                    if "time_cost" not in delta:
+                        delta["time_cost"] = 1
+                    if "attributes_delta" not in delta:
+                        delta["attributes_delta"] = {"stamina": -4, "hydration": -3}
+            elif matched_action.type == "interact":
+                succ_msg = ""
+                if matched_action.on_success and isinstance(matched_action.on_success, dict):
+                    succ_msg = matched_action.on_success.get("message", "")
+                if not succ_msg:
+                    succ_msg = f"你仔细完成了【{matched_action.label}】。"
+
+                narration = (
+                    f"你沉下心来，专注地在四周开展行动。\n\n"
+                    f"【行动结果】{succ_msg}\n\n"
+                    f"周围的环境因你的努力而悄然改变，为你接下来的求生开辟了新的可能。"
+                )
+                delta = dict(matched_action.on_success or {})
+                if "gain_item" in delta:
+                    delta["add_inventory"] = [{"id": delta["gain_item"]}]
+                if "time_cost" not in delta:
+                    delta["time_cost"] = 1
+            elif matched_action.type == "transition":
+                target_title = matched_action.target_scene or "未知新区域"
+                if matched_action.target_scene:
+                    target_obj = self.scenario_mgr.get_scene(session.scenario_id, matched_action.target_scene)
+                    if target_obj:
+                        target_title = target_obj.title
+                narration = (
+                    f"你收拾起为数不多的物资，迈开脚步朝着新的方向前进。\n\n"
+                    f"狂风吹拂着你的衣角，你穿过狭窄陡峭的路径，终于抵达了【{target_title}】。\n\n"
+                    f"眼前的景象豁然开朗，全新的机遇与潜在的危险正静候着你的探索。"
+                )
+                delta = {
+                    "current_scene": matched_action.target_scene,
+                    "time_cost": 1,
+                    "attributes_delta": {"stamina": -5, "hydration": -4},
+                }
+            else:
+                narration = f"你专注于执行【{matched_action.label}】，谨慎地推动着当前的事态发展。"
+                delta = {"time_cost": 1}
+        else:
+            # Open-ended scenario resolution
+            if session.scenario_id == "island_survival":
+                narration = (
+                    f"你迎着扑面而来的海风，在险恶的孤岛环境中尝试【{clean_action}】。\n\n"
+                    f"沙滩与灌木间回荡着你的脚步声，潮水在不远处涨落起伏。虽然并未立即触发某种机关或质变，"
+                    f"但这番探寻让你对周遭的地形与动静有了更深入的把握。体力略有消耗，但你的求生意志愈加坚定。"
+                )
+                delta = {
+                    "time_cost": 1,
+                    "attributes_delta": {"stamina": -3, "hydration": -2},
+                }
+            else:
+                narration = (
+                    f"幽暗的公馆大厅中蜡烛影影绰绰，窗外寒鸦惊啼。你谨慎地尝试【{clean_action}】。\n\n"
+                    f"沉闷的脚步声在石质地板间激起微弱的回响。空气中弥漫着旧羊皮纸与蜡油的味道，"
+                    f"整座宅邸的压迫感似乎无处不在，随时可能揭开更深层的谜团。"
+                )
+                delta = {
+                    "time_cost": 1,
+                    "san_delta": -1,
+                }
+
+        formatted = f"{narration}\n\n```state_delta\n{json.dumps(delta, ensure_ascii=False, indent=2)}\n```\n"
+        return formatted, delta
+
     async def stream_play(self, input_data: RunAgentInput) -> AsyncIterator[str]:
         """Stream play mode game turn conforming to AG-UI Protocol."""
         thread_id = input_data.thread_id or str(uuid.uuid4())
@@ -446,9 +606,9 @@ class AGUIBridge:
         if input_data.messages:
             last_msg = input_data.messages[-1]
             if hasattr(last_msg, "content"):
-                user_text = str(last_msg.content)
+                user_text = extract_message_text(last_msg.content)
             elif isinstance(last_msg, dict):
-                user_text = str(last_msg.get("content", ""))
+                user_text = extract_message_text(last_msg.get("content", ""))
         if not user_text:
             user_text = "[继续行动]"
 
@@ -468,6 +628,38 @@ class AGUIBridge:
         matched_action: Optional[ActionOption] = None
         if action_id and pre_scene and pre_scene.actions:
             matched_action = next((a for a in pre_scene.actions if a.id == action_id), None)
+        elif not matched_action and pre_scene and pre_scene.actions:
+            # Fuzzy match user_text against scene actions
+            clean_input = re.sub(r"^【.*?】", "", user_text).strip()
+            clean_input = re.sub(r"\[检定数据:.*?\]", "", clean_input).strip()
+            kw_map = {
+                "scavenge_bottle": ["玻璃瓶", "瓶子", "瓶", "漂流瓶"],
+                "search_luggage": ["金属盒", "行李", "打火机", "箱子"],
+                "pick_seashell": ["贝壳", "海螺", "螺"],
+                "catch_shore_crab": ["螃蟹", "海蟹", "抓蟹", "红蟹"],
+                "gather_driftwood": ["干柴", "树枝", "浮木", "捡柴"],
+                "cut_vines": ["藤蔓", "老藤", "割藤"],
+                "collect_fresh_water": ["泉水", "甘泉", "装水", "打水"],
+                "gather_coconuts": ["椰子", "采摘椰子", "摘椰子"],
+                "craft_campfire": ["生火", "点火", "篝火", "升火"],
+                "craft_rope": ["搓绳", "编织绳索", "做绳子", "编绳"],
+                "cook_meal": ["烤肉", "烤蟹", "做饭", "煮水", "烹饪"],
+                "rest_by_fire": ["休息", "睡觉", "过夜"],
+            }
+            for a in pre_scene.actions:
+                if a.label in clean_input or (len(clean_input) >= 2 and clean_input in a.label):
+                    matched_action = a
+                    break
+                kws = kw_map.get(a.id, [])
+                if any(kw in clean_input for kw in kws):
+                    matched_action = a
+                    break
+
+        if matched_action and matched_action.type == "check" and check_passed is None:
+            import random
+            roll = random.randint(1, 20)
+            dc = matched_action.difficulty or 10
+            check_passed = (roll >= dc)
 
         prompt = self.build_play_prompt(session, user_text)
 
@@ -514,22 +706,43 @@ class AGUIBridge:
                 if event.data.get("conversation_id"):
                     session.agent_conversation_id = event.data["conversation_id"]
 
+        delta_dict: Dict[str, Any] = {}
+
+        # If driver emitted empty text (credits 0, rate-limit, offline), activate Fallback SLG Director
+        if not full_text_buffer.strip():
+            fallback_text, fallback_delta = self.generate_fallback_turn(
+                session=session,
+                user_text=user_text,
+                matched_action=matched_action,
+                check_passed=check_passed,
+                current_scene=pre_scene,
+            )
+            delta_dict = fallback_delta
+            # Stream fallback narrative chunk by chunk
+            chunk_size = 12
+            for i in range(0, len(fallback_text), chunk_size):
+                chunk = fallback_text[i : i + chunk_size]
+                full_text_buffer += chunk
+                yield self.encoder.encode(
+                    TextMessageContentEvent(message_id=message_id, delta=chunk)
+                )
+                await asyncio.sleep(0.015)
+
         # 3. TEXT_MESSAGE_END
         yield self.encoder.encode(TextMessageEndEvent(message_id=message_id))
 
         # Parse state delta from full text buffer if present
-        delta_dict: Dict[str, Any] = {}
-        state_delta_match = re.search(
-            r"```state_delta\s*(\{.*?\})\s*```", full_text_buffer, re.DOTALL
-        )
-        if state_delta_match:
-            try:
-                parsed = json.loads(state_delta_match.group(1))
-                if isinstance(parsed, dict):
-                    delta_dict = parsed
-            except Exception:
-                # shortcut: ignore json parse failure gracefully on malformed LLM delta block
-                delta_dict = {}
+        if not delta_dict:
+            state_delta_match = re.search(
+                r"```state_delta\s*(\{.*?\})\s*```", full_text_buffer, re.DOTALL
+            )
+            if state_delta_match:
+                try:
+                    parsed = json.loads(state_delta_match.group(1))
+                    if isinstance(parsed, dict):
+                        delta_dict = parsed
+                except Exception:
+                    delta_dict = {}
 
         if matched_action is not None:
             delta_dict = self._merge_action_effects(
@@ -567,9 +780,9 @@ class AGUIBridge:
         if input_data.messages:
             last_msg = input_data.messages[-1]
             if hasattr(last_msg, "content"):
-                user_text = str(last_msg.content)
+                user_text = extract_message_text(last_msg.content)
             elif isinstance(last_msg, dict):
-                user_text = str(last_msg.get("content", ""))
+                user_text = extract_message_text(last_msg.get("content", ""))
 
         full_studio_response = ""
         scenario_id = "black_crow_manor"
@@ -621,6 +834,41 @@ actions:
                 yield self.encoder.encode(
                     TextMessageContentEvent(message_id=message_id, delta=delta)
                 )
+
+        if not full_studio_response.strip():
+            fallback_response = (
+                f"### AG-SLG Studio Co-pilot 编剧建议\n\n"
+                f"针对您的创作需求：“{user_text}”，已自动构思并格式化对应场景节点：\n\n"
+                f"```scene_yaml:secret_chamber\n"
+                f"id: \"secret_chamber\"\n"
+                f"title: \"隐秘密室\"\n"
+                f"background: \"/assets/scenes/manor_hall.png\"\n"
+                f"hero_image: \"/assets/illustrations/corridor_shadow.png\"\n"
+                f"music: \"/assets/bgm/manor_ambient.mp3\"\n"
+                f"description: |\n"
+                f"  地窖暗门后隐藏着一间尘封已久的密室，空气中积聚着旧纸页与蜡油的气味。\n"
+                f"  正中央的书桌上赫然摆放着一本摊开的泛黄日记，记录着尘封多年的家族真相。\n"
+                f"visuals:\n"
+                f"  background: \"/assets/scenes/manor_hall.png\"\n"
+                f"  foreground: \"\"\n"
+                f"  hero_image: \"/assets/illustrations/corridor_shadow.png\"\n"
+                f"  atmosphere: \"压抑、隐秘、疑云密布\"\n"
+                f"npcs: []\n"
+                f"actions:\n"
+                f"  - id: \"read_diary\"\n"
+                f"    label: \"翻阅书桌上的泛黄日记\"\n"
+                f"    type: \"check\"\n"
+                f"    skill: \"perception\"\n"
+                f"    difficulty: 9\n"
+                f"```\n"
+            )
+            for i in range(0, len(fallback_response), 16):
+                c = fallback_response[i : i + 16]
+                full_studio_response += c
+                yield self.encoder.encode(
+                    TextMessageContentEvent(message_id=message_id, delta=c)
+                )
+                await asyncio.sleep(0.01)
 
         yield self.encoder.encode(TextMessageEndEvent(message_id=message_id))
 

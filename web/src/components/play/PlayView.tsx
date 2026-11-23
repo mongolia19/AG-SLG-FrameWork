@@ -368,20 +368,22 @@ export default function PlayView({ scenarioId = 'black_crow_manor' }: PlayViewPr
         .replace(/```state_delta[\s\S]*?```/g, '')
         .trim();
 
-      if (cleanText) {
-        // 判断是否以 NPC 对话为主
-        const isDialogue = cleanText.includes('“') && cleanText.includes('”');
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `assistant-${Date.now()}`,
-            kind: isDialogue ? 'dialogue' : 'narrator',
-            speaker: isDialogue ? currentScene?.npcs?.[0]?.name : undefined,
-            content: cleanText,
-            timestamp: Date.now(),
-          },
-        ]);
-      }
+      const displayText =
+        cleanText ||
+        '你环顾四周，海浪持续拍打着岩滩。当前行动已由地下城主完成记录并推演，世界状态已更新。';
+
+      // 判断是否以 NPC 对话为主
+      const isDialogue = displayText.includes('“') && displayText.includes('”');
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          kind: isDialogue ? 'dialogue' : 'narrator',
+          speaker: isDialogue ? currentScene?.npcs?.[0]?.name : undefined,
+          content: displayText,
+          timestamp: Date.now(),
+        },
+      ]);
     } catch (err: any) {
       setMessages((prev) => [
         ...prev,

@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { StoryMessage, SceneNode, NPC, PropDecoration } from '../../types';
-import { User, Sparkles, MessageSquare, Terminal, Image as ImageIcon } from 'lucide-react';
+import { User, Sparkles, MessageSquare, Terminal, Image as ImageIcon, Copy, Check } from 'lucide-react';
 
 interface StoryStreamProps {
   messages: StoryMessage[];
@@ -16,6 +16,16 @@ export default function StoryStream({
   isStreaming,
 }: StoryStreamProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopy = (id: string, text: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => {
+      setCopiedId((prev) => (prev === id ? null : prev));
+    }, 2000);
+  };
 
   // 自动滚动到底部
   useEffect(() => {
@@ -205,11 +215,30 @@ export default function StoryStream({
             )}
 
             <div className="p-4 text-xs sm:text-sm leading-relaxed font-serif">
-              <div className="flex items-center gap-2 text-amber-400 font-semibold mb-1.5 text-xs font-sans uppercase tracking-wider">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>当前幕境 · {currentScene.title}</span>
+              <div className="flex items-center justify-between text-amber-400 font-semibold mb-1.5 text-xs font-sans uppercase tracking-wider">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>当前幕境 · {currentScene.title}</span>
+                </div>
+                <button
+                  onClick={(e) => handleCopy('scene_desc', currentScene.description, e)}
+                  className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-amber-300 px-2 py-0.5 rounded bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 transition"
+                  title="复制场景描述"
+                >
+                  {copiedId === 'scene_desc' ? (
+                    <>
+                      <Check className="w-3 h-3 text-emerald-400" />
+                      <span className="text-emerald-400 text-[10px]">已复制</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3 h-3" />
+                      <span className="text-[10px]">复制</span>
+                    </>
+                  )}
+                </button>
               </div>
-              <p className="whitespace-pre-line text-slate-300/90">{currentScene.description}</p>
+              <p className="whitespace-pre-line text-slate-300/90 select-text">{currentScene.description}</p>
             </div>
           </div>
         )}
@@ -220,9 +249,22 @@ export default function StoryStream({
             return (
               <div key={msg.id} className="flex justify-end animate-in fade-in duration-200">
                 <div className="flex items-start gap-2.5 max-w-[85%]">
-                  <div className="bg-amber-600/90 text-amber-50 rounded-2xl rounded-tr-none px-4 py-2.5 text-sm shadow-md border border-amber-500/50">
-                    <div className="text-[10px] text-amber-200/80 mb-0.5 font-medium">玩家决策</div>
-                    <div className="leading-relaxed whitespace-pre-wrap">{msg.content}</div>
+                  <div className="group relative bg-amber-600/90 text-amber-50 rounded-2xl rounded-tr-none px-4 py-2.5 text-sm shadow-md border border-amber-500/50">
+                    <div className="flex items-center justify-between text-[10px] text-amber-200/80 mb-0.5 font-medium gap-3">
+                      <span>玩家决策</span>
+                      <button
+                        onClick={(e) => handleCopy(msg.id, msg.content, e)}
+                        className="opacity-60 group-hover:opacity-100 p-0.5 rounded hover:bg-amber-700/80 transition"
+                        title="复制决策文本"
+                      >
+                        {copiedId === msg.id ? (
+                          <Check className="w-3 h-3 text-emerald-300" />
+                        ) : (
+                          <Copy className="w-3 h-3 text-amber-100" />
+                        )}
+                      </button>
+                    </div>
+                    <div className="leading-relaxed whitespace-pre-wrap select-text">{msg.content}</div>
                   </div>
                   <div className="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
                     <User className="w-4 h-4" />
@@ -239,11 +281,22 @@ export default function StoryStream({
                   <div className="w-8 h-8 rounded-full bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 shrink-0 mt-1">
                     <MessageSquare className="w-4 h-4" />
                   </div>
-                  <div className="bg-slate-900/90 border border-slate-700/80 rounded-2xl rounded-tl-none p-4 text-sm text-slate-200 shadow-lg backdrop-blur">
-                    <div className="text-xs font-semibold text-indigo-300 mb-1.5 flex items-center gap-1.5">
+                  <div className="group relative bg-slate-900/90 border border-slate-700/80 rounded-2xl rounded-tl-none p-4 text-sm text-slate-200 shadow-lg backdrop-blur">
+                    <div className="flex items-center justify-between text-xs font-semibold text-indigo-300 mb-1.5 gap-3">
                       <span>{msg.speaker || '人物对话'}</span>
+                      <button
+                        onClick={(e) => handleCopy(msg.id, msg.content, e)}
+                        className="opacity-50 group-hover:opacity-100 p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-indigo-200 transition"
+                        title="复制对话内容"
+                      >
+                        {copiedId === msg.id ? (
+                          <Check className="w-3 h-3 text-emerald-400" />
+                        ) : (
+                          <Copy className="w-3 h-3" />
+                        )}
+                      </button>
                     </div>
-                    <div className="leading-relaxed whitespace-pre-wrap font-serif text-slate-100">
+                    <div className="leading-relaxed whitespace-pre-wrap font-serif text-slate-100 select-text">
                       {msg.content}
                     </div>
                   </div>
@@ -254,10 +307,21 @@ export default function StoryStream({
 
           if (msg.kind === 'system') {
             return (
-              <div key={msg.id} className="flex justify-center my-2">
+              <div key={msg.id} className="flex justify-center my-2 group">
                 <div className="flex items-center gap-2 bg-slate-900/90 border border-slate-700 text-xs text-amber-400/90 px-3.5 py-1.5 rounded-full shadow">
                   <Terminal className="w-3.5 h-3.5 text-amber-400" />
-                  <span>{msg.content}</span>
+                  <span className="select-text">{msg.content}</span>
+                  <button
+                    onClick={(e) => handleCopy(msg.id, msg.content, e)}
+                    className="opacity-0 group-hover:opacity-100 ml-1 p-0.5 rounded text-slate-400 hover:text-amber-300 transition"
+                    title="复制系统消息"
+                  >
+                    {copiedId === msg.id ? (
+                      <Check className="w-3 h-3 text-emerald-400" />
+                    ) : (
+                      <Copy className="w-3 h-3" />
+                    )}
+                  </button>
                 </div>
               </div>
             );
@@ -266,10 +330,23 @@ export default function StoryStream({
           // 默认：Narrator 旁白
           return (
             <div key={msg.id} className="flex justify-start animate-in fade-in duration-200">
-              <div className="max-w-[92%] bg-slate-900/75 border border-slate-800 rounded-xl p-4 text-sm text-slate-200 shadow backdrop-blur-sm">
-                <div className="text-[11px] font-sans uppercase tracking-wider text-slate-500 mb-1.5 font-medium flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-amber-500" />
-                  <span>DM 叙事判定</span>
+              <div className="group relative max-w-[92%] bg-slate-900/75 border border-slate-800 rounded-xl p-4 text-sm text-slate-200 shadow backdrop-blur-sm">
+                <div className="flex items-center justify-between text-[11px] font-sans uppercase tracking-wider text-slate-500 mb-1.5 font-medium">
+                  <div className="flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-amber-500" />
+                    <span>DM 叙事判定</span>
+                  </div>
+                  <button
+                    onClick={(e) => handleCopy(msg.id, msg.content, e)}
+                    className="opacity-50 group-hover:opacity-100 p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-amber-300 transition"
+                    title="复制旁白内容"
+                  >
+                    {copiedId === msg.id ? (
+                      <Check className="w-3 h-3 text-emerald-400" />
+                    ) : (
+                      <Copy className="w-3 h-3" />
+                    )}
+                  </button>
                 </div>
                 {msg.hero_image && (
                   <div className="mb-3 rounded-lg overflow-hidden border border-slate-700 bg-slate-800">
@@ -293,7 +370,7 @@ export default function StoryStream({
                     )}
                   </div>
                 )}
-                <div className="leading-relaxed whitespace-pre-wrap font-serif text-slate-200">
+                <div className="leading-relaxed whitespace-pre-wrap font-serif text-slate-200 select-text">
                   {msg.content}
                 </div>
               </div>

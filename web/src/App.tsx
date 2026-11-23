@@ -23,8 +23,8 @@ export default function App() {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen bg-[#0f1117] text-slate-100 select-none">
-      <header className="flex items-center justify-between px-6 py-2.5 border-b border-slate-800 bg-[#141720] z-30">
+    <div className="flex flex-col h-screen bg-[#0f1117] text-slate-100">
+      <header className="flex items-center justify-between px-6 py-2.5 border-b border-slate-800 bg-[#141720] z-30 select-none">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <span className="text-xl font-black tracking-wider text-amber-500 font-serif">

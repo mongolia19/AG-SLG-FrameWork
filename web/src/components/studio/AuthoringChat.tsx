@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Loader2 } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Loader2, Copy, Check } from 'lucide-react';
 
 
 interface AuthoringMessage {
@@ -18,6 +18,17 @@ export default function AuthoringChat({
   scenarioId,
   onScenarioUpdated,
 }: AuthoringChatProps) {
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopy = (id: string, text: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => {
+      setCopiedId((prev) => (prev === id ? null : prev));
+    }, 2000);
+  };
+
   const defaultWelcomeMessage: AuthoringMessage = {
     id: 'welcome',
     sender: 'agent',
@@ -180,7 +191,7 @@ export default function AuthoringChat({
         {messages.map((m) => (
           <div
             key={m.id}
-            className={`flex gap-2.5 text-xs ${
+            className={`group flex gap-2.5 text-xs ${
               m.sender === 'user' ? 'justify-end' : 'justify-start'
             }`}
           >
@@ -191,13 +202,29 @@ export default function AuthoringChat({
             )}
 
             <div
-              className={`p-3 rounded-xl max-w-[85%] leading-relaxed ${
+              className={`relative p-3 rounded-xl max-w-[85%] leading-relaxed ${
                 m.sender === 'user'
                   ? 'bg-amber-600 text-white rounded-tr-none shadow-sm'
                   : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none font-mono text-[11px]'
               }`}
             >
-              <div className="whitespace-pre-wrap">{m.content}</div>
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <span className="text-[10px] opacity-60 font-sans">
+                  {m.sender === 'user' ? '创作指令' : 'Co-pilot'}
+                </span>
+                <button
+                  onClick={(e) => handleCopy(m.id, m.content, e)}
+                  className="opacity-40 group-hover:opacity-100 p-0.5 rounded hover:bg-slate-800/80 transition"
+                  title="复制消息内容"
+                >
+                  {copiedId === m.id ? (
+                    <Check className="w-3 h-3 text-emerald-400" />
+                  ) : (
+                    <Copy className="w-3 h-3 text-slate-400 hover:text-slate-200" />
+                  )}
+                </button>
+              </div>
+              <div className="whitespace-pre-wrap select-text">{m.content}</div>
             </div>
 
             {m.sender === 'user' && (

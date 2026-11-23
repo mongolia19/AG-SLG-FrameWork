@@ -106,6 +106,14 @@ class AgyDriver(BaseAgentDriver):
                                 raw=payload,
                             )
 
+                    elif step_type == "error_message":
+                        err_text = step.get("message") or step.get("text") or "Agent error"
+                        yield AgentEvent(
+                            event_type="error",
+                            data={"error": err_text, "conversation_id": active_conv_id},
+                            raw=payload,
+                        )
+
                     elif step_type == "tool_call":
                         tool_name = step.get("tool_name", "tool")
                         tool_args = step.get("tool_args", {})
@@ -126,17 +134,40 @@ class AgyDriver(BaseAgentDriver):
 
                 elif event_name == "result":
                     res = payload.get("result", {})
-                    yield AgentEvent(
-                        event_type="done",
-                        data={
-                            "conversation_id": active_conv_id,
-                            "response": res.get("response", "".join(full_text_accum)),
-                            "status": res.get("status", "SUCCESS"),
-                        },
-                        raw=payload,
-                    )
+                    if res.get("status") == "ERROR":
+                        yield AgentEvent(
+                            event_type="error",
+                            data={
+                                "conversation_id": active_conv_id,
+                                "error": res.get("error", "Agent execution error"),
+                                "status": "ERROR",
+                            },
+                            raw=payload,
+                        )
+                    else:
+                        yield AgentEvent(
+                            event_type="done",
+                            data={
+                                "conversation_id": active_conv_id,
+                                "response": res.get("response", "".join(full_text_accum)),
+                                "status": res.get("status", "SUCCESS"),
+                            },
+                            raw=payload,
+                        )
 
             await process.wait()
+            if process.returncode != 0 and not full_text_accum:
+                stderr_text = ""
+                if process.stderr:
+                    err_bytes = await process.stderr.read()
+                    stderr_text = err_bytes.decode("utf-8", errors="replace").strip()
+                yield AgentEvent(
+                    event_type="error",
+                    data={
+                        "error": stderr_text or f"Agent CLI exited with code {process.returncode}",
+                        "exit_code": process.returncode,
+                    },
+                )
 
         except Exception as e:
             yield AgentEvent(event_type="error", data={"error": str(e)})

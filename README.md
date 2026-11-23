@@ -41,9 +41,41 @@ FastAPI 桥接中枢 (ag-ui-protocol)
 
 ## 🚀 实施进度
 
-按照开发计划，项目按 4 个阶段有序推进：
 - [x] 阶段一：本地 Agent CLI 适配器与 AG-UI 协议桥接 (Core Bridge)
 - [x] 阶段二：SLG 沉浸运行端 (Play Mode)
 - [x] 阶段三：剧本编辑与本地 Agent 调试工作台 (Studio Mode)
-- [ ] 阶段四：完整实战剧本与端到端交付 (Delivery & Verification)
+- [x] 阶段四：剧本导演与视觉编排 Skill (`ag-slg-director`)
+- [x] 阶段五：荒岛生存文字 RPG 官方实战剧本 (`island_survival`) 与端到端交付
+
+---
+
+## 🏝️ 实战剧本：荒岛余生 (`island_survival`)
+
+一个完整的荒岛求生文字 RPG 剧本，全面融合多图层视觉与人体生存状态监控：
+- **人体生存属性监控**：
+  - ⚡ **体力 (Stamina)**：奔跑、搜索、编制与砍伐消耗。
+  - 💧 **水分 (Hydration)**：烈日脱水警告，通过寻找溪流或椰子补充。
+  - 🍖 **饱食度 (Fullness)**：维持基础代谢，搜寻野生坚果与浆果。
+  - 🌡️ **体温 (Temperature)**：防范夜间失温，生起篝火取暖。
+- **三大地图场景**：
+  - 🌊 **孤岛沙滩 (`beach`)**：失事残骸散落处，搜查防水盒获取 **打火机**，浅滩拾取 **玻璃瓶**，收集海浪冲刷的 **树枝**。
+  - 🌴 **海边丛林 (`coastal_jungle`)**：古藤缠绕密林，割取坚韧纤维编织 **绳子**，收集硬木柴。
+  - 🏕️ **丛林深处 (`deep_jungle`)**：遮天蔽日的深潭与溪流，用玻璃瓶取水，用打火机与干树枝生起庇护所 **篝火**。
+- **随身生存背包**：
+  点击顶部 HUD 中的 **生存背包**，可查看物品缩略图、数量、物品说明与详细详情。
+
+---
+
+## 🎨 视觉导演技能 (Agent Skill: ag-slg-director)
+
+框架内置了专属 Agent Skill —— `ag-slg-director`：
+- **技能路径**: `~/.t3/userdata/.../config/skills/ag-slg-director/SKILL.md` 及 [skills/ag-slg-director/SKILL.md](skills/ag-slg-director/SKILL.md)
+- **四层视觉合成体系**:
+  - **Layer 0 (Background)**: 空间全景底图 (`visuals.background`)，受控平稳过渡。
+  - **Layer 1 (Foreground)**: 登场 NPC 立绘 (`visuals.foreground`)，对话时动态聚焦。
+  - **Layer 2 (Hero Focus)**: 关键证物/焦点插图 (`visuals.hero_image`)，检定成功与线索特写。
+  - **Layer 3 (Stream UI)**: 旁白叙事、NPC 对话（`“...”`）与系统检定分离渲染。
+- **AG-UI 协议同步**:
+  通过 `state_delta.visuals` 实时下发状态补丁，前端无感平滑切换多图层渲染。
+
 

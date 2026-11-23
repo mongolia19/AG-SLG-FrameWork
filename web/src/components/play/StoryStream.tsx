@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { StoryMessage, SceneNode, NPC } from '../../types';
+import { StoryMessage, SceneNode, NPC, PropDecoration } from '../../types';
 import { User, Sparkles, MessageSquare, Terminal, Image as ImageIcon } from 'lucide-react';
 
 interface StoryStreamProps {
@@ -32,20 +32,37 @@ export default function StoryStream({
   const heroImage = currentScene?.visuals?.hero_image || currentScene?.hero_image;
   const foregroundImage = currentScene?.visuals?.foreground || currentScene?.foreground;
 
+  const decorations: PropDecoration[] =
+    currentScene?.visuals?.decorations || currentScene?.decorations || [];
+  const leftDecorations = decorations.filter((d) => d.side === 'left');
+  const rightDecorations = decorations.filter((d) => d.side === 'right');
+
+  const isImageSrc = (src?: string) => {
+    if (!src) return false;
+    return (
+      src.startsWith('/') ||
+      src.startsWith('http://') ||
+      src.startsWith('https://') ||
+      src.startsWith('data:') ||
+      src.startsWith('./') ||
+      /\.(png|jpe?g|webp|gif|svg)$/i.test(src)
+    );
+  };
+
   return (
     <div className="relative flex-1 flex flex-col h-full overflow-hidden bg-slate-950">
       {/* 1. 背景图层 (Background Layer) */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        {bgImage && bgImage.startsWith('http') ? (
+        {isImageSrc(bgImage) ? (
           <img
             src={bgImage}
             alt="Scene Background"
-            className="w-full h-full object-cover opacity-20 filter blur-xs scale-105 transition-all duration-1000"
+            className="w-full h-full object-cover opacity-50 scale-100 transition-all duration-1000"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-slate-900 border-b border-slate-800">
             <div className="text-center p-8 opacity-25">
-              <div className="text-6xl mb-3">🏰</div>
+              <div className="text-6xl mb-3">🏝️</div>
               <div className="text-xl font-serif tracking-widest text-slate-300">
                 {currentScene?.title || '未知探索区域'}
               </div>
@@ -55,14 +72,14 @@ export default function StoryStream({
             </div>
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0d1017] via-[#0d1017]/85 to-transparent z-10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0d1017] via-[#0d1017]/80 to-[#0d1017]/35 z-10" />
       </div>
 
       {/* 2. 角色立绘图层 (Character / Foreground Layer) */}
       {(primaryNPC || foregroundImage) && (
         <div className="absolute right-8 bottom-28 z-10 hidden md:flex flex-col items-center pointer-events-none transition-all duration-700 animate-in fade-in slide-in-from-right-8">
           <div className="w-48 h-64 rounded-2xl bg-gradient-to-b from-slate-800/90 to-slate-900/95 border border-slate-700/80 shadow-2xl flex flex-col items-center justify-center p-4 backdrop-blur-md">
-            {foregroundImage && foregroundImage.startsWith('http') ? (
+            {isImageSrc(foregroundImage) ? (
               <img
                 src={foregroundImage}
                 alt="Foreground Character"
@@ -85,6 +102,80 @@ export default function StoryStream({
         </div>
       )}
 
+      {/* 2a. 左侧场景氛围物件 (Left Margin Scenery Props) */}
+      {leftDecorations.length > 0 && (
+        <aside
+          aria-label="左侧环境氛围物"
+          className="absolute left-3 xl:left-8 top-6 bottom-6 z-10 hidden lg:flex flex-col gap-3.5 pointer-events-auto select-none w-32 xl:w-40 justify-start items-center overflow-y-auto no-scrollbar py-2"
+        >
+          {leftDecorations.map((item, idx) => (
+            <div
+              key={item.id || idx}
+              className="group relative w-full bg-slate-900/85 hover:bg-slate-800/95 border border-slate-700/70 hover:border-amber-500/60 rounded-xl overflow-hidden shadow-2xl backdrop-blur-md transition-all duration-300 hover:scale-[1.03] animate-in fade-in slide-in-from-left-4"
+              title={item.tooltip || item.caption || item.name}
+            >
+              <div className="w-full h-24 xl:h-32 overflow-hidden bg-slate-950/70 relative">
+                <img
+                  src={item.image}
+                  alt={item.name}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
+                <span className="absolute bottom-1.5 left-2 right-2 text-[11px] font-medium text-amber-300 drop-shadow truncate">
+                  {item.caption || item.name}
+                </span>
+              </div>
+              <div className="px-2 py-1 bg-slate-950/70 border-t border-slate-800/80 flex items-center justify-between">
+                <span className="text-[10px] text-slate-300 font-sans truncate">
+                  {item.name}
+                </span>
+                <span className="text-[9px] font-mono text-amber-400 bg-amber-950/60 px-1 py-0.5 rounded border border-amber-800/40 shrink-0">
+                  环境
+                </span>
+              </div>
+            </div>
+          ))}
+        </aside>
+      )}
+
+      {/* 2b. 右侧场景氛围物件 (Right Margin Scenery Props) */}
+      {rightDecorations.length > 0 && (
+        <aside
+          aria-label="右侧环境氛围物"
+          className={`absolute right-3 xl:right-8 ${
+            primaryNPC || foregroundImage ? 'top-6 max-h-[calc(100%-19rem)]' : 'top-6 bottom-6'
+          } z-10 hidden lg:flex flex-col gap-3.5 pointer-events-auto select-none w-32 xl:w-40 justify-start items-center overflow-y-auto no-scrollbar py-2`}
+        >
+          {rightDecorations.map((item, idx) => (
+            <div
+              key={item.id || idx}
+              className="group relative w-full bg-slate-900/85 hover:bg-slate-850/95 border border-slate-700/70 hover:border-amber-500/60 rounded-xl overflow-hidden shadow-2xl backdrop-blur-md transition-all duration-300 hover:scale-[1.03] animate-in fade-in slide-in-from-right-4"
+              title={item.tooltip || item.caption || item.name}
+            >
+              <div className="w-full h-24 xl:h-32 overflow-hidden bg-slate-950/70 relative">
+                <img
+                  src={item.image}
+                  alt={item.name}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
+                <span className="absolute bottom-1.5 left-2 right-2 text-[11px] font-medium text-amber-300 drop-shadow truncate">
+                  {item.caption || item.name}
+                </span>
+              </div>
+              <div className="px-2 py-1 bg-slate-950/70 border-t border-slate-800/80 flex items-center justify-between">
+                <span className="text-[10px] text-slate-300 font-sans truncate">
+                  {item.name}
+                </span>
+                <span className="text-[9px] font-mono text-amber-400 bg-amber-950/60 px-1 py-0.5 rounded border border-amber-800/40 shrink-0">
+                  环境
+                </span>
+              </div>
+            </div>
+          ))}
+        </aside>
+      )}
+
       {/* 3. 剧情流内容视窗 */}
       <div
         ref={scrollRef}
@@ -92,10 +183,10 @@ export default function StoryStream({
       >
         {/* 场景开场卡片与主图 (Hero Image) */}
         {currentScene && (
-          <div className="bg-slate-900/70 border border-slate-800/80 rounded-xl overflow-hidden backdrop-blur-sm text-slate-300 shadow">
+          <div className="bg-slate-900/80 border border-slate-800/80 rounded-xl overflow-hidden backdrop-blur-sm text-slate-300 shadow-xl">
             {heroImage && (
-              <div className="w-full h-44 bg-slate-800/90 relative flex items-center justify-center overflow-hidden border-b border-slate-800">
-                {heroImage.startsWith('http') ? (
+              <div className="w-full h-52 bg-slate-800/90 relative flex items-center justify-center overflow-hidden border-b border-slate-800">
+                {isImageSrc(heroImage) ? (
                   <img
                     src={heroImage}
                     alt={currentScene.title}
@@ -109,7 +200,7 @@ export default function StoryStream({
                     </span>
                   </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent" />
               </div>
             )}
 
@@ -182,10 +273,24 @@ export default function StoryStream({
                 </div>
                 {msg.hero_image && (
                   <div className="mb-3 rounded-lg overflow-hidden border border-slate-700 bg-slate-800">
-                    <div className="p-2 text-xs text-amber-300 flex items-center gap-2 bg-slate-850">
-                      <ImageIcon className="w-3.5 h-3.5" />
-                      <span>线索视觉特写：{msg.hero_image}</span>
-                    </div>
+                    {isImageSrc(msg.hero_image) ? (
+                      <div className="relative group max-h-56 overflow-hidden bg-slate-950">
+                        <img
+                          src={msg.hero_image}
+                          alt="Clue"
+                          className="w-full max-h-56 object-cover hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="p-2 text-xs text-amber-300 flex items-center gap-1.5 bg-slate-900/90 border-t border-slate-800">
+                          <ImageIcon className="w-3.5 h-3.5" />
+                          <span>线索特写插图</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-2 text-xs text-amber-300 flex items-center gap-2 bg-slate-850">
+                        <ImageIcon className="w-3.5 h-3.5" />
+                        <span>线索视觉特写：{msg.hero_image}</span>
+                      </div>
+                    )}
                   </div>
                 )}
                 <div className="leading-relaxed whitespace-pre-wrap font-serif text-slate-200">

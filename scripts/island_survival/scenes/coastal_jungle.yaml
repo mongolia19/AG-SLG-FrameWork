@@ -1,0 +1,174 @@
+id: "coastal_jungle"
+title: "海边丛林"
+background: "/assets/scenes/coastal_jungle.png"
+hero_image: ""
+music: "/assets/bgm/jungle_breeze.mp3"
+
+description: |
+  跨过沙滩上的白沙与碎石，你钻进了茂密的海边林带。
+  高耸的椰树与巨大的阔叶灌木遮挡住了刺眼的日光，空气中充斥着植被蒸腾的湿热气息。
+  岩石与树干上垂挂着密密麻麻的坚韧藤蔓，地上散落着风折的枯树枝。偶尔能听到林鸟的惊叫，提醒着你未知危险的存在。
+
+visuals:
+  background: "/assets/scenes/coastal_jungle.png"
+  foreground: ""
+  hero_image: ""
+  atmosphere: "林荫昏暗、藤蔓缠绕、湿热沉闷"
+  decorations:
+    - id: "palm_jungle"
+      name: "高耸椰树"
+      image: "/assets/props/palmtree.png"
+      side: "left"
+      caption: "茂盛椰林"
+      tooltip: "挡住海风的高耸野生椰子树"
+    - id: "vines_jungle"
+      name: "悬垂蔓藤"
+      image: "/assets/props/vines.png"
+      side: "right"
+      caption: "坚韧老藤"
+      tooltip: "热带雨林中交织生长的粗壮藤蔓"
+    - id: "moss_rocks_jungle"
+      name: "林地碎石"
+      image: "/assets/props/rocks.png"
+      side: "right"
+      caption: "青苔滚石"
+      tooltip: "散落在腐殖土上的苔藓石块"
+
+npcs: []
+
+actions:
+  - id: "craft_rope"
+    label: "割取坚韧古藤与树皮编制耐磨绳索"
+    type: "check"
+    skill: "survival"
+    difficulty: 9
+    condition:
+      variables:
+        found_rope: false
+    on_success:
+      gain_item: "rope"
+      variables:
+        found_rope: true
+      attributes_delta:
+        stamina: -8
+        hydration: -6
+        fullness: -5
+      time_cost: 1
+      message: "你熟练地抽离藤皮纤维，绞合编织出一捆长约五米、承重坚固的耐磨手工绳！"
+    on_failure:
+      attributes_delta:
+        stamina: -7
+        hydration: -5
+        fullness: -4
+      time_cost: 1
+      message: "选中的藤条过于脆弱，用力一拉就断裂了，需要重新寻找韧性更好的老藤。"
+
+  - id: "pick_coconut"
+    label: "攀爬低矮椰树摘取青椰（可补水充饥）"
+    type: "check"
+    skill: "agility"
+    difficulty: 10
+    condition:
+      time_slot_in: ["清晨", "上午", "下午", "黄昏"]
+      not_has_item: "coconut"
+    on_success:
+      gain_item: "coconut"
+      attributes_delta:
+        stamina: -8
+        fullness: -4
+      time_cost: 1
+      message: "你手脚并用爬上歪斜的椰树，用力拧下一颗沉甸甸的青椰！"
+    on_failure:
+      attributes_delta:
+        stamina: -9
+        hydration: -5
+        fullness: -4
+      time_cost: 1
+      message: "树干滑腻布满苔藓，你试了两次没能爬到椰冠附近。"
+
+  - id: "consume_coconut"
+    label: "劈开青椰，畅饮椰汁并吃下嫩白椰肉"
+    type: "interact"
+    condition:
+      has_item: "coconut"
+    on_success:
+      consume_item: "coconut"
+      attributes_delta:
+        hydration: 25
+        fullness: 20
+        stamina: 12
+      san_delta: 3
+      message: "清甜的椰汁与厚实的椰肉瞬间驱散了燥热与饥饿，饱食度与水分大幅回升！"
+
+  - id: "collect_hardwood"
+    label: "收集灌木底部的硬质树枝"
+    type: "interact"
+    condition:
+      not_has_item: "branches"
+    on_success:
+      gain_item: "branches"
+      attributes_delta:
+        stamina: -5
+        hydration: -4
+        fullness: -3
+      time_cost: 1
+      message: "你折断并收集了几根质地密实的硬木树枝，不仅能当作火柴堆的耐烧底料，还能充当防身木棍。"
+
+  - id: "build_jungle_shelter"
+    label: "用硬木树枝与纤维绳搭建防风庇护所"
+    type: "interact"
+    condition:
+      has_item: ["branches", "rope"]
+      variables:
+        shelter_level:
+          lt: 1
+    on_success:
+      consume_items: ["branches", "rope"]
+      variables:
+        shelter_level: 1
+      attributes_delta:
+        stamina: -15
+        hydration: -10
+        fullness: -8
+      san_delta: 8
+      time_cost: 1
+      message: "你用纤维绳将硬木交叉捆绑在树干间，搭起一座能遮风挡雨的稳固树枝庇护所！"
+
+  - id: "drink_fresh_water_coastal"
+    label: "饮用瓶中的天然甘泉解渴"
+    type: "interact"
+    condition:
+      has_item: "fresh_water_bottle"
+      attributes:
+        hydration:
+          lt: 95
+    on_success:
+      consume_item: "fresh_water_bottle"
+      gain_item: "glass_bottle"
+      attributes_delta:
+        hydration: 35
+        stamina: 10
+      san_delta: 3
+      message: "甘泉滋润了干裂的嘴唇，体能逐渐恢复。"
+
+  - id: "venture_deep_jungle"
+    label: "拨开高耸蕨类植物，向丛林深处进发"
+    type: "transition"
+    target_scene: "deep_jungle"
+    effects:
+      attributes_delta:
+        stamina: -5
+        hydration: -4
+        fullness: -4
+      time_cost: 1
+
+  - id: "return_to_beach"
+    label: "原路返回视线开阔的沙滩"
+    type: "transition"
+    target_scene: "beach"
+    effects:
+      attributes_delta:
+        stamina: -4
+        hydration: -3
+        fullness: -3
+      time_cost: 1

@@ -35,8 +35,20 @@ export interface ActionOption {
   target_scene?: string;
   skill?: string;
   difficulty?: number;
+  condition?: Record<string, any>;
+  effects?: Record<string, any>;
+  source?: string;
   on_success?: Record<string, any>;
   on_failure?: Record<string, any>;
+}
+
+export interface PropDecoration {
+  id: string;
+  name: string;
+  image: string;
+  side: 'left' | 'right';
+  caption?: string;
+  tooltip?: string;
 }
 
 export interface VisualLayer {
@@ -44,6 +56,7 @@ export interface VisualLayer {
   foreground?: string;      // 前景叠加物 / 遮罩 / 局部贴图
   hero_image?: string;      // 场景焦点主图（事件插画、关键证物特写等）
   atmosphere?: string;      // 场景氛围描述（雨夜、雾气、昏黄）
+  decorations?: PropDecoration[]; // 舞台边缘氛围装饰道具 (贝壳、螃蟹、椰树、藤蔓、石头等)
 }
 
 export interface SceneNode {
@@ -55,6 +68,7 @@ export interface SceneNode {
   music?: string;
   description: string;
   visuals?: VisualLayer;
+  decorations?: PropDecoration[];
   npcs?: NPC[];
   actions?: ActionOption[];
 }

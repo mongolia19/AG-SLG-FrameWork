@@ -107,6 +107,11 @@ export default function ActionPanel({
                       DC {act.difficulty}
                     </span>
                   )}
+                  {act.source === 'dynamic' && (
+                    <span className="text-[10px] text-amber-400 font-mono bg-amber-950/60 border border-amber-700/40 px-1 rounded">
+                      动态
+                    </span>
+                  )}
                   <ArrowRight className="w-3 h-3 text-slate-500 group-hover:text-amber-400 transition" />
                 </button>
               ))

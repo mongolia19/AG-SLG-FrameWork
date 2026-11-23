@@ -1,0 +1,32 @@
+id: "island_survival"
+title: "荒岛余生"
+version: "1.1.0"
+author: "AG-SLG Studio"
+initial_scene: "beach"
+
+initial_player_state:
+  name: "幸存者"
+  hp: 100
+  san: 85
+  gold: 0
+  attributes:
+    stamina: 95
+    hydration: 70
+    fullness: 60
+    temperature: 37
+    survival: 14
+    constitution: 12
+    perception: 13
+  inventory: []
+  variables:
+    day: 1
+    time_slot: "上午"
+    turn_count: 0
+    weather: "晴朗炎热"
+    fire_started: false
+    water_purified: false
+    found_lighter: false
+    found_rope: false
+    found_bottle: false
+    collected_branches: 0
+    shelter_level: 0

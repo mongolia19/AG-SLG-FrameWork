@@ -18,19 +18,47 @@ export default function AuthoringChat({
   scenarioId,
   onScenarioUpdated,
 }: AuthoringChatProps) {
-  const [messages, setMessages] = useState<AuthoringMessage[]>([
-    {
-      id: 'welcome',
-      sender: 'agent',
-      content:
-        '你好！我是你的编剧与场景协创 Agent (Studio Co-pilot)。\n你可以随时吩咐我扩写新场景、组织视觉图片与立绘配置、设计检定机关或重构剧情分支，我会在构思后直接为你生成并写入剧本 YAML 文件！',
-      timestamp: Date.now(),
-    },
-  ]);
+  const defaultWelcomeMessage: AuthoringMessage = {
+    id: 'welcome',
+    sender: 'agent',
+    content:
+      '你好！我是你的编剧与场景协创 Agent (Studio Co-pilot)。\n你可以随时吩咐我扩写新场景、组织视觉图片与立绘配置、设计检定机关或重构剧情分支，我会在构思后直接为你生成并写入剧本 YAML 文件！',
+    timestamp: Date.now(),
+  };
+
+  const [messages, setMessages] = useState<AuthoringMessage[]>([defaultWelcomeMessage]);
   const [inputText, setInputText] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // 加载已保存的协创对话
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`ag_slg_studio_chat_${scenarioId}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load studio chat cache:', e);
+    }
+    setMessages([defaultWelcomeMessage]);
+  }, [scenarioId]);
+
+  // 对话更新时自动写入缓存
+  useEffect(() => {
+    if (messages.length > 0) {
+      try {
+        localStorage.setItem(`ag_slg_studio_chat_${scenarioId}`, JSON.stringify(messages));
+      } catch (e) {
+        console.warn('Failed to save studio chat cache:', e);
+      }
+    }
+  }, [scenarioId, messages]);
 
   useEffect(() => {
     if (scrollRef.current) {

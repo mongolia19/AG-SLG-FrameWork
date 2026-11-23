@@ -10,7 +10,7 @@ from ag_ui.core import RunAgentInput
 
 from server.agent_driver import AgyDriver, CodexDriver, MockAgentDriver, BaseAgentDriver
 from server.agui_bridge import AGUIBridge
-from server.scenario_manager import ScenarioManager, SceneNode
+from server.scenario_manager import ScenarioManager, SceneNode, resolve_scene_actions
 
 app = FastAPI(title="AG-SLG-FrameWork Bridge Server", version="0.1.0")
 
@@ -85,10 +85,17 @@ def get_session_state(thread_id: str):
     if thread_id not in bridge.sessions:
         raise HTTPException(status_code=404, detail="Session not found")
     session = bridge.sessions[thread_id]
+    curr_scene = scenario_manager.get_scene(
+        session.scenario_id, session.player_state.current_scene
+    )
+    resolved_actions = resolve_scene_actions(
+        curr_scene, session.player_state, session.dynamic_actions
+    )
     return {
         "thread_id": thread_id,
         "scenario_id": session.scenario_id,
         "player_state": session.player_state.model_dump(),
+        "available_actions": [a.model_dump() for a in resolved_actions],
         "agent_conversation_id": session.agent_conversation_id,
     }
 
@@ -121,10 +128,15 @@ async def run_studio(input_data: RunAgentInput):
     )
 
 
-# Mount web/dist static files if built
+# Mount static assets & web/dist
+from fastapi.staticfiles import StaticFiles
+
+PUBLIC_ASSETS = BASE_DIR / "web" / "public" / "assets"
+if PUBLIC_ASSETS.exists():
+    app.mount("/assets", StaticFiles(directory=str(PUBLIC_ASSETS)), name="public_assets")
+
 DIST_DIR = BASE_DIR / "web" / "dist"
 if DIST_DIR.exists():
-    from fastapi.staticfiles import StaticFiles
     app.mount("/", StaticFiles(directory=str(DIST_DIR), html=True), name="static")
 
 

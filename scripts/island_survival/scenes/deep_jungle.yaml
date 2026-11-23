@@ -1,0 +1,254 @@
+id: "deep_jungle"
+title: "丛林深处"
+background: "/assets/scenes/deep_jungle.png"
+hero_image: "/assets/illustrations/campfire.png"
+music: "/assets/bgm/deep_woods.mp3"
+
+description: |
+  光线在此处骤然暗淡，遮天蔽日的百年古木将天际分割成细碎的绿斑。
+  空气中弥漫着潮湿的腐殖土气味，远处岩壁下方隐约传来清澈的溪流叮咚声。
+  古树干上留有野兽撕挠的新鲜爪印，林间雾气缓缓升腾。若能在夜晚降临前在此生起一堆篝火并取得淡水，将大大提升生存概率。
+
+visuals:
+  background: "/assets/scenes/deep_jungle.png"
+  foreground: ""
+  hero_image: "/assets/illustrations/campfire.png"
+  atmosphere: "古木森森、幽暗潮湿、溪流潺潺"
+  decorations:
+    - id: "vines_deep"
+      name: "遮天绞杀藤"
+      image: "/assets/props/vines.png"
+      side: "left"
+      caption: "遮天古藤"
+      tooltip: "自雨林树冠垂垂而下的粗壮巨藤"
+    - id: "rocks_deep"
+      name: "溪涧苔藓卵石"
+      image: "/assets/props/rocks.png"
+      side: "right"
+      caption: "溪涧苔石"
+      tooltip: "清冽山泉浸润冲刷的深色玄武岩石"
+
+npcs: []
+
+actions:
+  - id: "craft_stone_blade"
+    label: "在溪流边挑选坚韧玄武石砸磨简易石刀"
+    type: "check"
+    skill: "survival"
+    difficulty: 9
+    condition:
+      not_has_item: "stone_blade"
+    on_success:
+      gain_item: "stone_blade"
+      attributes_delta:
+        stamina: -8
+        hydration: -4
+        fullness: -4
+      time_cost: 1
+      message: "你利用溪边硬质火山卵石反复敲击出锋利断口，打磨成一把顺手的石刀！"
+    on_failure:
+      attributes_delta:
+        stamina: -6
+        hydration: -3
+      time_cost: 1
+      message: "挑选的石块内部有裂纹，猛力一砸便粉碎成了碎渣。"
+  - id: "collect_fresh_water"
+    label: "循着水声探寻溪流，用玻璃瓶打满甘泉"
+    type: "check"
+    skill: "survival"
+    difficulty: 9
+    condition:
+      has_item: "glass_bottle"
+      not_has_item: "fresh_water_bottle"
+    on_success:
+      consume_item: "glass_bottle"
+      gain_item: "fresh_water_bottle"
+      variables:
+        water_purified: true
+      attributes_delta:
+        stamina: -5
+        hydration: 15
+      time_cost: 1
+      message: "你在青苔覆盖的泉眼边先痛饮几口，再将厚壁玻璃瓶盛满清冽泉水！这彻底解除了脱水的致命威胁。"
+    on_failure:
+      attributes_delta:
+        stamina: -6
+        fullness: -3
+      time_cost: 1
+      message: "水流急促混杂着山洪泥沙，未能找到澄清的直接饮用源头。"
+
+  - id: "drink_stream_directly"
+    label: "俯身在清澈山溪边直接掬水痛饮"
+    type: "interact"
+    condition:
+      attributes:
+        hydration:
+          lt: 95
+    on_success:
+      attributes_delta:
+        hydration: 30
+        stamina: 5
+        fullness: -2
+      time_cost: 1
+      message: "你捧起冰凉甘甜的山泉大口喝下，干涸的身体立刻焕发生机。"
+
+  - id: "light_campfire"
+    label: "清理空地，用树枝与打火机生起庇护所篝火"
+    type: "check"
+    skill: "survival"
+    difficulty: 8
+    condition:
+      has_item: ["lighter", "branches"]
+      variables:
+        fire_started: false
+    on_success:
+      consume_item: "branches"
+      variables:
+        fire_started: true
+      attributes_delta:
+        stamina: -6
+        temperature: 1
+      san_delta: 8
+      time_cost: 1
+      message: "咔哒一声！防风打火机的橙蓝火苗舔舐引火枯草，篝火腾空燃起，驱散了周遭的湿冷与林间野兽。"
+    on_failure:
+      attributes_delta:
+        stamina: -6
+        hydration: -3
+      time_cost: 1
+      message: "地面青苔潮气太重，干柴被熏黑冒烟却未能引燃，需要重新调整通风结构。"
+
+  - id: "drill_wood_fire"
+    label: "没有打火机：尝试用干树枝钻木取火（极高难度）"
+    type: "check"
+    skill: "survival"
+    difficulty: 15
+    condition:
+      not_has_item: "lighter"
+      has_item: "branches"
+      variables:
+        fire_started: false
+    on_success:
+      consume_item: "branches"
+      variables:
+        fire_started: true
+      attributes_delta:
+        stamina: -18
+        hydration: -12
+        fullness: -10
+      san_delta: 10
+      time_cost: 1
+      message: "双掌磨出血泡之际，一缕青烟终于化作炽热的火星！你成功点燃了篝火！"
+    on_failure:
+      attributes_delta:
+        stamina: -15
+        hydration: -10
+        fullness: -8
+      time_cost: 1
+      message: "手臂酸痛难忍，木屑只冒出微弱白烟便熄灭了。如果有打火机就好了……"
+
+  - id: "forage_food"
+    label: "搜寻野生棕榈芯与热带坚果"
+    type: "check"
+    skill: "perception"
+    difficulty: 9
+    condition:
+      time_slot_in: ["清晨", "上午", "下午", "黄昏"]
+      not_has_item: "wild_food"
+    on_success:
+      gain_item: "wild_food"
+      attributes_delta:
+        stamina: -6
+        hydration: -4
+        fullness: -3
+      time_cost: 1
+      message: "你采摘到了几串饱满成熟的野生坚果与清脆的棕榈嫩芯，妥善收进背包。现在可以随时食用或烤熟充饥！"
+    on_failure:
+      attributes_delta:
+        stamina: -7
+        hydration: -5
+        fullness: -4
+      time_cost: 1
+      message: "只找到一些带有毒刺的不知名浆果，谨慎起见你没有采摘。"
+
+  - id: "eat_wild_food_raw"
+    label: "直接食用背包里的野生坚果与棕榈芯充饥"
+    type: "interact"
+    condition:
+      has_item: "wild_food"
+      attributes:
+        fullness:
+          lt: 100
+    on_success:
+      consume_item: "wild_food"
+      attributes_delta:
+        fullness: 28
+        stamina: 12
+        hydration: -3
+      san_delta: 2
+      message: "你剥开坚果壳与鲜嫩棕榈芯大口嚼下，浓郁的油脂与清甜果肉迅速填饱了肚子，饱食度与体力明显回升！"
+
+  - id: "cook_food_on_fire"
+    label: "在篝火旁烤熟食物，美美吃上一顿热食"
+    type: "interact"
+    condition:
+      variables:
+        fire_started: true
+      has_any_item: ["raw_crab", "wild_food"]
+      attributes:
+        fullness:
+          lt: 100
+    on_success:
+      consume_any_item: ["raw_crab", "wild_food"]
+      attributes_delta:
+        fullness: 45
+        stamina: 22
+        temperature: 1
+      hp_delta: 5
+      san_delta: 6
+      time_cost: 1
+      message: "跳动的火舌将食材烤得焦香四溢！一顿滚烫美味的热食下肚，饥饿感一扫而空，浑身充满暖意与力量。"
+
+  - id: "rest_by_campfire"
+    label: "围着篝火安心休息过夜（恢复体力并推进时间）"
+    type: "interact"
+    condition:
+      variables:
+        fire_started: true
+      time_slot_in: ["黄昏", "夜晚", "深夜"]
+    on_success:
+      attributes_delta:
+        stamina: 40
+        fullness: -15
+        hydration: -12
+        temperature: 1
+      hp_delta: 10
+      san_delta: 10
+      time_cost: 2
+      message: "在噼啪作响的篝火守护下，你安心睡了一觉，体力和精神得到了充分恢复，新的时段悄然到来。"
+
+  - id: "short_rest_in_woods"
+    label: "靠着古树稍作喘息（恢复少量体力）"
+    type: "interact"
+    condition:
+      attributes:
+        stamina:
+          lt: 85
+    on_success:
+      attributes_delta:
+        stamina: 20
+        fullness: -8
+        hydration: -8
+      time_cost: 1
+      message: "你靠在盘根错节的树干旁闭目养神片刻，呼吸渐渐平稳下来。"
+
+  - id: "return_coastal_jungle"
+    label: "顺着来时的标记退回海边丛林"
+    type: "transition"
+    target_scene: "coastal_jungle"
+    effects:
+      attributes_delta:
+        stamina: -5
+        hydration: -4
+        fullness: -4
+      time_cost: 1

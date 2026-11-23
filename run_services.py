@@ -44,6 +44,7 @@ def start():
     backend_proc = subprocess.Popen(
         [str(VENV_PYTHON), "-m", "uvicorn", "server.app:app", "--host", "127.0.0.1", "--port", "8001"],
         cwd=str(ROOT_DIR),
+        stdin=subprocess.DEVNULL,
         stdout=backend_log,
         stderr=subprocess.STDOUT,
         start_new_session=True,  # Fully detached session

@@ -114,8 +114,12 @@ export interface DiceCheckEvent {
   skill: string;
   difficulty: number;
   roll: number;
+  modifier?: number;
   total: number;
   isSuccess: boolean;
+  outcome?: 'critical_success' | 'success' | 'partial_success' | 'failure' | string;
+  outcome_label?: string;
+  reason?: string;
   message?: string;
 }
 

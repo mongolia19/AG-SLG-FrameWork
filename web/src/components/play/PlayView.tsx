@@ -270,6 +270,8 @@ export default function PlayView({
         nextVisualsPatch = patch.value;
       } else if (patch.path === '/available_actions') {
         nextDynamicActions = Array.isArray(patch.value) ? patch.value : null;
+      } else if (patch.path === '/check_result' && patch.value) {
+        setDiceEvent(patch.value);
       }
     }
 
@@ -336,7 +338,7 @@ export default function PlayView({
   const executeTurn = async (
     userPrompt: string,
     checkContext?: DiceCheckEvent,
-    actionMeta?: { action_id?: string; check_passed?: boolean }
+    actionMeta?: { action_id?: string; check_passed?: boolean; client_roll?: number }
   ) => {
     if (!playerState || isStreaming) return;
 
@@ -348,7 +350,7 @@ export default function PlayView({
         id: userMsgId,
         kind: 'user',
         content: checkContext
-          ? `${userPrompt} (掷骰 D20: ${checkContext.roll} -> ${checkContext.isSuccess ? '成功' : '失败'})`
+          ? `${userPrompt} (掷骰 D20: ${checkContext.roll})`
           : userPrompt,
         timestamp: Date.now(),
       },
@@ -370,7 +372,7 @@ export default function PlayView({
             {
               type: 'text',
               text: checkContext
-                ? `${userPrompt}\n[检定数据: ${checkContext.skill} 检定，投出 D20 = ${checkContext.roll}，难度 DC = ${checkContext.difficulty}，判定为 ${checkContext.isSuccess ? '成功' : '失败'}]`
+                ? `${userPrompt}\n[检定数据: ${checkContext.skill} 检定，投出 D20 = ${checkContext.roll}，难度 DC = ${checkContext.difficulty}，请DM综合当前玩家状态、着装、道具与剧情做出裁决]`
                 : userPrompt,
             },
           ],
@@ -470,33 +472,21 @@ export default function PlayView({
     if (action.type === 'check' && action.skill && action.difficulty) {
       // 掷骰 D20
       const roll = Math.floor(Math.random() * 20) + 1;
-      const isSuccess = roll >= action.difficulty;
-      const event: DiceCheckEvent = {
+      const initialEvent: DiceCheckEvent = {
         skill: action.skill,
         difficulty: action.difficulty,
         roll,
         total: roll,
-        isSuccess,
-        message: isSuccess
-          ? (action.on_success?.message as string) || '你成功发现了关键线索！'
-          : (action.on_failure?.message as string) || '未发现异常。',
+        isSuccess: roll >= action.difficulty,
+        outcome_label: '裁决中...',
+        reason: '计算中...',
+        message: '已投出 D20 骰子，地下城主正综合当前角色生理状态、随身装备与环境给出综合裁决...',
       };
-      setDiceEvent(event);
+      setDiceEvent(initialEvent);
 
-      // 若成功且伴随场景切换，提前切换背景；数值/背包/时间/动态选项由后端 STATE_DELTA 权威下发
-      if (isSuccess && action.on_success?.transition_scene) {
-        applyStateDeltas([
-          {
-            op: 'replace',
-            path: '/current_scene',
-            value: action.on_success.transition_scene,
-          },
-        ]);
-      }
-
-      executeTurn(`【执行检定】${action.label}`, event, {
+      executeTurn(`【执行检定】${action.label}`, initialEvent, {
         action_id: action.id,
-        check_passed: isSuccess,
+        client_roll: roll,
       });
     } else if (action.type === 'interact') {
       executeTurn(`【收集/互动】${action.label}`, undefined, {

@@ -190,3 +190,90 @@ async def test_fallback_director_lighter_campfire_and_cooking():
     inv_ids = [item.get("id") for item in session.player_state.inventory]
     assert "raw_crab" not in inv_ids
     assert session.player_state.attributes.get("fullness") > 60
+
+
+def test_evaluate_agent_adjudication_modifiers_and_tiers():
+    """Verify multi-dimensional modifier calculation and graded outcome tiers."""
+    mgr = ScenarioManager()
+    driver = EmptyMockDriver()
+    bridge = AGUIBridge(scenario_mgr=mgr, driver=driver)
+    session = bridge.get_or_create_session("test_adjudication_eval", "island_survival")
+
+    # Initial state in island_survival has shoes(+1), wrist(+1), and good stamina(+1)
+    session.player_state.attributes["survival"] = 14
+    session.player_state.attributes["stamina"] = 80
+    session.player_state.outfit["outer"] = {"id": "windbreaker", "name": "冲锋外套"}
+
+    # Base DC = 15, roll = 7 + total_mod(7) = 14 vs DC 15 -> partial_success (14 >= 15 - 3)
+    res_partial = bridge.evaluate_agent_adjudication(
+        skill="survival",
+        base_dc=15,
+        player_state=session.player_state,
+        clean_action="在泥泞中搜寻",
+        client_roll=7,
+    )
+    assert res_partial["roll"] == 7
+    assert res_partial["modifier"] == 7  # attr(2) + outer(2) + shoes(1) + wrist(1) + stamina(1)
+    assert res_partial["total"] == 14
+    assert res_partial["outcome"] == "partial_success"
+    assert res_partial["isSuccess"] is True
+    assert "冲锋外套" in res_partial["reason"]
+
+    # Roll 15 + mod 7 = 22 vs DC 15 -> critical_success (22 >= 15 + 5)
+    res_crit = bridge.evaluate_agent_adjudication(
+        skill="survival",
+        base_dc=15,
+        player_state=session.player_state,
+        clean_action="在泥泞中搜寻",
+        client_roll=15,
+    )
+    assert res_crit["outcome"] == "critical_success"
+    assert res_crit["isSuccess"] is True
+
+
+@pytest.mark.asyncio
+async def test_stream_play_check_action_emits_check_result_patch():
+    """Verify check action triggers evaluate_agent_adjudication and returns /check_result patch."""
+    mgr = ScenarioManager()
+    driver = EmptyMockDriver()
+    bridge = AGUIBridge(scenario_mgr=mgr, driver=driver)
+
+    inp = RunAgentInput(
+        thread_id="test_check_result_thread",
+        run_id="run_chk_1",
+        messages=[
+            {
+                "id": "msg-chk-1",
+                "role": "user",
+                "content": [{"type": "text", "text": "【执行检定】搜寻被沙石半掩的玻璃瓶"}],
+            }
+        ],
+        forwarded_props={
+            "scenario_id": "island_survival",
+            "action_id": "scavenge_bottle",
+            "client_roll": 10,
+        },
+    )
+
+    events = []
+    async for raw in bridge.stream_play(inp):
+        events.append(raw)
+
+    import json
+    patches = []
+    for raw in events:
+        for line in raw.strip().split("\n"):
+            if line.startswith("data: "):
+                payload = json.loads(line[6:])
+                if payload.get("type") == "STATE_DELTA":
+                    patches.extend(payload.get("delta", []))
+
+    check_patches = [p for p in patches if p.get("path") == "/check_result"]
+    assert len(check_patches) > 0
+    chk = check_patches[0]["value"]
+    assert chk["skill"] == "agility"
+    assert chk["roll"] == 10
+    assert "modifier" in chk
+    assert "outcome" in chk
+    assert "reason" in chk
+

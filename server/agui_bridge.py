@@ -350,6 +350,10 @@ class GameSession:
         if "visuals" in delta and isinstance(delta["visuals"], dict):
             patches.append({"op": "replace", "path": "/visuals", "value": delta["visuals"]})
 
+        check_obj = delta.get("check_result") or delta.get("check")
+        if isinstance(check_obj, dict):
+            patches.append({"op": "replace", "path": "/check_result", "value": check_obj})
+
         return patches
 
 
@@ -374,7 +378,12 @@ class AGUIBridge:
         self.sessions[thread_id] = session
         return session
 
-    def build_play_prompt(self, session: GameSession, user_input: str) -> str:
+    def build_play_prompt(
+        self,
+        session: GameSession,
+        user_input: str,
+        check_eval: Optional[Dict[str, Any]] = None,
+    ) -> str:
         scenario = self.scenario_mgr.load_scenario(session.scenario_id)
         curr_scene_id = session.player_state.current_scene or scenario.world.initial_scene
         curr_scene = self.scenario_mgr.get_scene(session.scenario_id, curr_scene_id)
@@ -406,6 +415,18 @@ class AGUIBridge:
             ]
             history_block = "\n近期剧情回溯：\n" + "\n".join(history_lines) + "\n"
 
+        check_eval_block = ""
+        if check_eval:
+            check_eval_block = f"""
+【DM 综合裁决基准参考】：
+- 检定技能：{check_eval.get('skill')} | 检定难度 DC：{check_eval.get('difficulty')}
+- 投骰数值：D20 = {check_eval.get('roll')}，综合状态/装备修正：{check_eval.get('modifier')}，最终判定总值：{check_eval.get('total')}
+- 综合判定梯度：{check_eval.get('outcome_label')} ({check_eval.get('outcome')})
+- 判定核心依据：{check_eval.get('reason')}
+- 裁决导向建议：{check_eval.get('message')}
+（请作为权威 DM 尊重并融合此综合修正结果，在剧情中生动展现装备/体魄/工具如何协助或制约该动作，并在 state_delta.check_result 中准确回传裁决数据）
+"""
+
         prompt = f"""你是一款高沉浸感文字跑团（TRPG / SLG）的地下城主（DM / Game Master）兼视觉导演（遵循 ag-slg-director 规范）。
 当前世界观：{scenario.world.title} (ID: {scenario.world.id})
 玩家当前状态：
@@ -431,7 +452,7 @@ class AGUIBridge:
 
 当前可用行动选项（仅供参考，非强制限制）：
 {scene_actions or '无'}
-{history_block}
+{history_block}{check_eval_block}
 玩家执行了以下行动：
 "{user_input}"
 
@@ -444,16 +465,24 @@ class AGUIBridge:
      ① 必须承认打火机是现成的核心火源！严禁无视玩家背包内的打火机，严禁谎称“没有火源”或无端判定点火失败！
      ② 必须成功点燃火焰：在 state_delta.variables 中明确写入 `"fire_started": true`，并在 visuals.hero_image 给出篝火特写插图 `/assets/illustrations/campfire.png`。
      ③ 若玩家同时进行了煮食物/烤食物：只要背包中有可烹饪物品（如 raw_crab、wild_food、coconut、fresh_water 等），必须在叙述中生动描绘火烤烹饪与熟食香气，在 state_delta.remove_inventory 中扣除对应食材，并通过 attributes_delta 大幅增加饱食度（fullness: +30~+40）与体力（stamina: +15~+25）！
-2. 叙事文本与对话分明：生动叙述环境与行动结果，NPC 发言请以 角色名: “对话内容” 格式清晰表达。严禁在叙述文本中直接泄漏具体图片文件路径。
-3. 视觉舞台导演原则（ag-slg-director）：
+2. DM 综合裁决与灵活判定法则（代入感与策略性核心）：
+   - 杜绝生硬机械的二元通过/失败，全面综合玩家的【属性点】+【穿戴装备与衣物】+【随身工具道具】+【生理体能状况】给出多维裁决修正；
+   - 采用 TRPG 四阶递进式裁决深度演化剧情：
+     · 卓越成功 (Critical Success, Total >= DC + 5 或 Nat 20)：游刃有余、精妙达成，不仅达成全部目标，还可节省精力或获得额外顿悟；
+     · 顺利达成 (Success, DC <= Total < DC + 5)：稳扎稳打达成目标，消耗标准资源；
+     · 代价成功 (Partial Success, DC - 3 <= Total < DC)：虽遇险阻但凭借装备支撑或顽强毅力达成了核心目标，付出额外体力或产生次要代价；
+     · 受挫转折 (Failure with Momentum, Total < DC - 3 或 Nat 1)：环境险恶行动受阻，但绝不卡死故事，转化为新的局势信息或避险转折，引导玩家调整策略。
+   - 若本次行动包含检定，请在回复末尾的 ```state_delta``` 中附带 `check_result` 字段记录裁决明细。
+3. 叙事文本与对话分明：生动叙述环境与行动结果，NPC 发言请以 角色名: “对话内容” 格式清晰表达。严禁在叙述文本中直接泄漏具体图片文件路径。
+4. 视觉舞台导演原则（ag-slg-director）：
    - 背景稳定性：不要在普通的对话轮换背景；仅在发生场景转移或环境巨变时更新 visuals.background。
    - 角色立绘调度：与具体 NPC 对话时，设置 visuals.foreground 为其立绘；玩家独处检定或离开时置空。
    - 焦点特写镜头：当玩家成功发现关键线索、拾获或搜查物品、或遭遇高潮事件时，在 visuals.hero_image 给出特写插图路径或语义描述（如“【物品特写】洗净泥沙的防水金属盒”）。
-4. 数值与动态选项演算（非常重要）：
+5. 数值与动态选项演算（非常重要）：
    - 若玩家进食、饮水、休息、劳作或受环境影响，务必在 state_delta 中通过 `attributes_delta` 真实更新对应属性（如 `fullness` 饱食度、`hydration` 水分、`stamina` 体力、`temperature` 体温），消耗掉的食材/饮水通过 `remove_inventory` 列出道具 id 移除。
    - 行动耗时可通过 `time_cost`（整数，如 1 表示推进一个时段：清晨→上午→下午→黄昏→夜晚→深夜）推进时间。
    - 如因剧情变化衍生出新的临时行动选项，可通过 `available_actions` 提供动态选项列表；预设场景选项也会随状态与时间自动刷新。
-5. 若产生场景转移、数值变化、道具增减、时间推进或视觉变更，在回复最末尾附带一个 ```state_delta 代码块：
+6. 若产生场景转移、数值变化、道具增减、时间推进或视觉变更，在回复最末尾附带一个 ```state_delta 代码块：
 ```state_delta
 {{
   "current_scene": "目标场景ID（若发生转移）",
@@ -465,6 +494,18 @@ class AGUIBridge:
   "remove_inventory": ["consumed_item_id"],
   "outfit": {{"outer": {{"id": "jacket_id", "name": "穿戴服装名", "desc": "描述", "tag": "状态/加成"}}}},
   "variables": {{"variable_key": "variable_value"}},
+  "check_result": {{
+    "skill": "survival",
+    "difficulty": 10,
+    "roll": 12,
+    "modifier": 3,
+    "total": 15,
+    "isSuccess": true,
+    "outcome": "success",
+    "outcome_label": "顺利达成",
+    "reason": "基础属性(+1)、防风外套(+2)",
+    "message": "成功克服恶劣海风影响"
+  }},
   "available_actions": [
     {{"id": "dynamic_act_1", "label": "新的情境行动", "type": "interact"}}
   ],
@@ -590,6 +631,115 @@ class AGUIBridge:
 
         return merged
 
+    @staticmethod
+    def evaluate_agent_adjudication(
+        skill: str,
+        base_dc: int,
+        player_state: PlayerState,
+        clean_action: str,
+        client_roll: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Comprehensively evaluate action check based on player attributes, outfit, tools, and stamina."""
+        import random
+        roll = client_roll if (client_roll is not None and 1 <= client_roll <= 20) else random.randint(1, 20)
+
+        # 1. Attribute modifier
+        attr_val = int(player_state.attributes.get(skill, 10) or 10)
+        attr_mod = (attr_val - 10) // 2
+
+        # 2. Outfit & clothing bonuses
+        outfit_mod = 0
+        outfit_reasons = []
+        outfit = player_state.outfit or {}
+        if outfit.get("outer"):
+            outfit_mod += 2
+            outfit_reasons.append(f"{outfit['outer'].get('name', '防风外套')}(+2)")
+        if outfit.get("shoes") and skill in ("agility", "survival"):
+            outfit_mod += 1
+            outfit_reasons.append(f"{outfit['shoes'].get('name', '防滑跑鞋')}(+1)")
+        if outfit.get("wrist") and skill in ("perception", "survival"):
+            outfit_mod += 1
+            outfit_reasons.append(f"{outfit['wrist'].get('name', '反光腕表')}(+1)")
+        if outfit.get("neck"):
+            outfit_mod += 1
+            outfit_reasons.append(f"{outfit['neck'].get('name', '潮汐护符')}(+1)")
+
+        # 3. Tool bonuses
+        tool_mod = 0
+        tool_reasons = []
+        inv_ids = {
+            item.get("id", "") for item in (player_state.inventory or []) if isinstance(item, dict)
+        }
+        if "stone_blade" in inv_ids and any(k in clean_action for k in ("割", "切", "削", "剥", "撬", "磨", "修")):
+            tool_mod += 2
+            tool_reasons.append("石刀精制(+2)")
+        if "lighter" in inv_ids and any(k in clean_action for k in ("火", "点", "燃", "烧")):
+            tool_mod += 3
+            tool_reasons.append("防风打火机(+3)")
+        if "rope" in inv_ids and any(k in clean_action for k in ("捆", "扎", "绑", "绳", "编", "爬", "攀")):
+            tool_mod += 2
+            tool_reasons.append("坚韧绳索(+2)")
+        if "metal_box" in inv_ids and any(k in clean_action for k in ("水", "煮", "装", "存", "盒")):
+            tool_mod += 1
+            tool_reasons.append("防水金属盒(+1)")
+
+        # 4. Physical condition penalties/bonuses
+        cond_mod = 0
+        cond_reasons = []
+        stamina = int(player_state.attributes.get("stamina", 50) or 50)
+        hydration = int(player_state.attributes.get("hydration", 50) or 50)
+        fullness = int(player_state.attributes.get("fullness", 50) or 50)
+
+        if stamina >= 75 and hydration >= 60 and fullness >= 50:
+            cond_mod += 1
+            cond_reasons.append("体能充沛(+1)")
+        elif stamina < 30:
+            cond_mod -= 2
+            cond_reasons.append("体力透支(-2)")
+        if hydration < 25:
+            cond_mod -= 2
+            cond_reasons.append("严重口渴(-2)")
+        if fullness < 25:
+            cond_mod -= 2
+            cond_reasons.append("饥肠辘辘(-2)")
+
+        total_mod = attr_mod + outfit_mod + tool_mod + cond_mod
+        total = roll + total_mod
+
+        # Graded evaluation
+        if total >= base_dc + 5:
+            outcome = "critical_success"
+            label = "卓越成功"
+        elif total >= base_dc:
+            outcome = "success"
+            label = "顺利达成"
+        elif total >= base_dc - 3:
+            outcome = "partial_success"
+            label = "代价成功"
+        else:
+            outcome = "failure"
+            label = "受挫转折"
+
+        reason_parts = [f"{skill.upper()}属性({attr_mod:+d})"]
+        if outfit_reasons:
+            reason_parts.extend(outfit_reasons)
+        if tool_reasons:
+            reason_parts.extend(tool_reasons)
+        if cond_reasons:
+            reason_parts.extend(cond_reasons)
+
+        return {
+            "skill": skill,
+            "difficulty": base_dc,
+            "roll": roll,
+            "modifier": total_mod,
+            "total": total,
+            "outcome": outcome,
+            "outcome_label": label,
+            "isSuccess": outcome != "failure",
+            "reason": " · ".join(reason_parts),
+        }
+
     def generate_fallback_turn(
         self,
         session: GameSession,
@@ -597,6 +747,7 @@ class AGUIBridge:
         matched_action: Optional[ActionOption],
         check_passed: Optional[bool],
         current_scene: Optional[SceneNode],
+        client_roll: Optional[int] = None,
     ) -> tuple[str, Dict[str, Any]]:
         """Fallback local SLG Director: generates vivid narrative and state delta when external agent is unavailable."""
         clean_action = re.sub(r"^【.*?】", "", user_text).strip()
@@ -605,25 +756,76 @@ class AGUIBridge:
 
         if matched_action:
             if matched_action.type == "check":
-                if check_passed is None:
-                    import random
-                    roll = random.randint(1, 20)
-                    dc = matched_action.difficulty or 10
-                    check_passed = (roll >= dc)
+                skill = matched_action.skill or "survival"
+                dc = matched_action.difficulty or 10
+                eval_res = self.evaluate_agent_adjudication(
+                    skill=skill,
+                    base_dc=dc,
+                    player_state=session.player_state,
+                    clean_action=clean_action,
+                    client_roll=client_roll,
+                )
 
-                if check_passed:
-                    succ_msg = ""
-                    if matched_action.on_success and isinstance(matched_action.on_success, dict):
-                        succ_msg = matched_action.on_success.get("message", "")
-                    if not succ_msg:
-                        succ_msg = f"你动作沉着敏捷，成功【{matched_action.label}】！"
+                succ_msg = ""
+                if matched_action.on_success and isinstance(matched_action.on_success, dict):
+                    succ_msg = matched_action.on_success.get("message", "")
+                if not succ_msg:
+                    succ_msg = f"你沉着应对，成功【{matched_action.label}】！"
 
+                fail_msg = ""
+                if matched_action.on_failure and isinstance(matched_action.on_failure, dict):
+                    fail_msg = matched_action.on_failure.get("message", "")
+                if not fail_msg:
+                    fail_msg = f"环境恶劣，你这次未能成功【{matched_action.label}】。"
+
+                if eval_res["outcome"] == "critical_success":
                     narration = (
-                        f"你屏住呼吸，眼神死死锁定着目标。瞅准浪潮翻滚与光影交错的绝佳间隙，你敏捷地跨步探身，果断出手！\n\n"
-                        f"【检定判定通过】{succ_msg}\n\n"
-                        f"你将所获之物紧紧攥入掌心，咸涩的海风呼啸而过，严峻的生存挑战中终于迎来了宝贵的生机。"
+                        f"你屏息凝神，稳稳把控着周遭的每一个细节。凭借【{eval_res['reason']}】，你的动作游刃有余、精妙绝伦！\n\n"
+                        f"【DM综合裁决 · 卓越成功】（投骰 {eval_res['roll']} + 修正 {eval_res['modifier']} = {eval_res['total']} vs DC: {eval_res['difficulty']}）\n\n"
+                        f"{succ_msg}\n\n"
+                        f"完美的预判让你不仅顺利达成了目标，甚至几乎没有消耗额外精力，信心大振！"
                     )
                     delta = dict(matched_action.on_success or {})
+                    if "attributes_delta" in delta and isinstance(delta["attributes_delta"], dict):
+                        delta["attributes_delta"] = {
+                            k: (v // 2 if k == "stamina" and v < 0 else v)
+                            for k, v in delta["attributes_delta"].items()
+                        }
+                    delta["san_delta"] = int(delta.get("san_delta", 0)) + 3
+                elif eval_res["outcome"] == "success":
+                    narration = (
+                        f"你眼神坚定，沉稳调度全身气力与随身装备。瞅准绝佳时机，你果断出手！\n\n"
+                        f"【DM综合裁决 · 顺利达成】（投骰 {eval_res['roll']} + 修正 {eval_res['modifier']} = {eval_res['total']} vs DC: {eval_res['difficulty']}）\n\n"
+                        f"判定依据：{eval_res['reason']}。\n\n"
+                        f"{succ_msg}"
+                    )
+                    delta = dict(matched_action.on_success or {})
+                elif eval_res["outcome"] == "partial_success":
+                    narration = (
+                        f"周围环境险恶复杂，潮气与海风不断侵扰。虽然过程波折重重，但幸得【{eval_res['reason']}】的有力支撑，你咬牙撑过难关，终究在付出额外汗水后艰难达成了目标！\n\n"
+                        f"【DM综合裁决 · 代价成功】（投骰 {eval_res['roll']} + 修正 {eval_res['modifier']} = {eval_res['total']} vs DC: {eval_res['difficulty']}）\n\n"
+                        f"{succ_msg}\n\n"
+                        f"主要目标顺利达成，但激烈的应对让你多消耗了些许体能。"
+                    )
+                    delta = dict(matched_action.on_success or {})
+                    if "attributes_delta" not in delta or not isinstance(delta["attributes_delta"], dict):
+                        delta["attributes_delta"] = {}
+                    delta["attributes_delta"]["stamina"] = int(delta["attributes_delta"].get("stamina", -4)) - 3
+                else:
+                    narration = (
+                        f"自然与环境的阻碍超乎预料。纵然有【{eval_res['reason']}】的勉力支撑，这次突进依然未能尽如人意。\n\n"
+                        f"【DM综合裁决 · 受挫转折】（投骰 {eval_res['roll']} + 修正 {eval_res['modifier']} = {eval_res['total']} vs DC: {eval_res['difficulty']}）\n\n"
+                        f"{fail_msg}\n\n"
+                        f"你稳住阵脚向后轻撤半步。这次尝试虽未达成，却让你彻底探明了前方的虚实暗礁，为你下一次策略调整赢得了关键的情报！"
+                    )
+                    delta = dict(matched_action.on_failure or {})
+                    if "time_cost" not in delta:
+                        delta["time_cost"] = 1
+                    if "attributes_delta" not in delta:
+                        delta["attributes_delta"] = {"stamina": -3, "hydration": -2}
+
+                delta["check_result"] = eval_res
+                if eval_res["isSuccess"]:
                     if "gain_item" in delta:
                         delta["add_inventory"] = [{"id": delta["gain_item"]}]
                     if "equip_outfit" in delta and "outfit" not in delta:
@@ -632,23 +834,6 @@ class AGUIBridge:
                         delta["variables"] = {"found_bottle": True}
                     if "time_cost" not in delta:
                         delta["time_cost"] = 1
-                else:
-                    fail_msg = ""
-                    if matched_action.on_failure and isinstance(matched_action.on_failure, dict):
-                        fail_msg = matched_action.on_failure.get("message", "")
-                    if not fail_msg:
-                        fail_msg = f"环境恶劣，你这次未能成功【{matched_action.label}】。"
-
-                    narration = (
-                        f"你试图强行出手，然而自然险峻的威力超乎想象。迎面拍来的一股冷冽浪花猛地撞上你的脚踝，湿滑的砂石让你身形一晃！\n\n"
-                        f"【检定判定未通过】{fail_msg}\n\n"
-                        f"你踉跄着后退两步，粗砺的碎石在你的手背上留下了一道微浅的红痕。你稳住呼吸，冷静地重新审视着眼前的局面。"
-                    )
-                    delta = dict(matched_action.on_failure or {})
-                    if "time_cost" not in delta:
-                        delta["time_cost"] = 1
-                    if "attributes_delta" not in delta:
-                        delta["attributes_delta"] = {"stamina": -4, "hydration": -3}
             elif matched_action.type == "interact":
                 succ_msg = ""
                 if matched_action.on_success and isinstance(matched_action.on_success, dict):
@@ -893,9 +1078,15 @@ class AGUIBridge:
         scenario_id = "black_crow_manor"
         action_id: Optional[str] = None
         check_passed: Optional[bool] = None
+        client_roll: Optional[int] = None
         if input_data.forwarded_props and isinstance(input_data.forwarded_props, dict):
             scenario_id = input_data.forwarded_props.get("scenario_id", scenario_id)
             action_id = input_data.forwarded_props.get("action_id")
+            if "client_roll" in input_data.forwarded_props:
+                try:
+                    client_roll = int(input_data.forwarded_props.get("client_roll"))
+                except (ValueError, TypeError):
+                    client_roll = None
             if "check_passed" in input_data.forwarded_props:
                 check_passed = bool(input_data.forwarded_props.get("check_passed"))
 
@@ -912,13 +1103,23 @@ class AGUIBridge:
                 pre_scene, user_text, session.player_state
             )
 
-        if matched_action and matched_action.type == "check" and check_passed is None:
-            import random
-            roll = random.randint(1, 20)
+        eval_res: Optional[Dict[str, Any]] = None
+        if matched_action and matched_action.type == "check":
+            skill = matched_action.skill or "survival"
             dc = matched_action.difficulty or 10
-            check_passed = (roll >= dc)
+            clean_input = re.sub(r"^【.*?】", "", user_text).strip()
+            clean_input = re.sub(r"\[检定数据:.*?\]", "", clean_input).strip()
+            eval_res = self.evaluate_agent_adjudication(
+                skill=skill,
+                base_dc=dc,
+                player_state=session.player_state,
+                clean_action=clean_input,
+                client_roll=client_roll,
+            )
+            if check_passed is None:
+                check_passed = eval_res["isSuccess"]
 
-        prompt = self.build_play_prompt(session, user_text)
+        prompt = self.build_play_prompt(session, user_text, check_eval=eval_res)
 
         # 1. RUN_STARTED
         yield self.encoder.encode(RunStartedEvent(run_id=run_id, thread_id=thread_id))
@@ -975,6 +1176,7 @@ class AGUIBridge:
                 matched_action=matched_action,
                 check_passed=check_passed,
                 current_scene=pre_scene,
+                client_roll=client_roll,
             )
             delta_dict = fallback_delta
             # Stream fallback narrative chunk by chunk
@@ -1007,6 +1209,9 @@ class AGUIBridge:
             delta_dict = self._merge_action_effects(
                 delta_dict, matched_action, check_passed, session.player_state
             )
+
+        if eval_res and "check_result" not in delta_dict:
+            delta_dict["check_result"] = eval_res
 
         clean_narrator_text = re.sub(r"```state_delta[\s\S]*?```", "", full_text_buffer).strip()
         session.history.append({"role": "user", "content": user_text})

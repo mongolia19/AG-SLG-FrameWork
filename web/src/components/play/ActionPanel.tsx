@@ -44,37 +44,67 @@ export default function ActionPanel({
   return (
     <div className="bg-[#13161f] border-t border-slate-800 p-4 z-20 shadow-lg">
       <div className="max-w-4xl mx-auto space-y-3">
-        {/* D20 检定反馈卡片（若发生检定判定） */}
+        {/* D20 检定反馈卡片（DM 综合判定展示） */}
         {diceEvent && (
-          <div className="bg-slate-900 border-2 border-amber-500/70 rounded-xl p-3 shadow-xl animate-in fade-in slide-in-from-bottom-2 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-500/20 border border-amber-500/50 flex items-center justify-center font-bold text-lg text-amber-300">
-                {diceEvent.roll}
+          <div className="bg-slate-900 border-2 border-amber-500/70 rounded-xl p-3 shadow-xl animate-in fade-in slide-in-from-bottom-2 flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3 min-w-0 flex-1">
+              <div className="w-11 h-11 rounded-lg bg-gradient-to-br from-amber-500/20 to-amber-700/20 border border-amber-500/50 flex flex-col items-center justify-center shrink-0">
+                <span className="font-mono font-bold text-base text-amber-300 leading-none">
+                  {diceEvent.total ?? (diceEvent.roll + (diceEvent.modifier || 0))}
+                </span>
+                <span className="text-[9px] font-mono text-amber-400/80 leading-none mt-0.5">
+                  d20:{diceEvent.roll}
+                </span>
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-slate-200">
-                    {diceEvent.skill.toUpperCase()} 属性检定
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-bold text-slate-200">
+                    {diceEvent.skill ? diceEvent.skill.toUpperCase() : '能力'} 属性裁决
                   </span>
-                  <span
-                    className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${
-                      diceEvent.isSuccess
-                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                        : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                    }`}
-                  >
-                    {diceEvent.isSuccess ? '检定成功 SUCCESS' : '检定失败 FAILURE'}
+                  {diceEvent.outcome === 'critical_success' && (
+                    <span className="text-[10px] px-2 py-0.5 rounded font-bold uppercase bg-emerald-500/25 text-emerald-300 border border-emerald-500/40">
+                      ★ 卓越成功 CRITICAL
+                    </span>
+                  )}
+                  {diceEvent.outcome === 'partial_success' && (
+                    <span className="text-[10px] px-2 py-0.5 rounded font-bold uppercase bg-amber-500/25 text-amber-300 border border-amber-500/40">
+                      ⚡ 代价成功 PARTIAL
+                    </span>
+                  )}
+                  {(!diceEvent.outcome || diceEvent.outcome === 'success') && diceEvent.isSuccess && (
+                    <span className="text-[10px] px-2 py-0.5 rounded font-bold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                      ✓ 判定达成 SUCCESS
+                    </span>
+                  )}
+                  {(!diceEvent.isSuccess || diceEvent.outcome === 'failure') && (
+                    <span className="text-[10px] px-2 py-0.5 rounded font-bold uppercase bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                      ✕ 受挫转折 COMPLICATION
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs text-slate-300 mt-1">
+                  <span className="font-mono text-amber-400/90 font-medium">
+                    投骰 {diceEvent.roll}
+                    {(diceEvent.modifier ?? 0) !== 0 && (
+                      <span> {diceEvent.modifier! > 0 ? `+ ${diceEvent.modifier}` : `- ${Math.abs(diceEvent.modifier!)}`} (状态与装备修正)</span>
+                    )}
+                    {' '}= {diceEvent.total ?? (diceEvent.roll + (diceEvent.modifier || 0))}
                   </span>
+                  <span className="text-slate-500 mx-1.5">vs</span>
+                  <span className="font-mono text-slate-400">难度 DC: {diceEvent.difficulty}</span>
                 </div>
-                <div className="text-xs text-slate-400 mt-0.5">
-                  投骰值 {diceEvent.roll} (难度 DC: {diceEvent.difficulty}) · {diceEvent.message || ''}
-                </div>
+                {(diceEvent.reason || diceEvent.message) && (
+                  <div className="text-[11px] text-slate-300/90 mt-1 bg-slate-950/60 p-1.5 rounded border border-slate-800 leading-relaxed">
+                    <span className="text-amber-400/90 font-semibold">[DM判定依据] </span>
+                    {diceEvent.reason || diceEvent.message}
+                  </div>
+                )}
               </div>
             </div>
             {onDismissDice && (
               <button
                 onClick={onDismissDice}
-                className="text-xs text-slate-400 hover:text-slate-200 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 transition"
+                className="text-xs text-slate-400 hover:text-slate-200 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 transition shrink-0"
               >
                 收起
               </button>

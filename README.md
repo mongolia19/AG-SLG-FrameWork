@@ -185,11 +185,14 @@ scripts/island_survival/
 
 ## 测试与验证
 
-项目包含全面的单元测试与端到端测试，覆盖检定裁决、状态补丁、行动回退、换装逻辑及剧本校验：
+项目包含全面的单元测试、端到端测试以及针对用户反馈建立的 **Bad Cases 回归测试套件**（`tests/test_regression_bad_cases.py`），覆盖意图识别防劫持、背包同步防脱节、生存工具去重、多维综合检定裁决、Studio热更新与剧本合法性校验：
 
 ```bash
-# 运行后端测试集（28 项全量通过）
+# 运行后端全量测试套件（35 项全量通过）
 .venv/bin/pytest -v
+
+# 仅运行 Bad Cases 回归测试集
+.venv/bin/pytest -v tests/test_regression_bad_cases.py
 
 # 前端类型检查与构建验证
 cd web && npm run build

@@ -59,25 +59,14 @@ export default function StoryStream({
   const foregroundImage = currentScene?.visuals?.foreground || currentScene?.foreground;
   const atmosphereText = currentScene?.visuals?.atmosphere;
 
-  const prevSceneIdRef = useRef(currentScene?.id);
-  const prevHeroImageRef = useRef(heroImage);
+  // 仅在焦点图展开（非收起）情况下才更新并绘制焦点图；收起状态下不触发大图绘制与更新
+  const [displayedHeroImage, setDisplayedHeroImage] = useState<string | undefined>(heroImage);
 
-  // 场景切换时自动展开焦点图并重置描述折叠状态
   useEffect(() => {
-    if (currentScene?.id && currentScene.id !== prevSceneIdRef.current) {
-      prevSceneIdRef.current = currentScene.id;
-      setIsHeroCollapsed(false);
-      setIsDescExpanded(false);
+    if (!isHeroCollapsed) {
+      setDisplayedHeroImage(heroImage);
     }
-  }, [currentScene?.id]);
-
-  // 当焦点图变更（例如营地生火完成、获得关键视觉图）时自动展开焦点图提醒玩家
-  useEffect(() => {
-    if (heroImage && heroImage !== prevHeroImageRef.current) {
-      prevHeroImageRef.current = heroImage;
-      setIsHeroCollapsed(false);
-    }
-  }, [heroImage]);
+  }, [isHeroCollapsed, heroImage]);
 
   const resolveWeatherMode = (label?: string, wType?: string) => {
     if (wType) return wType;
@@ -310,71 +299,59 @@ export default function StoryStream({
       {/* 3. 剧情流主列 (包含置顶冻结的场景焦点图与独立向下滚动的消息流) */}
       <main className="relative z-10 flex-1 flex flex-col h-full min-h-0 overflow-hidden max-w-4xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl w-full mx-auto">
         {/* 顶部固定/冻结区：窄屏设施缩略条 + 场景焦点图 */}
-        <div className="flex-none px-4 sm:px-6 pt-3 pb-1 space-y-2.5 z-20">
+        <div className="flex-none px-4 sm:px-6 pt-1.5 pb-1 space-y-1.5 z-20">
           {/* 窄屏模式下展示已建成的耐用营地设施缩略条 */}
           {builtStructures.length > 0 && (
             <div
               key={`mobile-structs-${currentScene?.id || 'none'}`}
-              className="lg:hidden flex items-center gap-2.5 overflow-x-auto no-scrollbar pb-1"
+              className="lg:hidden flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5"
             >
               {builtStructures.map((item, idx) => (
                 <div
                   key={item.id || idx}
                   title={item.tooltip || item.caption || item.name}
-                  className="flex items-center gap-2 shrink-0 bg-slate-900/90 border border-emerald-500/50 rounded-lg p-1.5 pr-2.5 shadow-md"
+                  className="flex items-center gap-1.5 shrink-0 bg-slate-900/90 border border-emerald-500/50 rounded-lg p-1 pr-2 shadow-sm"
                 >
                   <img
                     src={item.image}
                     alt={item.name}
-                    className="w-10 h-10 rounded object-cover border border-slate-800"
+                    className="w-8 h-8 rounded object-cover border border-slate-800"
                   />
                   <div className="min-w-0">
-                    <div className="text-[11px] font-semibold text-emerald-300 truncate">{item.name}</div>
-                    <div className="text-[10px] text-slate-400 truncate">{item.tag || '已建成'}</div>
+                    <div className="text-[10px] font-semibold text-emerald-300 truncate">{item.name}</div>
+                    <div className="text-[9px] text-slate-400 truncate">{item.tag || '已建成'}</div>
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          {/* 场景焦点图与开场卡片 (Pinned Scene Hero Card) - 冻结在顶部，不再被对话滚动挤出视野 */}
+          {/* 场景焦点图与开场卡片 (Pinned Scene Hero Card) */}
           {currentScene && (
             <div
               key={`scene-card-${currentScene.id}`}
-              className="bg-slate-900/90 border border-slate-800/90 rounded-xl overflow-hidden backdrop-blur-md text-slate-300 shadow-xl transition-all duration-300"
+              className="bg-slate-900/90 border border-slate-800/90 rounded-xl overflow-hidden backdrop-blur-md text-slate-300 shadow-lg transition-all duration-300"
             >
               {isHeroCollapsed ? (
-                /* 紧凑条形状态 (便于在长文本阅读时腾出最大对话纵向空间) */
-                <div className="px-3.5 py-2 flex items-center justify-between gap-3 bg-slate-900/95">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    {heroImage && isImageSrc(heroImage) ? (
-                      <img
-                        src={heroImage}
-                        alt={currentScene.title}
-                        className="w-9 h-9 rounded-lg object-cover border border-amber-500/40 shrink-0 shadow-sm"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-lg bg-slate-800 border border-amber-500/30 flex items-center justify-center shrink-0">
-                        <ImageIcon className="w-4 h-4 text-amber-400" />
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                      <span className="text-xs font-semibold text-amber-400 truncate font-sans">
-                        {currentScene.title}
+                /* 紧凑条形状态 (收起状态：完全不绘制和加载焦点图，腾出最大对话纵向空间) */
+                <div className="px-3 py-1.5 flex items-center justify-between gap-2.5 bg-slate-900/95">
+                  <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span className="text-xs font-semibold text-amber-400 truncate font-sans">
+                      {currentScene.title}
+                    </span>
+                    {(weather || atmosphereText) && (
+                      <span className="text-[10px] text-slate-300 bg-slate-800/80 border border-slate-700/70 px-2 py-0.5 rounded-full truncate">
+                        {weather ? `${weather}` : ''}
+                        {weather && atmosphereText ? ' · ' : ''}
+                        {atmosphereText || ''}
                       </span>
-                      {(weather || atmosphereText) && (
-                        <span className="text-[10px] text-slate-300 bg-slate-800/80 border border-slate-700/70 px-2 py-0.5 rounded-full truncate">
-                          {weather ? `${weather}` : ''}
-                          {weather && atmosphereText ? ' · ' : ''}
-                          {atmosphereText || ''}
-                        </span>
-                      )}
-                    </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       onClick={() => setIsHeroCollapsed(false)}
-                      className="flex items-center gap-1 text-[11px] text-amber-300/90 hover:text-amber-200 px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 transition"
+                      className="flex items-center gap-1 text-[11px] text-amber-300/90 hover:text-amber-200 px-2.5 py-0.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 transition"
                       title="展开场景焦点大图与描述"
                     >
                       <span>展开焦点图</span>
@@ -383,44 +360,55 @@ export default function StoryStream({
                   </div>
                 </div>
               ) : (
-                /* 展开完整焦点图与描述状态 */
+                /* 展开完整焦点图与描述状态 (仅在打开时才绘制和更新焦点图) */
                 <div>
-                  {heroImage && (
-                    <div className="w-full h-40 sm:h-48 md:h-52 bg-slate-800/90 relative flex items-center justify-center overflow-hidden border-b border-slate-800">
-                      {isImageSrc(heroImage) ? (
+                  {displayedHeroImage && (
+                    isImageSrc(displayedHeroImage) ? (
+                      <div className="w-full h-28 sm:h-36 max-h-40 bg-slate-800/90 relative flex items-center justify-center overflow-hidden border-b border-slate-800">
                         <img
-                          src={heroImage}
+                          src={displayedHeroImage}
                           alt={currentScene.title}
                           className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
                         />
-                      ) : (
-                        <div className="flex flex-col items-center text-slate-400">
-                          <ImageIcon className="w-8 h-8 mb-1.5 text-amber-500/70" />
-                          <span className="text-xs font-mono font-medium tracking-wide">
-                            【场景焦点图】{heroImage}
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent pointer-events-none" />
+
+                        {/* 右上角收起按钮 */}
+                        <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5">
+                          <button
+                            onClick={() => setIsHeroCollapsed(true)}
+                            className="flex items-center gap-1 text-[11px] text-slate-300 bg-slate-950/75 hover:bg-slate-900 border border-slate-700/80 px-2 py-0.5 rounded-lg backdrop-blur-md shadow-md transition"
+                            title="收起焦点大图以获得更大的对话滚动视野"
+                          >
+                            <span>收起</span>
+                            <ChevronUp className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* 文本/线索占位条：高度压至极小，不占多余屏幕空间 */
+                      <div className="w-full px-3 py-1.5 bg-slate-800/60 border-b border-slate-800 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 text-slate-300 min-w-0">
+                          <ImageIcon className="w-3.5 h-3.5 text-amber-500/80 shrink-0" />
+                          <span className="text-[11px] font-mono font-medium tracking-wide truncate">
+                            {displayedHeroImage}
                           </span>
                         </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent pointer-events-none" />
-
-                      {/* 右上角收起按钮 */}
-                      <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5">
                         <button
                           onClick={() => setIsHeroCollapsed(true)}
-                          className="flex items-center gap-1 text-[11px] text-slate-300 bg-slate-950/75 hover:bg-slate-900 border border-slate-700/80 px-2.5 py-1 rounded-lg backdrop-blur-md shadow-md transition"
-                          title="收起焦点大图以获得更大的对话滚动视野"
+                          className="flex items-center gap-1 text-[10px] text-slate-300 hover:text-white px-2 py-0.5 rounded bg-slate-700/60 border border-slate-600/60 transition shrink-0"
+                          title="收起"
                         >
                           <span>收起</span>
-                          <ChevronUp className="w-3.5 h-3.5" />
+                          <ChevronUp className="w-3 h-3" />
                         </button>
                       </div>
-                    </div>
+                    )
                   )}
 
-                  <div className="p-3.5 sm:p-4 text-xs sm:text-sm leading-relaxed font-serif">
-                    <div className="flex items-center justify-between text-amber-400 font-semibold mb-1.5 text-xs font-sans uppercase tracking-wider gap-2">
+                  <div className="p-2 sm:p-2.5 text-xs leading-relaxed font-serif">
+                    <div className="flex items-center justify-between text-amber-400 font-semibold mb-1 text-xs font-sans uppercase tracking-wider gap-2">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                        <Sparkles className="w-3 h-3 shrink-0" />
                         <span>当前幕境 · {currentScene.title}</span>
                         {(weather || atmosphereText) && (
                           <span className="text-[10px] font-normal normal-case tracking-normal text-slate-300/90 bg-slate-800/80 border border-slate-700/70 px-2 py-0.5 rounded-full">
@@ -433,41 +421,41 @@ export default function StoryStream({
                       <div className="flex items-center gap-1.5">
                         <button
                           onClick={(e) => handleCopy('scene_desc', currentScene.description, e)}
-                          className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-amber-300 px-2 py-0.5 rounded bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 transition"
+                          className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-amber-300 px-2 py-0.5 rounded bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 transition"
                           title="复制场景描述"
                         >
                           {copiedId === 'scene_desc' ? (
                             <>
                               <Check className="w-3 h-3 text-emerald-400" />
-                              <span className="text-emerald-400 text-[10px]">已复制</span>
+                              <span className="text-emerald-400 text-[9px]">已复制</span>
                             </>
                           ) : (
                             <>
                               <Copy className="w-3 h-3" />
-                              <span className="text-[10px]">复制</span>
+                              <span className="text-[9px]">复制</span>
                             </>
                           )}
                         </button>
-                        {!heroImage && (
+                        {!displayedHeroImage && (
                           <button
                             onClick={() => setIsHeroCollapsed(true)}
-                            className="flex items-center gap-0.5 text-[11px] text-slate-400 hover:text-slate-200 px-1.5 py-0.5 rounded bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 transition"
+                            className="flex items-center gap-0.5 text-[10px] text-slate-400 hover:text-slate-200 px-1.5 py-0.5 rounded bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 transition"
                             title="收起场景信息"
                           >
-                            <ChevronUp className="w-3.5 h-3.5" />
+                            <ChevronUp className="w-3 h-3" />
                           </button>
                         )}
                       </div>
                     </div>
                     {/* 场景描述文本 */}
                     <div className="text-slate-300/90 select-text">
-                      <p className={`whitespace-pre-line ${!isDescExpanded ? 'line-clamp-2 sm:line-clamp-3' : ''}`}>
+                      <p className={`whitespace-pre-line ${!isDescExpanded ? 'line-clamp-2' : ''}`}>
                         {currentScene.description}
                       </p>
                       {currentScene.description && currentScene.description.length > 80 && (
                         <button
                           onClick={() => setIsDescExpanded(!isDescExpanded)}
-                          className="mt-1 text-[11px] text-amber-400/80 hover:text-amber-300 underline font-sans"
+                          className="mt-0.5 text-[10px] text-amber-400/80 hover:text-amber-300 underline font-sans"
                         >
                           {isDescExpanded ? '收起描述' : '展开全文'}
                         </button>
@@ -480,10 +468,10 @@ export default function StoryStream({
           )}
         </div>
 
-        {/* 历史消息流与对话区 - 独立向下滚动，不会滚走顶部的焦点图 */}
+        {/* 历史消息流与对话区 - 独立向下滚动，至少占画面大半空间 */}
         <div
           ref={scrollRef}
-          className="relative flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-3 space-y-5"
+          className="relative flex-1 min-h-[35vh] overflow-y-auto px-4 sm:px-6 py-2.5 space-y-4"
         >
 
         {/* 历史消息流 */}

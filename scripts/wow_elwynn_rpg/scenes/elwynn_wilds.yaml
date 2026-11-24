@@ -1,0 +1,151 @@
+id: "elwynn_wilds"
+title: "野外 · 艾尔文密林与哨岗"
+background: "【场景全景】阳光斑驳的艾尔文古老森林，高大橡树阴影间潜伏着灰狼与迪菲亚游荡盗贼，前方哨岗旁立着精灵斥候"
+foreground: "【角色立绘】巡林者艾莲娜·迅箭 · 披着墨绿披风、手握银叶长弓的暴风城哨兵斥候"
+hero_image: "【焦点插画】艾尔文森林岔路口与法戈第矿洞警示木牌"
+music: "/assets/bgm/elwynn_forest.mp3"
+
+description: |
+  踏出北郡山谷，参天古树交织成一片幽深而壮丽的艾尔文密林。阳光穿过茂密的橡树枝叶，在铺满苔藓的石径上投下斑驳光影。
+  林间并不平静——饥饿的艾尔文森林灰狼在灌木后游曳，佩戴红色面罩的迪菲亚劫掠者也在附近扎营窥伺。
+  路旁一处隐蔽的木制哨岗下，巡林者艾莲娜·迅箭正蹲身检查地面残留的黑色蛛丝与腐蚀毒液。通往法戈第蛛网矿洞的入口就在前方山坡下。
+
+visuals:
+  background: "【场景全景】阳光斑驳的艾尔文古老森林，高大橡树阴影间潜伏着灰狼与迪菲亚游荡盗贼，前方哨岗旁立着精灵斥候"
+  foreground: "【角色立绘】巡林者艾莲娜·迅箭 · 披着墨绿披风、手握银叶长弓的暴风城哨兵斥候"
+  hero_image: "【焦点插画】艾尔文森林岔路口与法戈第矿洞警示木牌"
+  atmosphere: "林涛沙沙、危机暗伏、战意升腾"
+  decorations:
+    - id: "elwynn_ancient_vines"
+      name: "艾尔文古藤"
+      image: "/assets/props/vines.png"
+      side: "left"
+      category: "env"
+      tag: "荒野植被"
+      caption: "古树垂藤"
+      tooltip: "缠绕在百年橡树干上的粗壮森林藤蔓，遮蔽了野兽与盗贼的踪迹"
+
+decorations: []
+
+npcs:
+  - id: "elena_swiftarrow"
+    name: "巡林者艾莲娜·迅箭"
+    avatar: "/assets/characters/elena_swiftarrow.png"
+    greeting: "嘘……看地上的黑色粘液，法戈第矿洞里的蜘蛛领主阿拉克诺斯正在孵化新巢。单靠一个人冲进去必死无疑，我们必须分工合作！"
+
+actions:
+  - id: "talk_elena_coop"
+    label: "【结伴合作】与巡林者艾莲娜交换矿洞情报并约定协同入洞"
+    type: "interact"
+    target_npc: "elena_swiftarrow"
+    condition:
+      variables:
+        ally_recruited: false
+    on_success:
+      gain_item: "照明信号箭"
+      variables:
+        ally_recruited: true
+      visuals:
+        foreground: "【角色立绘】巡林者艾莲娜·迅箭 · 递来闪烁微光的照明信号箭"
+        hero_image: "【小队结盟】两位冒险者在森林哨岗击掌立约，共赴法戈第矿洞"
+      message: "艾莲娜凝视着你手中的武器，露出一丝赞许的微笑：‘好，有你这位强力战友，胜算大增！拿着这支【照明信号箭】，进洞后你负责正面破防与主攻，我负责照亮暗角、狙击幼蛛并牵制蜘蛛领主侧翼！’"
+
+  - id: "hunt_elwynn_prowler"
+    label: "【野外狩猎】施展职业技能伏击艾尔文森林灰狼群"
+    type: "check"
+    skill: "agility"
+    difficulty: 11
+    condition:
+      variables:
+        wilds_wolf_cleared: false
+    on_success:
+      gain_item: "优质狼皮"
+      hp_delta: -8
+      variables:
+        wilds_wolf_cleared: true
+        xp: 220
+      visuals:
+        foreground: ""
+        hero_image: "【荒野狩猎】狼群在职业技能的凌厉攻势下溃散"
+      message: "你精准预判了头狼的扑击轨迹，连招瞬发将灰狼群击溃！收获【优质狼皮】并获得实战经验（当前 XP 提升至 220）。"
+    on_failure:
+      hp_delta: -15
+      message: "一头狡猾的成年灰狼从侧后灌木扑出咬伤了你的护腿（HP -15），你稳住阵型才逼退了狼群。"
+
+  - id: "clear_defias_camp"
+    label: "【野外讨伐】清剿迪菲亚强盗营地，夺取解毒草药与补给"
+    type: "check"
+    skill: "strength"
+    difficulty: 11
+    condition:
+      variables:
+        wilds_defias_cleared: false
+    on_success:
+      gain_item: "银叶解毒草"
+      gold_delta: 30
+      hp_delta: -10
+      variables:
+        wilds_defias_cleared: true
+        xp: 320
+      visuals:
+        foreground: ""
+        hero_image: "【战利品特写】迪菲亚营地缴获的银叶解毒草与钱袋"
+      message: "你与艾莲娜的哨箭形成夹击，顺利击溃了这支迪菲亚盗贼小队！在营地木箱中搜出【银叶解毒草】与 30 金币（当前 XP 达 320，已满足 Lv.3 突破条件！）。"
+    on_failure:
+      hp_delta: -16
+      message: "迪菲亚盗贼掷出致盲飞沙，打乱了你的进攻节奏（HP -16）。整理架势后可再次进攻。"
+
+  - id: "brew_cave_antidote"
+    label: "【战前整备】用【银叶解毒草】调配矿洞专用抗毒合剂"
+    type: "interact"
+    condition:
+      has_item: "银叶解毒草"
+      variables:
+        antidote_prepared: false
+    on_success:
+      consume_item: "银叶解毒草"
+      remove_inventory:
+        - "银叶解毒草"
+      gain_item: "抗毒合剂"
+      variables:
+        antidote_prepared: true
+      message: "在艾莲娜的草药学指导下，你将银叶草碾碎熬制，封装成一瓶碧绿澄澈的【抗毒合剂】，可在蜘蛛领主战前饮用。"
+
+  - id: "upgrade_to_lv3"
+    label: "【等级突破 Lv.2 → Lv.3】总结荒野实战经验，提升全属性与核心技能至 Lv.3"
+    type: "interact"
+    target_npc: "elena_swiftarrow"
+    condition:
+      variables:
+        level: 2
+        wilds_wolf_cleared: true
+        wilds_defias_cleared: true
+    on_success:
+      hp_delta: 30
+      san_delta: 8
+      attributes_delta:
+        strength: 3
+        agility: 3
+        intelligence: 3
+        constitution: 3
+        perception: 2
+      variables:
+        level: 3
+        xp: 320
+        xp_next: 700
+        skill_rank: 3
+        skills: "核心职业技能全员晋升至 Lv.3（解锁合作爆发连携）"
+      visuals:
+        foreground: "【角色立绘】巡林者艾莲娜·迅箭 · 对你的成长赞叹不已"
+        hero_image: "【等级跃升】星辰与魔力交汇！角色晋升 Lv.3，属性大幅增长，技能迈入 Lv.3"
+      message: "经历艾尔文荒野的连续恶战，你的战技与魔力回路完成蜕变！成功晋升【Lv.3】！全属性大幅增长，职业技能全部升级至【Lv.3】，已具备挑战法戈第蜘蛛领主的实力！"
+
+  - id: "enter_fargodeep_cave"
+    label: "穿过阴冷矿洞木架，深入【洞穴 · 法戈第蛛网矿洞】"
+    type: "transition"
+    target_scene: "fargodeep_cave"
+
+  - id: "return_to_northshire"
+    label: "沿林间石径返回【新手村 · 北郡修道院】"
+    type: "transition"
+    target_scene: "northshire_abbey"

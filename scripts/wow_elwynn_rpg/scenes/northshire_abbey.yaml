@@ -1,0 +1,299 @@
+id: "northshire_abbey"
+title: "新手村 · 北郡修道院"
+background: "【场景全景】艾尔文森林·北郡修道院晨光广场，石砌钟楼与圣光旗帜矗立在绿茵山谷之中"
+foreground: "【角色立绘】治安官麦格布莱德 · 身披蓝金相间暴风城狮头战袍的资深指挥官"
+hero_image: "【焦点插画】北郡修道院圣光祭坛与暴风城新兵征召榜"
+music: "/assets/bgm/northshire_dawn.mp3"
+
+description: |
+  清晨的薄雾正从艾尔文森林苍翠的树梢间散去，北郡修道院高耸的石砌钟楼敲响了晨祷钟声。
+  石阶广场上飘扬着蓝金相间的暴风城雄狮战旗，几名神色严峻的卫兵正低声清点着战备补给。
+  修道院大门前，治安官麦格布莱德双臂抱胸站在征召榜旁。南方的法戈第矿洞近日频频传出蜘蛛异动与毒雾蔓延的坏消息，
+  暴风城急需新的英雄挺身而出——在你踏上艾泽拉斯的冒险之前，必须先觉醒属于自己的种族血脉与职业技艺。
+
+visuals:
+  background: "【场景全景】艾尔文森林·北郡修道院晨光广场，石砌钟楼与圣光旗帜矗立在绿茵山谷之中"
+  foreground: "【角色立绘】治安官麦格布莱德 · 身披蓝金相间暴风城狮头战袍的资深指挥官"
+  hero_image: "【焦点插画】北郡修道院圣光祭坛与暴风城新兵征召榜"
+  atmosphere: "晨光熹微、庄严肃穆、号角蓄势"
+  decorations: []
+
+decorations: []
+
+npcs:
+  - id: "marshal_mcbride"
+    name: "治安官麦格布莱德"
+    avatar: "/assets/characters/marshal_mcbride.png"
+    greeting: "圣光保佑你，年轻的冒险者！先选定你的种族与职业之道，再完成北郡新兵试炼吧。切记，法戈第矿洞的蜘蛛领主绝非一人之力可敌。"
+
+actions:
+  - id: "choose_human_paladin"
+    label: "【开局抉择】人类 · 圣骑士（初始技能：十字军打击/圣光闪现/虔诚光环 Lv.1）"
+    type: "interact"
+    target_npc: "marshal_mcbride"
+    condition:
+      variables:
+        class_selected: false
+    on_success:
+      attributes_delta:
+        strength: 4
+        intelligence: 3
+        constitution: 3
+        perception: 1
+      equip_outfit:
+        top:
+          id: "paladin_chainmail"
+          name: "银白新兵锁甲胸铠"
+          desc: "刻有白银之手微记的制式锁甲，兼具防御与圣光导魔性。"
+          tag: "圣骑士 · 锁甲"
+        accessory:
+          id: "silver_hand_libram"
+          name: "白银之手训练圣契与战锤"
+          desc: "象征圣骑士誓言的入门圣契与战锤，释放圣光技能时隐隐发光。"
+          tag: "圣光 · 职业武装"
+      variables:
+        class_selected: true
+        race: "人类"
+        class_name: "圣骑士"
+        class_id: "paladin"
+        level: 1
+        xp: 0
+        xp_next: 100
+        skill_rank: 1
+        skills: "十字军打击 Lv.1 · 圣光闪现 Lv.1 · 虔诚光环 Lv.1"
+      visuals:
+        hero_image: "【职业觉醒】白银之手圣光照耀人类圣骑士徽记"
+      message: "圣光在你掌心燃起温暖金芒！你觉醒为【人类 · 圣骑士】，力量+4、智力+3、体质+3，掌握初始技能：十字军打击 Lv.1、圣光闪现 Lv.1、虔诚光环 Lv.1。"
+
+  - id: "choose_nightelf_hunter"
+    label: "【开局抉择】暗夜精灵 · 猎人（初始技能：奥术射击/毒蛇钉刺/猎豹守护 Lv.1）"
+    type: "interact"
+    target_npc: "marshal_mcbride"
+    condition:
+      variables:
+        class_selected: false
+    on_success:
+      attributes_delta:
+        agility: 5
+        perception: 3
+        constitution: 2
+        strength: 1
+      equip_outfit:
+        top:
+          id: "moonshadow_leather"
+          name: "月影游侠轻革猎装"
+          desc: "泰达希尔工艺缝制的暗青色皮甲，在林间穿梭几乎毫无声响。"
+          tag: "猎人 · 皮甲"
+        accessory:
+          id: "darnassus_longbow"
+          name: "达纳苏斯紫杉长弓"
+          desc: "弓臂柔韧而精准的精灵训练弓，自带月神祝福箭袋。"
+          tag: "远程 · 职业武装"
+      variables:
+        class_selected: true
+        race: "暗夜精灵"
+        class_name: "猎人"
+        class_id: "hunter"
+        level: 1
+        xp: 0
+        xp_next: 100
+        skill_rank: 1
+        skills: "奥术射击 Lv.1 · 毒蛇钉刺 Lv.1 · 猎豹守护 Lv.1"
+      visuals:
+        hero_image: "【职业觉醒】艾露恩银辉萦绕的暗夜精灵紫杉长弓"
+      message: "银月清辉映照你的双眸！你觉醒为【暗夜精灵 · 猎人】，敏捷+5、感知+3、体质+2，掌握初始技能：奥术射击 Lv.1、毒蛇钉刺 Lv.1、猎豹守护 Lv.1。"
+
+  - id: "choose_gnome_mage"
+    label: "【开局抉择】侏儒 · 法师（初始技能：火球术/寒冰箭/奥术智慧 Lv.1）"
+    type: "interact"
+    target_npc: "marshal_mcbride"
+    condition:
+      variables:
+        class_selected: false
+    on_success:
+      attributes_delta:
+        intelligence: 5
+        perception: 3
+        agility: 2
+        constitution: 1
+      equip_outfit:
+        top:
+          id: "dalaran_apprentice_robe"
+          name: "紫罗兰肯瑞托学徒法袍"
+          desc: "绣有银色奥术符文的深紫长袍，能汇聚周围游离的元素魔力。"
+          tag: "法师 · 布甲"
+        accessory:
+          id: "arcane_spark_staff"
+          name: "奥术微光短杖"
+          desc: "镶嵌着微型蓝宝石的法师手杖，助你稳定引导火焰与冰霜法术。"
+          tag: "奥术 · 职业武装"
+      variables:
+        class_selected: true
+        race: "侏儒"
+        class_name: "法师"
+        class_id: "mage"
+        level: 1
+        xp: 0
+        xp_next: 100
+        skill_rank: 1
+        skills: "火球术 Lv.1 · 寒冰箭 Lv.1 · 奥术智慧 Lv.1"
+      visuals:
+        hero_image: "【职业觉醒】紫罗兰奥术符文阵与元素火球术法杖"
+      message: "奥术星芒在你指尖跃动！你觉醒为【侏儒 · 法师】，智力+5、感知+3、敏捷+2，掌握初始技能：火球术 Lv.1、寒冰箭 Lv.1、奥术智慧 Lv.1。"
+
+  - id: "choose_dwarf_warrior"
+    label: "【开局抉择】矮人 · 战士（初始技能：英勇打击/雷霆一击/盾牌格挡 Lv.1）"
+    type: "interact"
+    target_npc: "marshal_mcbride"
+    condition:
+      variables:
+        class_selected: false
+    on_success:
+      attributes_delta:
+        strength: 4
+        constitution: 5
+        agility: 1
+        perception: 1
+      equip_outfit:
+        top:
+          id: "ironforge_breastplate"
+          name: "铁炉堡锻钢重胸甲"
+          desc: "由黑铁砧炉锤炼百次的厚实板甲，能硬生生弹开野兽利爪。"
+          tag: "战士 · 板甲"
+        accessory:
+          id: "dwarven_warshield"
+          name: "铁炉堡橡木镶铁战盾与战斧"
+          desc: "沉稳厚重的矮人防具，配有一柄顺手的单手战斧。"
+          tag: "盾战 · 职业武装"
+      variables:
+        class_selected: true
+        race: "矮人"
+        class_name: "战士"
+        class_id: "warrior"
+        level: 1
+        xp: 0
+        xp_next: 100
+        skill_rank: 1
+        skills: "英勇打击 Lv.1 · 雷霆一击 Lv.1 · 盾牌格挡 Lv.1"
+      visuals:
+        hero_image: "【职业觉醒】铁炉堡熔火纹章战盾与钢铁战斧"
+      message: "铁炉堡的山丘之力在你血脉中奔涌！你觉醒为【矮人 · 战士】，力量+4、体质+5、敏捷+1，掌握初始技能：英勇打击 Lv.1、雷霆一击 Lv.1、盾牌格挡 Lv.1。"
+
+  - id: "talk_mcbride_quest"
+    label: "向治安官麦格布莱德请命，接取《清剿法戈第蛛灾》任务并领取军饷"
+    type: "interact"
+    target_npc: "marshal_mcbride"
+    condition:
+      variables:
+        class_selected: true
+        mcbride_quest_accepted: false
+    on_success:
+      gold_delta: 20
+      gain_item: "北郡军令状"
+      variables:
+        mcbride_quest_accepted: true
+      visuals:
+        foreground: "【角色立绘】治安官麦格布莱德 · 展开艾尔文军事羊皮卷"
+      message: "麦格布莱德将盖有暴风城火漆的【北郡军令状】与 20 枚金币交到你手中：‘先在修道院外围磨炼技能，再前往艾尔文野外与斥候艾莲娜汇合！只有两人配合，才能拿下矿洞深处的蜘蛛领主！’"
+
+  - id: "northshire_wolf_trial"
+    label: "【新手试炼】运用初始技能清剿修道院外围灰狼与狗头人斥候"
+    type: "check"
+    skill: "perception"
+    difficulty: 9
+    condition:
+      variables:
+        class_selected: true
+        northshire_trial_done: false
+    on_success:
+      xp: 100
+      hp_delta: -6
+      gold_delta: 15
+      gain_item: "狗头人蜡烛碎块"
+      variables:
+        northshire_trial_done: true
+        xp: 100
+      visuals:
+        foreground: ""
+        hero_image: "【战斗特写】修道院林边击溃偷蜡烛的狗头人斥候"
+      message: "你果断施展 Lv.1 初始职业技能，漂亮地击退了潜伏在修道院篱笆旁的森林灰狼与狗头人斥候！积累了宝贵战斗经验（XP +100），现在可以找治安官麦格布莱德突破等级了！"
+    on_failure:
+      hp_delta: -12
+      message: "狗头人趁你收招间隙挥舞矿镐偷袭，划伤了你的手臂（HP -12）。调整呼吸后你可以再次发起清剿。"
+
+  - id: "upgrade_to_lv2"
+    label: "【等级突破 Lv.1 → Lv.2】向麦格布莱德汇报战果，全面提升属性与技能等级"
+    type: "interact"
+    target_npc: "marshal_mcbride"
+    condition:
+      variables:
+        class_selected: true
+        northshire_trial_done: true
+        level: 1
+    on_success:
+      hp_delta: 25
+      san_delta: 5
+      attributes_delta:
+        strength: 2
+        agility: 2
+        intelligence: 2
+        constitution: 2
+        perception: 2
+      variables:
+        level: 2
+        xp: 100
+        xp_next: 300
+        skill_rank: 2
+        skills: "初始职业三技能全面晋升至 Lv.2（威力提升 35%，冷却缩短）"
+      visuals:
+        foreground: "【角色立绘】治安官麦格布莱德 · 授予新兵晋升嘉奖"
+        hero_image: "【等级跃升】金光涌动！角色晋升 Lv.2，全属性提升，技能迈入 Lv.2"
+      message: "麦格布莱德满意地点了点头，亲自指点你发力与施法的窍门！你成功晋升至【Lv.2】！全基础属性 +2、生命恢复，所有初始职业技能正式突破至【Lv.2】！"
+
+  - id: "drink_healing_potion_village"
+    label: "饮用随身携带的【初级治疗药水】恢复生命值"
+    type: "interact"
+    condition:
+      has_item: "初级治疗药水"
+    on_success:
+      consume_item: "初级治疗药水"
+      remove_inventory:
+        - "初级治疗药水"
+      hp_delta: 40
+      message: "甘甜而温暖的炼金药液顺喉而下，身上的擦伤迅速愈合（HP +40）。"
+
+  - id: "turn_in_boss_materials"
+    label: "【凯旋交差】向麦格布莱德呈交蜘蛛领主掉落材料，锻造暴风城英雄披风"
+    type: "interact"
+    target_npc: "marshal_mcbride"
+    condition:
+      has_item: "幽暗蛛王丝"
+      variables:
+        boss_defeated: true
+        quest_completed: false
+    on_success:
+      consume_item: "幽暗蛛王丝"
+      remove_inventory:
+        - "幽暗蛛王丝"
+      gold_delta: 150
+      san_delta: 10
+      equip_outfit:
+        outer:
+          id: "stormwind_hero_cloak"
+          name: "蛛丝织锦·暴风城守望者披风"
+          desc: "由幽暗蛛王丝与暴风城金线混纺而成的稀有披风，刀剑难伤、剧毒不侵。"
+          tag: "史诗掉落打造 · 外套"
+      variables:
+        quest_completed: true
+      visuals:
+        foreground: "【角色立绘】治安官麦格布莱德 · 肃立敬礼授予英雄披风"
+        hero_image: "【史诗成就】艾尔文英雄归来！法戈第矿洞危机彻底解除"
+      message: "麦格布莱德接过珍贵的【幽暗蛛王丝】，高声赞叹你的勇武！修道院工匠连夜为你织就【蛛丝织锦·暴风城守望者披风】并赏赐 150 金币。北郡的钟声为你而鸣，艾泽拉斯记住了你的名字！"
+
+  - id: "go_to_wilds"
+    label: "沿艾尔文大道南下，前往【野外 · 艾尔文密林与哨岗】"
+    type: "transition"
+    target_scene: "elwynn_wilds"
+    condition:
+      variables:
+        class_selected: true

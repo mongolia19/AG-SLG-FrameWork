@@ -54,7 +54,8 @@ def health() -> Dict[str, Any]:
 @app.get("/api/scenarios")
 def list_scenarios():
     scenarios = scenario_manager.list_scenarios()
-    return {"scenarios": scenarios}
+    items = scenario_manager.list_scenario_summaries()
+    return {"scenarios": scenarios, "items": items}
 
 
 @app.get("/api/scenarios/{scenario_id}")

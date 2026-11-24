@@ -1,0 +1,59 @@
+id: "wow_elwynn_rpg"
+title: "艾泽拉斯传说：法戈第矿洞之影"
+version: "1.0.0"
+author: "AG-SLG Studio Co-pilot"
+initial_scene: "northshire_abbey"
+
+initial_player_state:
+  name: "艾泽拉斯新兵"
+  hp: 100
+  san: 95
+  gold: 10
+  attributes:
+    strength: 10
+    agility: 10
+    intelligence: 10
+    constitution: 10
+    perception: 10
+  inventory:
+    - id: "炉石"
+      name: "炉石（北郡修道院）"
+      desc: "刻有温暖蓝白符文的魔法石，将灵魂绑定在北郡修道院的旅店炉火旁。"
+    - id: "初级治疗药水"
+      name: "初级治疗药水"
+      desc: "暴风城炼金师配制的红色恢复药瓶，紧急时刻饮下可快速愈合伤势。"
+  outfit:
+    top:
+      id: "recruit_tunic"
+      name: "新兵粗麻衬衣"
+      desc: "艾尔文新兵入伍时配发的轻便衬衣，等待着被职业护甲替换。"
+      tag: "初始 · 上装"
+    bottom:
+      id: "elwynn_trousers"
+      name: "艾尔文耐磨旅人长裤"
+      desc: "深棕色厚帆布长裤，能抵御森林荆棘刮擦。"
+      tag: "耐磨 · 下装"
+    shoes:
+      id: "stormwind_boots"
+      name: "暴风城制式皮靴"
+      desc: "鞋底钉有防滑铜钉的军旅皮靴，适合在碎石路与潮湿矿洞中行进。"
+      tag: "防滑 · 鞋履"
+  variables:
+    class_selected: false
+    race: "未选择"
+    class_name: "待定"
+    class_id: ""
+    level: 1
+    xp: 0
+    xp_next: 100
+    skill_rank: 1
+    skills: "尚未觉醒职业技能"
+    northshire_trial_done: false
+    mcbride_quest_accepted: false
+    wilds_wolf_cleared: false
+    wilds_defias_cleared: false
+    ally_recruited: false
+    antidote_prepared: false
+    coop_synergy: false
+    boss_defeated: false
+    quest_completed: false

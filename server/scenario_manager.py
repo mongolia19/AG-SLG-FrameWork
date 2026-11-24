@@ -358,6 +358,26 @@ class ScenarioManager:
             if p.is_dir() and (p / "world.yaml").exists()
         ]
 
+    def list_scenario_summaries(self) -> List[Dict[str, str]]:
+        """Return list of scenarios with id and title from world.yaml."""
+        if not self.base_dir.exists():
+            return []
+        summaries: List[Dict[str, str]] = []
+        for p in self.base_dir.iterdir():
+            if p.is_dir():
+                world_file = p / "world.yaml"
+                if world_file.exists():
+                    title = p.name
+                    try:
+                        with open(world_file, "r", encoding="utf-8") as f:
+                            data = yaml.safe_load(f) or {}
+                            title = data.get("title") or p.name
+                    except Exception:
+                        pass
+                    summaries.append({"id": p.name, "title": title})
+        # Sort with island_survival first or stable order
+        return sorted(summaries, key=lambda s: 0 if s["id"] == "island_survival" else (1 if s["id"] == "wow_elwynn_rpg" else 2))
+
     def load_scenario(self, scenario_id: str) -> ScenarioSpec:
         scenario_path = self.base_dir / scenario_id
         world_file = scenario_path / "world.yaml"

@@ -1,0 +1,291 @@
+id: "fargodeep_cave"
+title: "洞穴 · 法戈第蛛网矿洞"
+background: "【场景全景】阴暗潮湿的废弃矿洞深处，巨型蛛网悬垂于朽坏矿柱之间，幽绿毒雾在洞窟底部翻涌"
+foreground: "【角色立绘】巡林者艾莲娜·迅箭 · 搭箭上弦紧盯岩顶阴影的战友"
+hero_image: "【Boss 特写】法戈第蜘蛛领主·阿拉克诺斯 · 覆满紫黑甲壳与毒腺的巨型蛛王"
+music: "/assets/bgm/fargodeep_boss.mp3"
+
+description: |
+  踏入法戈第矿洞，刺骨的阴寒与腐败甜腻的毒雾扑面而来。原本属于暴风城矿工的木轨早已生锈倾覆，四周岩壁被厚如棉絮的惨白蛛网层层包裹。
+  矿洞穹顶倒悬着数以百计的鼓胀蛛卵，最深处的巨型岩台上，盘踞着令人窒息的巨兽——【蜘蛛领主·阿拉克诺斯】。
+  它八只复眼闪烁着残忍的幽绿寒光，粗壮螯肢滴落着腐蚀岩石的剧毒。若没有同伴协助破除陷阱并牵制其侧翼，任何单独闯入者都会瞬间沦为蛛网中的猎物！
+
+visuals:
+  background: "【场景全景】阴暗潮湿的废弃矿洞深处，巨型蛛网悬垂于朽坏矿柱之间，幽绿毒雾在洞窟底部翻涌"
+  foreground: "【角色立绘】巡林者艾莲娜·迅箭 · 搭箭上弦紧盯岩顶阴影的战友"
+  hero_image: "【Boss 特写】法戈第蜘蛛领主·阿拉克诺斯 · 覆满紫黑甲壳与毒腺的巨型蛛王"
+  atmosphere: "幽暗阴寒、蛛丝密布、杀机四伏"
+  decorations:
+    - id: "fargodeep_ore_rocks"
+      name: "矿洞玄武岩壁"
+      image: "/assets/props/rocks.png"
+      side: "left"
+      category: "env"
+      tag: "矿洞地形"
+      caption: "潮湿矿石壁"
+      tooltip: "残留着铜矿脉与腐蚀蛛液痕迹的深邃洞壁"
+
+decorations: []
+
+npcs:
+  - id: "elena_swiftarrow"
+    name: "巡林者艾莲娜·迅箭"
+    avatar: "/assets/characters/elena_swiftarrow.png"
+    greeting: "别急着冲上去！先和我配合放出照明信号、清掉洞顶的潜伏蛛网，暴露出蜘蛛领主的腹部弱点后再一起集火！"
+
+actions:
+  - id: "coop_clear_webs"
+    label: "【洞穴合作 · 第一阶段】与艾莲娜协同释放照明信号箭，焚毁主蛛网并锁定Boss弱点"
+    type: "check"
+    skill: "perception"
+    difficulty: 10
+    condition:
+      variables:
+        ally_recruited: true
+        coop_synergy: false
+        boss_defeated: false
+    on_success:
+      consume_item: "照明信号箭"
+      remove_inventory:
+        - "照明信号箭"
+      san_delta: 6
+      variables:
+        coop_synergy: true
+      visuals:
+        foreground: "【角色立绘】巡林者艾莲娜·迅箭 · 精准射出穿云破网连珠箭"
+        hero_image: "【合作战术】照明火光驱散矿洞黑暗！蜘蛛领主腹部软甲暴露无遗"
+      message: "你高举信号箭吸引岩顶幼蛛注意，艾莲娜借着灼热火光连发三箭，瞬间烧穿了笼罩战场的巨型毒网！【合作连携已激活】——蜘蛛领主的腹部软甲彻底暴露，Boss 决战难度大幅下降！"
+    on_failure:
+      hp_delta: -12
+      message: "潮湿的空气延缓了火光扩散，一团粘稠蛛丝差点封住你的左臂（HP -12）。艾莲娜急忙一箭斩断蛛丝，你们重新站稳阵脚，随时可以再次尝试配合破网。"
+
+  - id: "use_antidote_before_boss"
+    label: "【战前准备】饮用【抗毒合剂】增强毒抗并恢复体力"
+    type: "interact"
+    condition:
+      has_item: "抗毒合剂"
+      variables:
+        boss_defeated: false
+    on_success:
+      consume_item: "抗毒合剂"
+      remove_inventory:
+        - "抗毒合剂"
+      hp_delta: 25
+      attributes_delta:
+        constitution: 2
+      message: "清凉的草药灵流流遍全身（HP +25，体质 +2），法戈第矿洞中的幽绿毒雾瞬间对你失去了侵蚀力！"
+
+  - id: "coop_boss_paladin"
+    label: "【合作决战 · 圣骑士】与艾莲娜左右夹击，释放 Lv.3 十字军打击圣光裁决蜘蛛领主！"
+    type: "check"
+    skill: "strength"
+    difficulty: 12
+    condition:
+      variables:
+        class_id: "paladin"
+        coop_synergy: true
+        boss_defeated: false
+    on_success:
+      gain_item: "幽暗蛛王丝"
+      gold_delta: 120
+      hp_delta: 15
+      san_delta: 15
+      attributes_delta:
+        strength: 3
+        agility: 2
+        intelligence: 3
+        constitution: 3
+        perception: 2
+      variables:
+        boss_defeated: true
+        level: 4
+        xp: 800
+        xp_next: 1400
+        skill_rank: 4
+        skills: "十字军打击 Lv.4 · 圣光闪现 Lv.4 · 虔诚光环 Lv.4（大师级觉醒）"
+      visuals:
+        hero_image: "【Boss 战胜利】金色圣光轰碎阿拉克诺斯甲壳，珍稀材料散落岩台！"
+      message: "艾莲娜的冰霜箭雨稳稳锁住了蜘蛛领主的螯肢！你抓住瞬息破绽，金色战锤挟着 Lv.3 十字军打击怒劈其腹部软甲，轰然终结了蜘蛛领主·阿拉克诺斯！你晋升【Lv.4】（全属性与技能升级至 Lv.4），战利品【幽暗蛛王丝】与 120 金币已收入囊中！"
+    on_failure:
+      hp_delta: -22
+      message: "蜘蛛领主在临死挣扎中甩出毒液尾钩击飞了你的格挡（HP -22）！艾莲娜立刻发射震荡箭逼退巨蛛，你们重整圣光阵型准备下一轮合击！"
+
+  - id: "coop_boss_hunter"
+    label: "【合作决战 · 猎人】与艾莲娜双箭共鸣，释放 Lv.3 奥术射击贯通蜘蛛领主复眼！"
+    type: "check"
+    skill: "agility"
+    difficulty: 12
+    condition:
+      variables:
+        class_id: "hunter"
+        coop_synergy: true
+        boss_defeated: false
+    on_success:
+      gain_item: "幽暗蛛王丝"
+      gold_delta: 120
+      hp_delta: 15
+      san_delta: 15
+      attributes_delta:
+        strength: 2
+        agility: 4
+        intelligence: 2
+        constitution: 3
+        perception: 3
+      variables:
+        boss_defeated: true
+        level: 4
+        xp: 800
+        xp_next: 1400
+        skill_rank: 4
+        skills: "奥术射击 Lv.4 · 毒蛇钉刺 Lv.4 · 猎豹守护 Lv.4（大师级觉醒）"
+      visuals:
+        hero_image: "【Boss 战胜利】双弓流光贯穿蛛王头颅，珍稀材料散落岩台！"
+      message: "艾莲娜率先射断蜘蛛领主左侧步足使其失衡！你借势腾空，Lv.3 奥术射击与毒蛇钉刺化作致命银芒精准贯穿蛛王中枢复眼！蜘蛛领主·阿拉克诺斯轰然倒地！你晋升【Lv.4】（全属性与技能升级至 Lv.4），掉落【幽暗蛛王丝】与 120 金币！"
+    on_failure:
+      hp_delta: -20
+      message: "蜘蛛领主喷吐大片浓雾遮蔽了弹道，螯肢擦伤了你的肩甲（HP -20）。艾莲娜掩护你翻滚脱身，蓄力准备再次齐射！"
+
+  - id: "coop_boss_mage"
+    label: "【合作决战 · 法师】借艾莲娜掩护破甲，引导 Lv.3 火球术暴燃引爆蜘蛛领主！"
+    type: "check"
+    skill: "intelligence"
+    difficulty: 12
+    condition:
+      variables:
+        class_id: "mage"
+        coop_synergy: true
+        boss_defeated: false
+    on_success:
+      gain_item: "幽暗蛛王丝"
+      gold_delta: 120
+      hp_delta: 15
+      san_delta: 15
+      attributes_delta:
+        strength: 1
+        agility: 2
+        intelligence: 4
+        constitution: 3
+        perception: 3
+      variables:
+        boss_defeated: true
+        level: 4
+        xp: 800
+        xp_next: 1400
+        skill_rank: 4
+        skills: "火球术 Lv.4 · 寒冰箭 Lv.4 · 奥术智慧 Lv.4（大师级觉醒）"
+      visuals:
+        hero_image: "【Boss 战胜利】炽烈奥术炎爆吞噬蜘蛛领主，珍稀材料散落岩台！"
+      message: "艾莲娜用精准箭矢打断了蜘蛛领主的扑击蓄力！你从容念完咒文，Lv.3 寒冰箭冻结其关节后紧接一发炽烈火球术引爆它体内的可燃毒囊，轰碎了蜘蛛领主·阿拉克诺斯！你晋升【Lv.4】（全属性与技能升级至 Lv.4），掉落【幽暗蛛王丝】与 120 金币！"
+    on_failure:
+      hp_delta: -22
+      message: "矿洞顶部的碎石落下打断了你的施法吟唱，毒液溅射造成伤害（HP -22）。艾莲娜迅速拉你退至石柱后方重整魔力！"
+
+  - id: "coop_boss_warrior"
+    label: "【合作决战 · 战士】架盾顶住Boss冲锋，与艾莲娜合击释放 Lv.3 英勇打击斩杀蛛王！"
+    type: "check"
+    skill: "strength"
+    difficulty: 12
+    condition:
+      variables:
+        class_id: "warrior"
+        coop_synergy: true
+        boss_defeated: false
+    on_success:
+      gain_item: "幽暗蛛王丝"
+      gold_delta: 120
+      hp_delta: 15
+      san_delta: 15
+      attributes_delta:
+        strength: 4
+        agility: 2
+        intelligence: 1
+        constitution: 4
+        perception: 2
+      variables:
+        boss_defeated: true
+        level: 4
+        xp: 800
+        xp_next: 1400
+        skill_rank: 4
+        skills: "英勇打击 Lv.4 · 雷霆一击 Lv.4 · 盾牌格挡 Lv.4（大师级觉醒）"
+      visuals:
+        hero_image: "【Boss 战胜利】矮人战斧劈碎蜘蛛领主核心，珍稀材料散落岩台！"
+      message: "你用盾牌格挡硬生生扛住蛛王雷霆万钧的扑击，一记雷霆一击震裂地面！艾莲娜箭矢贯穿其腹甲瞬间，你怒吼着劈出 Lv.3 英勇打击，一斧枭首蜘蛛领主·阿拉克诺斯！你晋升【Lv.4】（全属性与技能升级至 Lv.4），掉落【幽暗蛛王丝】与 120 金币！"
+    on_failure:
+      hp_delta: -20
+      message: "巨蛛的冲撞力道震麻了你的持盾手臂（HP -20），所幸艾莲娜一箭射中其复眼替你解围！"
+
+  - id: "solo_boss_assault"
+    label: "【孤军强攻（高危）】不依赖合作战术，强行正面单挑蜘蛛领主（DC 18）"
+    type: "check"
+    skill: "constitution"
+    difficulty: 18
+    condition:
+      variables:
+        coop_synergy: false
+        boss_defeated: false
+    on_success:
+      gain_item: "幽暗蛛王丝"
+      gold_delta: 120
+      hp_delta: -15
+      san_delta: 12
+      attributes_delta:
+        strength: 3
+        agility: 3
+        intelligence: 3
+        constitution: 3
+        perception: 2
+      variables:
+        boss_defeated: true
+        level: 4
+        xp: 800
+        xp_next: 1400
+        skill_rank: 4
+        skills: "全职业核心技能晋升至 Lv.4（孤胆英雄奇迹）"
+      visuals:
+        hero_image: "【险胜 Boss】浴血硬撼蜘蛛领主，艰难斩落蛛王头颅"
+      message: "纵然四周蛛网密布、危机四伏，你仍凭过人的顽强体魄与超凡反应硬扛毒伤，历经苦战终于击杀蜘蛛领主·阿拉克诺斯！晋升【Lv.4】（全属性与技能升至 Lv.4），掉落【幽暗蛛王丝】与 120 金币！"
+    on_failure:
+      hp_delta: -35
+      san_delta: -8
+      message: "黑暗中的幼蛛与毒网瞬间从四面八方缠住了你的双脚！蜘蛛领主居高临下发动猛扑，你身负重创（HP -35）狼狈撤退。务必先在艾尔文野外招募艾莲娜并配合破除蛛网！"
+
+  - id: "loot_venom_gland"
+    label: "【搜刮 Boss 掉落材料】采集蜘蛛领主的【纯净毒囊结晶】"
+    type: "interact"
+    condition:
+      not_has_item: "纯净毒囊结晶"
+      variables:
+        boss_defeated: true
+    on_success:
+      gain_item: "纯净毒囊结晶"
+      visuals:
+        hero_image: "【掉落材料特写】散发幽蓝荧光的纯净毒囊结晶"
+      message: "你小心剖开蜘蛛领主·阿拉克诺斯的毒腺囊腔，取出一枚晶莹剔透、炼金师梦寐以求的【纯净毒囊结晶】！"
+
+  - id: "loot_boss_relic"
+    label: "【拾取 Boss 掉落装备】剥取【阿拉克诺斯暗牙护符】并佩戴"
+    type: "interact"
+    condition:
+      not_has_item: "暗牙护符"
+      variables:
+        boss_defeated: true
+    on_success:
+      gain_item: "暗牙护符"
+      equip_outfit:
+        neck:
+          id: "arachnos_fang_charm"
+          name: "阿拉克诺斯暗牙护符"
+          desc: "用蜘蛛领主最坚硬的一对主螯牙雕琢而成的稀有颈饰，隐隐散发威压。"
+          tag: "Boss 稀有掉落 · 颈饰"
+      attributes_delta:
+        perception: 2
+        agility: 2
+      visuals:
+        hero_image: "【掉落装备特写】泛着紫黑寒光的阿拉克诺斯暗牙护符"
+      message: "你拔下蜘蛛领主最锋利的主螯牙制成【阿拉克诺斯暗牙护符】佩戴于颈间（敏捷 +2、感知 +2）！"
+
+  - id: "return_to_wilds"
+    label: "离开法戈第矿洞，返回【野外 · 艾尔文密林与哨岗】"
+    type: "transition"
+    target_scene: "elwynn_wilds"

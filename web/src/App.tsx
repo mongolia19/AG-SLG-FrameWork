@@ -3,23 +3,63 @@ import PlayView from './components/play/PlayView';
 import StudioView from './components/studio/StudioView';
 import { BookOpen } from 'lucide-react';
 
+interface ScenarioItem {
+  id: string;
+  title: string;
+}
+
 export default function App() {
   const [mode, setMode] = useState<'play' | 'studio'>('play');
   const [selectedScenario, setSelectedScenario] = useState('island_survival');
-  const [scenarios, setScenarios] = useState<string[]>(['island_survival', 'black_crow_manor']);
+  const [scenarioItems, setScenarioItems] = useState<ScenarioItem[]>([
+    { id: 'island_survival', title: '🏝️ 荒岛余生' },
+    { id: 'wow_elwynn_rpg', title: '⚔️ 艾泽拉斯传说：法戈第矿洞之影' },
+    { id: 'black_crow_manor', title: '🏰 黑鸦公馆之夜' },
+  ]);
 
-  useEffect(() => {
+  const fetchScenarios = () => {
     fetch('/api/scenarios')
       .then((res) => res.json())
       .then((data) => {
-        if (data.scenarios && Array.isArray(data.scenarios)) {
-          setScenarios(data.scenarios);
-          if (data.scenarios.includes('island_survival')) {
+        if (data.items && Array.isArray(data.items) && data.items.length > 0) {
+          const formatted: ScenarioItem[] = data.items.map((it: any) => {
+            let prefix = '📜 ';
+            if (it.id === 'island_survival') prefix = '🏝️ ';
+            else if (it.id === 'wow_elwynn_rpg') prefix = '⚔️ ';
+            else if (it.id === 'black_crow_manor') prefix = '🏰 ';
+            return {
+              id: it.id,
+              title: it.title.startsWith('🏝️') || it.title.startsWith('⚔️') || it.title.startsWith('🏰') || it.title.startsWith('📜')
+                ? it.title
+                : `${prefix}${it.title}`,
+            };
+          });
+          setScenarioItems(formatted);
+          if (formatted.some((s) => s.id === selectedScenario)) {
+            // keep current
+          } else if (formatted.some((s) => s.id === 'island_survival')) {
             setSelectedScenario('island_survival');
+          } else {
+            setSelectedScenario(formatted[0].id);
           }
+        } else if (data.scenarios && Array.isArray(data.scenarios)) {
+          const list: ScenarioItem[] = data.scenarios.map((id: string) => ({
+            id,
+            title: id === 'island_survival' ? '🏝️ 荒岛余生' : id === 'wow_elwynn_rpg' ? '⚔️ 艾泽拉斯传说：法戈第矿洞之影' : id === 'black_crow_manor' ? '🏰 黑鸦公馆之夜' : `📜 ${id}`,
+          }));
+          setScenarioItems(list);
         }
       })
       .catch((e) => console.error(e));
+  };
+
+  useEffect(() => {
+    fetchScenarios();
+
+    // 监听外部或 Studio 新建/导入剧本事件，自动刷新剧本下拉列表
+    const handleUpdate = () => fetchScenarios();
+    window.addEventListener('ag_slg_scenario_updated', handleUpdate);
+    return () => window.removeEventListener('ag_slg_scenario_updated', handleUpdate);
   }, []);
 
   return (
@@ -38,16 +78,16 @@ export default function App() {
           <div className="h-4 w-px bg-slate-800 hidden sm:block" />
 
           {/* 剧本选择器 */}
-          <div className="flex items-center gap-1.5 text-xs text-slate-300 bg-slate-900/90 px-2.5 py-1 rounded-md border border-slate-700/60">
-            <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+          <div className="flex items-center gap-1.5 text-xs text-slate-300 bg-slate-900/90 px-2.5 py-1 rounded-md border border-slate-700/60 shadow-sm">
+            <BookOpen className="w-3.5 h-3.5 text-amber-400 shrink-0" />
             <select
               value={selectedScenario}
               onChange={(e) => setSelectedScenario(e.target.value)}
-              className="bg-transparent text-amber-300 font-medium text-xs focus:outline-none cursor-pointer"
+              className="bg-transparent text-amber-300 font-medium text-xs focus:outline-none cursor-pointer pr-1"
             >
-              {scenarios.map((s) => (
-                <option key={s} value={s} className="bg-slate-900 text-slate-200">
-                  {s === 'island_survival' ? '🏝️ 荒岛余生' : s === 'black_crow_manor' ? '🏰 黑鸦公馆之夜' : s}
+              {scenarioItems.map((s) => (
+                <option key={s.id} value={s.id} className="bg-slate-900 text-slate-200">
+                  {s.title}
                 </option>
               ))}
             </select>

@@ -1,4 +1,4 @@
-# 🏝️ AG-SLG-FrameWork
+# AG-SLG-FrameWork
 
 <div align="center">
 
@@ -7,216 +7,196 @@
 ![React](https://img.shields.io/badge/React-18-61DAFB.svg?logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6.svg?logo=typescript)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688.svg?logo=fastapi)
-![AG--UI Protocol](https://img.shields.io/badge/AG--UI-Native-orange.svg)
-![Local Agent](https://img.shields.io/badge/Local%20Agent-Antigravity%20%7C%20Codex-purple.svg)
+![AG-UI Protocol](https://img.shields.io/badge/AG--UI-Native-orange.svg)
 
-**专为 AI 时代打造的原生 Agent 驱动型文字冒险 / TRPG 跑团引擎（Agent-Native SillyTavern）**  
-*动态 DM 现场推演 · 四层视觉舞台编排 · D20 属性判定 · 左右空白景物沉浸渲染 · 完整 Studio 协创工作台*
+基于 **AG-UI Protocol** 的 Agent 驱动型文字冒险 / TRPG 跑团框架。  
+支持 AI 主持人（DM）动态推演、多层视觉舞台编排、多维属性与装备检定，以及剧本可视化编辑器。
 
-[🎮 快速开始](#-30-秒极速上手) • [🏝️ 荒岛余生案例](#️-核心实战剧本荒岛余生-island-survival) • [✨ 核心特性](#-核心特性) • [📦 剧本包自包含架构](#-自包含剧本包与资产可维护性) • [🛠️ 架构设计](#️-架构概览)
+[快速开始](#快速开始) • [实战剧本：荒岛余生](#实战剧本荒岛余生) • [核心特性](#核心特性) • [剧本包结构](#自包含剧本包结构) • [技术架构](#技术架构) • [测试验证](#测试与验证)
 
 </div>
 
 ---
 
-## 🌟 为什么选择 AG-SLG-FrameWork？
+## 项目简介
 
-在传统的文字游戏或角色扮演聊天室中，LLM 往往只是单薄地回复一段纯文本，没有真正的数值状态机、缺乏视觉合成体系，且无法像真正的游戏制作人那样理解剧本结构。
+AG-SLG-FrameWork 旨在探索大语言模型在交互式叙事（Interactive Fiction）与文字跑团（TRPG）中的结构化实践。框架将文本生成与游戏运行态解耦，通过标准协议（AG-UI SSE）实现“**Agent 剧情演绎 + 局部状态补丁（JSON-Patch）+ 多图层舞台渲染**”。
 
-**AG-SLG-FrameWork 彻底改变了这一切**：
-- 🤖 **Agent 原生主持（Native AI DM）**：不直接裸调单次 API，而是接入具备**长程规划与工具调用能力**的本地自主 Agent 引擎（默认支持 Google Antigravity `agy` 与 OpenAI `codex`，自带零配置本地 Fallback Director），AI 主持人不仅会根据玩家决策推演剧情，还会**动态发放分支选项、投掷 D20 骰子检定、变更玩家生命/饱食/水分/体温数值**。
-- 🎨 **多图层视觉舞台（Visual Staging）**：全景背景底图、角色半身立绘、关键线索物特写插图无缝层叠；更支持在对话框两侧的空白区域渲染**场景微距景物**（如爬行青蟹、贝壳礁石、摇曳椰树），打造极致沉浸体验。
-- 📦 **自包含剧本包（Self-Contained Scenario Bundles）**：剧本节点、世界观与多媒体图片素材全部就近收纳在同一个剧本目录下，支持 Studio 界面中**一键导出与导入 ZIP 剧本包**，便于创作者分享与社区交流。
-- 🛠️ **双模一体：沉浸游玩 (Play Mode) + 智能编剧工作台 (Studio Mode)**：既能尽情游玩，又能一键切换到后台，吩咐 **Studio Co-pilot 编剧助手** 用自然语言为你扩写全新密室、自动纠察死锁跳转！
+项目既可作为玩家体验文字跑团的客户端，也是一套面向创作者的剧本开发与调试套件。
 
 ---
 
-## 🏝️ 核心实战剧本：荒岛余生 (Island Survival)
+## 核心特性
 
-项目中完整内置了开箱即用的高拟真求生文字 RPG 剧本——**《荒岛余生》**，全面融合了人体代谢监控、动态环境互动与场景道具收集！
-
-```
-                     ┌──────────────────────┐
-                     │   🌊 孤岛海滩 (beach)  │
-                     │  飞机残骸 · 散落行李   │
-                     │  海浪浮木 · 潮间青蟹   │
-                     └──────────┬───────────┘
-                                │
-                    [深入岛屿]  │  [返回海岸]
-                                ▼
-                     ┌──────────────────────┐
-                     │ 🌴 海边丛林 (jungle)  │
-                     │  古藤缠绕 · 坚韧纤维   │
-                     │  避风岩壁 · 编织绳索   │
-                     └──────────┬───────────┘
-                                │
-                    [探索密林]  │  [折返外围]
-                                ▼
-                     ┌──────────────────────┐
-                     │ 🏕️ 丛林深处 (deep)    │
-                     │  清澈溪流 · 淡水泉眼   │
-                     │  搭建庇护所 · 升起篝火  │
-                     └──────────────────────┘
-```
-
-### 🎮 游戏核心玩法与亮点
-
-1. **六大生理生存指标实时监控**：
-   - ❤️ **生命值 (HP)** & 🧠 **理智值 (SAN)**：受伤与绝望可能带来不可逆的生命危机。
-   - ⚡ **体力 (Stamina)**：所有探索、伐木、翻找均会消耗体力，体力过低将无法执行高强度行动。
-   - 💧 **水分 (Hydration)**：烈日暴晒与长途跋涉加速脱水，必须尽快寻获容器并在丛林深处过滤淡水。
-   - 🍖 **饱食度 (Fullness)**：空腹将导致体能大幅衰退，可拾取海贝应急，或退潮后在礁石间抓捕海蟹生火炙烤！
-   - 🌡️ **体温 (Temperature)**：暴雨与夜幕降临可能导致失温症，必须采集干燥树枝并用打火机升起篝火取暖。
-
-2. **左右空白区域景物沉浸渲染（Margin Props）**：
-   - 对话流左侧：实时显示当前场景环境景物，如海滩上的**高耸椰树**、沙滩上沙沙爬动的**敏捷红蟹**。
-   - 对话流右侧：展示海浪冲刷的**天然海贝**与黝黑的**火山礁石**，点击查看材质细节与交互提示。
-
-3. **自由输入意图深度理解 + 复合行动全链路支持**：
-   - 支持预设快捷行动（拾取金属盒、搜索行李、捞取玻璃瓶、探索密林、退潮捕蟹）。
-   - **支持任意自然语言自由输入**：例如输入“从背包中取出打火机点燃甘草进而引燃火堆，开始煮食物”，引擎能精准识别持有道具与连贯意图，一次性推进点火、生成篝火特写、烹饪海鲜熟食并补充饱食度，彻底杜绝输入被忽略或无理判定！
-
-4. **可视化随身生存背包与多槽位服装配饰系统（Outfit & Inventory）**：
-   - 随时点击顶部 HUD 中的 **生存背包**，查看已搜集的军用防风打火机、厚壁储水玻璃瓶、干燥易燃树枝、坚韧古藤绳索与海蟹食材。
-   - 点击 **服装栏** 查看当前穿着与随身挂饰：从迫降时撕裂的亚麻衬衫、速干工装裤、防滑跑鞋，到机长防风夹克、海螺颈坠与反光机械腕表，槽位与词缀一目了然！
-
-5. **Studio 即时热生效（Live Sync to Play Mode）**：
-   - 在 Studio 工作台中随意新增场景节点、修改描述文本、配置新行动选项或立绘插图，切回 **运行端 (Play Mode)** 即刻热重载生效，无须重置游戏或丢弃当前角色进度！
+- **多维综合裁决与分阶判定**
+  - 告别机械的二元通过/失败，引入 TRPG 风格的**四阶判定结果**：卓越成功（Critical）、顺利达成（Success）、代价成功（Partial）、受挫转折（Complication）。
+  - 检定综合考量四大要素：角色属性修正、穿戴衣物装备（外衣/鞋履/腕饰/配饰）、随身工具（石刀/打火机/绳索等）以及当前生理状态（体能/水分/饱食度）。
+- **多图层视觉编排（Visual Staging）**
+  - 场景底图（Background）：空间全景与氛围渲染；
+  - 角色立绘（Foreground）：NPC 登场与对话交互；
+  - 焦点特写（Hero Focus）：关键线索与拾获道具特写；
+  - 场景微距景物（Margin Props）：对话两侧展示环境景物（如礁石、海蟹、椰树、贝壳），提升视觉层次感。
+- **双模式运行：游玩端 (Play) + 制作端 (Studio)**
+  - **游玩模式**：支持预设快捷行动与自由自然语言输入，实时显示状态 HUD、背包道具与换装插槽。
+  - **编剧工作台**：场景拓扑节点可视化编辑、跳转死锁校验，支持与 Studio 编剧助手协作扩写剧情，修改后切换游玩模式即刻热生效。
+- **自包含剧本架构（Self-Contained Scenarios）**
+  - 场景逻辑 YAML 与图片等多媒体资源就近收纳，支持一键导出与导入 ZIP 剧本包，便于分享与版本管理。
+- **双引擎驱动与离线兜底**
+  - 支持接入外部自主 Agent（如 Antigravity `agy`、OpenAI `codex`）；
+  - 内置零配置本地导演引擎（Fallback Director），无 API Key 或离线状态下依然可完整游玩与推演。
 
 ---
 
-## ⚡ 30 秒极速上手
+## 实战剧本：荒岛余生
 
-无需复杂的数据库配置，只需 Python 与 Node.js 环境即可一键启动：
+项目中内置了求生题材实战剧本——**《荒岛余生》（Island Survival）**，作为框架各系统的完整参考实现：
 
-### 1. 克隆代码库
+```
+                 ┌──────────────────────┐
+                 │    孤岛海滩 (beach)   │
+                 │  失事残骸 · 散落行李   │
+                 │  礁石海浪 · 潮间青蟹   │
+                 └──────────┬───────────┘
+                            │
+                [深入密林]   │   [返回海岸]
+                            ▼
+                 ┌──────────────────────┐
+                 │  海边丛林 (jungle)   │
+                 │  古藤缠绕 · 避风岩壁   │
+                 │  收集纤维 · 编织绳索   │
+                 └──────────┬───────────┘
+                            │
+                [探索深处]   │   [折返外围]
+                            ▼
+                 ┌──────────────────────┐
+                 │  丛林深处 (deep)     │
+                 │  淡水泉眼 · 搭建营地   │
+                 │  升起篝火 · 烤制熟食   │
+                 └──────────────────────┘
+```
+
+### 包含的玩法系统
+
+1. **生理状态代谢循环**：生命（HP）、理智（SAN）、体力（Stamina）、水分（Hydration）、饱食度（Fullness）、体温（Temperature）。劳作与探索消耗体力水分，饥饿与失温带来状态惩罚。
+2. **意图识别与复合行动**：输入自由文本如“从背包拿出打火机引燃甘草，升起火堆烤螃蟹”，系统会准确识别持有道具、生火意图与烹饪动作，同步更新环境状态与角色饱食度。
+3. **随身背包与装备槽位**：支持外衣（防风保暖）、鞋子（防滑跑鞋）、腕部（反光腕表）、颈部等槽位穿戴，实时对后续环境检定提供数值修正。
+4. **时间流转与昼夜系统**：行动推动时段流转（清晨 → 上午 → 下午 → 黄昏 → 夜晚 → 深夜），天气与能见度随之动态变化。
+
+---
+
+## 快速开始
+
+### 运行环境
+- Python 3.10+
+- Node.js 18+
+
+### 1. 克隆项目
 ```bash
 git clone https://gitee.com/idroid23/ag-slg-frame-work.git
 cd ag-slg-frame-work
 ```
 
-### 2. 准备后端环境与依赖
+### 2. 安装后端依赖
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. 安装前端依赖
+### 3. 安装前端依赖并构建
 ```bash
 cd web
 npm install
+npm run build
 cd ..
 ```
 
-### 4. 一键启动前后端全套服务
-AG-SLG-FrameWork 自带后台服务管家 `run_services.py`：
+### 4. 启动服务
+使用内置的服务管理脚本一键拉起前后端：
 ```bash
 python3 run_services.py start
 ```
-- **后端服务 (FastAPI + AG-UI)**: `http://127.0.0.1:8001`
-- **前端工作台 (React + Vite)**: `http://localhost:5173`
 
-打开浏览器访问 `http://localhost:5173`，在顶部剧本下拉菜单中选择 **【荒岛余生】**，即可立刻开启求生冒险！
+服务就绪后：
+- 前端界面：`http://localhost:5173`
+- 后端接口：`http://127.0.0.1:8001`
+- API 文档：`http://127.0.0.1:8001/docs`
 
-> **常用运维命令**：
-> - `python3 run_services.py status` —— 查看前后端运行健康状态
-> - `python3 run_services.py restart` —— 一键重启前后端
-> - `python3 run_services.py stop` —— 停止前后端守护进程
+在浏览器打开 `http://localhost:5173`，选择剧本 **【荒岛余生】** 即可体验。
+
+> **服务管理辅助命令**：
+> - 查看运行状态：`python3 run_services.py status`
+> - 重启服务：`python3 run_services.py restart`
+> - 停止服务：`python3 run_services.py stop`
 
 ---
 
-## 📦 自包含剧本包与资产可维护性
+## 自包含剧本包结构
 
-传统 SLG 游戏素材往往散落在全局静态资源目录中，一旦需要移植、备份或与朋友分享剧本，极其繁琐且极易丢失图片文件。
-
-AG-SLG-FrameWork 采用了**剧本资产自包含（Co-located Scenario Bundles）**架构：
+每个剧本为一个独立目录，资产与逻辑就近存放，结构清晰规范：
 
 ```
 scripts/island_survival/
-├── world.yaml                  # 世界观、初始主角属性、全局初始变量
-├── scenes/                     # 场景逻辑节点定义
-│   ├── beach.yaml              # 孤岛海滩场景：行动、检定DC、左右景物配置
-│   ├── coastal_jungle.yaml     # 海边丛林场景
-│   └── deep_jungle.yaml        # 丛林深处场景
-└── assets/                     # 🎬 剧本专属多媒体资产（自包含在当前目录）
-    ├── scenes/                 # 空间背景全景图 (island_beach.png, deep_jungle.png 等)
-    ├── illustrations/          # 特写插画 (wreckage.png, campfire.png 等)
-    ├── props/                  # 左右景物立绘 (seashell.png, crab.png, palmtree.png 等)
-    └── items/                  # 随身道具图标 (lighter.png, rope.png, glass_bottle.png 等)
+├── world.yaml                  # 世界观、主角初始状态、全局变量
+├── scenes/                     # 场景节点 YAML
+│   ├── beach.yaml              # 场景描述、可用选项、检定DC、左右景物
+│   ├── coastal_jungle.yaml
+│   └── deep_jungle.yaml
+└── assets/                     # 剧本专属媒体资产
+    ├── scenes/                 # 空间背景图 (island_beach.jpg 等)
+    ├── illustrations/          # 特写插画 (campfire.jpg, lighter.jpg 等)
+    ├── props/                  # 景物素材 (crab.jpg, seashell.jpg 等)
+    └── items/                  # 道具图标
 ```
 
-### 导入与导出特权：
-- **一键导出（Export ZIP）**：在 Studio 模式顶部点击 **「导出剧本包」**，即可将当前剧本的世界设定、所有场景节点及专属图片资产一键打包下载为 `.zip`。
-- **一键导入（Import ZIP）**：点击 **「导入剧本包」**，直接上传任意符合规范的 `.zip` 剧本包，系统自动解包校验并即时生效，随插随玩！
+- **导出剧本**：在 Studio 顶部点击「导出剧本包」，自动打包为标准 `.zip` 文件。
+- **导入剧本**：在 Studio 顶部点击「导入剧本包」，上传符合格式的 `.zip` 即可加载并立即游玩。
 
 ---
 
-## 🎨 视觉导演技能 (Agent Skill: ag-slg-director)
-
-框架内置了符合业内高级视觉叙事标准的 Agent Skill —— `ag-slg-director`：
-- **技能规范文件**: [skills/ag-slg-director/SKILL.md](skills/ag-slg-director/SKILL.md)
-- **四层视觉合成架构**:
-  1. **Layer 0 (Background)**: 空间全景图，受控慢速景深过渡与氛围渐变。
-  2. **Layer 1 (Foreground)**: 登场 NPC 立绘与动态表情半身像。
-  3. **Layer 2 (Hero Focus)**: 关键线索、证物插画特写。
-  4. **Layer 3 (Stream UI)**: 旁白叙事、NPC 对话卡片、检定判定与状态补丁分离渲染。
-- **全文本可复制（Copy Anywhere）**：所有玩家决策、人物对话、DM 旁白及打字机流式输出均配备一键复制按钮与原生文本选中支持。
-
----
-
-## 🏗️ 架构概览
+## 技术架构
 
 ```
 ┌────────────────────────────────────────────────────────┐
 │                   Web Browser UI                       │
-│    (React 18 + TailwindCSS + @ag-ui/client SDK)        │
-│    [Play Mode 沉浸跑团]   |   [Studio Mode 可视化协创]    │
+│    (React 18 + TailwindCSS + @ag-ui/client)            │
+│    [游玩模式 Play Mode]     |     [制作模式 Studio Mode] │
 └───────────────────────────┬────────────────────────────┘
                             │
                AG-UI Protocol (SSE / JSON-RPC)
                             │
 ┌───────────────────────────▼────────────────────────────┐
 │              FastAPI Bridge Server (:8001)             │
-│    - AGUIBridge: 协议转换、状态补丁、掷骰引擎             │
-│    - ScenarioManager: 剧本加载、自包含资产路由、ZIP导包   │
-│    - ScriptLinter: 跳转死锁检测、孤立节点校验          │
+│    - AGUIBridge: 协议转换、状态打补丁、DM综合裁决引擎       │
+│    - ScenarioManager: 剧本加载、资产路由、ZIP打包导入     │
+│    - ScriptLinter: 死锁跳转与孤立节点静态分析           │
 └───────────────────────────┬────────────────────────────┘
                             │
-             标准输入输出管道 (stdin / stdout stream-json)
+                     stdin / stdout 管道
                             │
 ┌───────────────────────────▼────────────────────────────┐
 │              Local Agent Engine CLI                    │
 │    - Google Antigravity (agy) / OpenAI Codex           │
-│    - 具备文件系统读写能力，直接编辑剧本 YAML             │
-│    - 零配置内置高拟真 Fallback Director 兜底               │
+│    - 内置 Fallback Director（离线/无 Key 时自动接管）    │
 └────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🧪 自动化测试套件
+## 测试与验证
 
-AG-SLG-FrameWork 具备完备严苛的自动化测试套件，保障每一次提交与剧本扩写均稳定可靠：
+项目包含全面的单元测试与端到端测试，覆盖检定裁决、状态补丁、行动回退、换装逻辑及剧本校验：
 
 ```bash
-# 运行后端 26 项全量核心测试（包含协议桥接、属性检定、荒岛生存游玩流、服装槽位与自包含打包等）
+# 运行后端测试集（28 项全量通过）
 .venv/bin/pytest -v
 
-# 运行前端 TypeScript 类型检查与 Vite 生产编译
+# 前端类型检查与构建验证
 cd web && npm run build
 ```
 
 ---
 
-## 🤝 参与贡献与社区交流
+## 协议与贡献
 
-欢迎提交 Issue、发起 Pull Request，或者分享你制作的精彩剧本包！
-- 发现 Bug 或有新的机制创意？欢迎在 [Gitee Issues](https://gitee.com/idroid23/ag-slg-frame-work/issues) 中提出。
-- 更多实战剧本持续更新中，敬请期待！
-
----
-
-<div align="center">
-<b>AG-SLG-FrameWork</b> — 让每个人都能轻松拥有属于自己的 Agent 原生文字冒险宇宙！
-</div>
+本项目采用 [MIT 许可证](LICENSE)。欢迎提交 Issue 反馈问题或发起 Pull Request 参与共建。

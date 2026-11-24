@@ -277,3 +277,58 @@ async def test_stream_play_check_action_emits_check_result_patch():
     assert "outcome" in chk
     assert "reason" in chk
 
+
+@pytest.mark.asyncio
+async def test_stream_play_syncs_client_player_state_and_deduplicates_inventory():
+    """Verify that when client passes player_state in forwarded_props, the server syncs inventory and deduplicates."""
+    mgr = ScenarioManager()
+    driver = EmptyMockDriver()
+    bridge = AGUIBridge(scenario_mgr=mgr, driver=driver)
+
+    client_state = {
+        "current_scene": "beach",
+        "hp": 95,
+        "san": 90,
+        "attributes": {"stamina": 80, "hydration": 70, "fullness": 65},
+        "inventory": [
+            {"id": "lighter", "name": "防风打火机"},
+            {"id": "glass_bottle", "name": "厚壁玻璃瓶"},
+            {"id": "lighter", "name": "防风打火机"},  # duplicate lighter
+            {"id": "raw_crab", "name": "新鲜海蟹"},
+        ],
+        "variables": {"fire_started": False},
+    }
+
+    inp = RunAgentInput(
+        thread_id="test_client_sync_thread",
+        run_id="run_sync_1",
+        messages=[
+            {
+                "id": "msg-sync-1",
+                "role": "user",
+                "content": [{"type": "text", "text": "用打火机生火并烤螃蟹"}],
+            }
+        ],
+        forwarded_props={
+            "scenario_id": "island_survival",
+            "player_state": client_state,
+        },
+    )
+
+    events = []
+    async for raw in bridge.stream_play(inp):
+        events.append(raw)
+
+    session = bridge.sessions["test_client_sync_thread"]
+    # The lighter should be deduplicated to exactly 1
+    lighter_count = sum(1 for item in session.player_state.inventory if item.get("id") == "lighter")
+    assert lighter_count == 1
+
+    # Fire should be started since lighter was recognized from client's synced inventory
+    assert session.player_state.variables.get("fire_started") is True
+
+    # Crab was cooked & consumed
+    assert not any(item.get("id") == "raw_crab" for item in session.player_state.inventory)
+    assert session.player_state.attributes.get("fullness") > 80
+
+

@@ -201,6 +201,7 @@ class GameSession:
         self.agent_conversation_id: Optional[str] = None
         self.history: List[Dict[str, str]] = []
         self.dynamic_actions: List[Dict[str, Any]] = []
+        self.inventory_synced: bool = False
 
     def apply_delta(self, delta: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Apply state delta and return standard JSON-patch like delta list."""
@@ -304,9 +305,18 @@ class GameSession:
 
         added_items: List[Dict[str, Any]] = []
         if "add_inventory" in delta and isinstance(delta["add_inventory"], list):
+            existing_ids = {
+                (i.get("id") if isinstance(i, dict) else str(i))
+                for i in self.player_state.inventory
+            }
+            unique_tools = {"lighter", "metal_box", "stone_blade", "rope"}
             for raw_item in delta["add_inventory"]:
                 item = _enrich_item_meta(raw_item)
+                item_id = item.get("id")
+                if item_id in unique_tools and item_id in existing_ids:
+                    continue
                 self.player_state.inventory.append(item)
+                existing_ids.add(item_id)
                 added_items.append(item)
 
         if removed_any:
@@ -367,14 +377,79 @@ class AGUIBridge:
         self.encoder = EventEncoder()
         self.sessions: Dict[str, GameSession] = {}
 
-    def get_or_create_session(self, thread_id: str, scenario_id: str = "black_crow_manor") -> GameSession:
+    @staticmethod
+    def _sync_player_state(target: PlayerState, source: Dict[str, Any]) -> bool:
+        """Sync runtime player state from client to prevent server restart desync.
+
+        Returns True if inventory was deduplicated or updated.
+        """
+        if not isinstance(source, dict):
+            return False
+
+        if "current_scene" in source and source["current_scene"]:
+            target.current_scene = source["current_scene"]
+        if "hp" in source and isinstance(source["hp"], (int, float)):
+            target.hp = int(source["hp"])
+        if "san" in source and isinstance(source["san"], (int, float)):
+            target.san = int(source["san"])
+        if "gold" in source and isinstance(source["gold"], (int, float)):
+            target.gold = int(source["gold"])
+        if "attributes" in source and isinstance(source["attributes"], dict):
+            for k, v in source["attributes"].items():
+                target.attributes[k] = int(v)
+        if "variables" in source and isinstance(source["variables"], dict):
+            for k, v in source["variables"].items():
+                target.variables[k] = v
+        if "outfit" in source and isinstance(source["outfit"], dict):
+            target.outfit = {
+                k: _enrich_item_meta(v)
+                for k, v in source["outfit"].items()
+                if isinstance(v, dict)
+            }
+
+        inv_changed = False
+        if "inventory" in source and isinstance(source["inventory"], list):
+            deduped_inv = []
+            seen_unique = set()
+            unique_tools = {"lighter", "metal_box", "stone_blade", "rope"}
+            for raw_item in source["inventory"]:
+                if isinstance(raw_item, dict):
+                    item = _enrich_item_meta(raw_item)
+                    item_id = item.get("id")
+                    if item_id in unique_tools:
+                        if item_id in seen_unique:
+                            inv_changed = True
+                            continue
+                        seen_unique.add(item_id)
+                    deduped_inv.append(item)
+            if len(deduped_inv) != len(target.inventory) or deduped_inv != target.inventory:
+                target.inventory = deduped_inv
+                inv_changed = True
+
+        return inv_changed
+
+    def get_or_create_session(
+        self,
+        thread_id: str,
+        scenario_id: str = "black_crow_manor",
+        client_state: Optional[Dict[str, Any]] = None,
+    ) -> GameSession:
         if thread_id in self.sessions:
-            return self.sessions[thread_id]
+            session = self.sessions[thread_id]
+            if client_state:
+                if self._sync_player_state(session.player_state, client_state):
+                    session.inventory_synced = True
+            return session
 
         spec = self.scenario_mgr.load_scenario(scenario_id)
         # Deep copy initial player state
         init_state = PlayerState(**spec.world.initial_player_state.model_dump())
+        inv_synced = False
+        if client_state:
+            inv_synced = self._sync_player_state(init_state, client_state)
+
         session = GameSession(thread_id, scenario_id, init_state)
+        session.inventory_synced = inv_synced
         self.sessions[thread_id] = session
         return session
 
@@ -1079,9 +1154,13 @@ class AGUIBridge:
         action_id: Optional[str] = None
         check_passed: Optional[bool] = None
         client_roll: Optional[int] = None
+        client_state: Optional[Dict[str, Any]] = None
+        recent_history: Optional[List[Dict[str, str]]] = None
         if input_data.forwarded_props and isinstance(input_data.forwarded_props, dict):
             scenario_id = input_data.forwarded_props.get("scenario_id", scenario_id)
             action_id = input_data.forwarded_props.get("action_id")
+            client_state = input_data.forwarded_props.get("player_state")
+            recent_history = input_data.forwarded_props.get("recent_history")
             if "client_roll" in input_data.forwarded_props:
                 try:
                     client_roll = int(input_data.forwarded_props.get("client_roll"))
@@ -1090,7 +1169,11 @@ class AGUIBridge:
             if "check_passed" in input_data.forwarded_props:
                 check_passed = bool(input_data.forwarded_props.get("check_passed"))
 
-        session = self.get_or_create_session(thread_id, scenario_id)
+        session = self.get_or_create_session(thread_id, scenario_id, client_state=client_state)
+        if recent_history and not session.history:
+            session.history = [
+                h for h in recent_history if isinstance(h, dict) and "role" in h and "content" in h
+            ][-8:]
         pre_scene_id = session.player_state.current_scene
         pre_scene = self.scenario_mgr.get_scene(scenario_id, pre_scene_id) if pre_scene_id else None
         matched_action: Optional[ActionOption] = None
@@ -1220,23 +1303,36 @@ class AGUIBridge:
         if len(session.history) > 12:
             session.history = session.history[-12:]
 
+        patches: List[Dict[str, Any]] = []
         if delta_dict:
             patches = session.apply_delta(delta_dict)
-            if patches:
-                curr_scene_after = self.scenario_mgr.get_scene(
-                    session.scenario_id, session.player_state.current_scene
-                )
-                resolved_actions = resolve_scene_actions(
-                    curr_scene_after, session.player_state, session.dynamic_actions
-                )
-                patches.append(
-                    {
-                        "op": "replace",
-                        "path": "/available_actions",
-                        "value": [a.model_dump() for a in resolved_actions],
-                    }
-                )
-                yield self.encoder.encode(StateDeltaEvent(delta=patches))
+        elif getattr(session, "inventory_synced", False):
+            patches = session.apply_delta({})
+
+        if getattr(session, "inventory_synced", False):
+            session.inventory_synced = False
+            if not any(p.get("path") == "/inventory" for p in patches):
+                patches.append({
+                    "op": "replace",
+                    "path": "/inventory",
+                    "value": list(session.player_state.inventory),
+                })
+
+        if patches:
+            curr_scene_after = self.scenario_mgr.get_scene(
+                session.scenario_id, session.player_state.current_scene
+            )
+            resolved_actions = resolve_scene_actions(
+                curr_scene_after, session.player_state, session.dynamic_actions
+            )
+            patches.append(
+                {
+                    "op": "replace",
+                    "path": "/available_actions",
+                    "value": [a.model_dump() for a in resolved_actions],
+                }
+            )
+            yield self.encoder.encode(StateDeltaEvent(delta=patches))
 
         # 4. RUN_FINISHED
         yield self.encoder.encode(RunFinishedEvent(run_id=run_id, thread_id=thread_id))

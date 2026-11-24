@@ -360,6 +360,11 @@ export default function PlayView({
     setIsStreaming(true);
     setStreamingText('');
 
+    const recentHistory = messages.slice(-8).map((m) => ({
+      role: m.kind === 'user' ? 'user' : 'assistant',
+      content: m.content,
+    }));
+
     const runId = `run-${Date.now()}`;
     const payload = {
       thread_id: threadIdRef.current,
@@ -380,6 +385,8 @@ export default function PlayView({
       ],
       forwarded_props: {
         scenario_id: scenarioId,
+        player_state: playerState,
+        recent_history: recentHistory,
         ...(actionMeta || {}),
       },
     };

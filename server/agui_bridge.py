@@ -136,7 +136,59 @@ ITEM_META = {
         "icon": "/assets/items/branches.png",
         "desc": "散发出诱人焦香的熟食，能大幅恢复饱食度与体力。",
     },
+    "torn_linen_shirt": {
+        "name": "撕裂的白色亚麻衬衫",
+        "desc": "迫降时被海水浸湿又在烈日下微干的机舱休闲衬衫，袖口略有撕裂。",
+        "tag": "微湿 · 轻便",
+    },
+    "khaki_cargo_pants": {
+        "name": "卡其色速干长裤",
+        "desc": "耐磨的多口袋工装长裤，裤脚沾满细沙，能阻挡灌木枝刺刮伤。",
+        "tag": "耐磨 · 下装",
+    },
+    "sandy_sneakers": {
+        "name": "沾沙的运动跑鞋",
+        "desc": "鞋底厚实防滑，能保护双脚不在尖锐礁石与碎珊瑚上割伤。",
+        "tag": "防滑 · 鞋履",
+    },
+    "broken_watch": {
+        "name": "停摆的机械腕表",
+        "desc": "表盘玻璃在撞击时裂开了一道细纹，指针停在凌晨 3:14，金属表壳可反射阳光求救。",
+        "tag": "腕饰 · 可反光",
+    },
+    "pilot_windbreaker": {
+        "name": "失事机长防风夹克",
+        "desc": "在残骸附近搜获的橙灰拼色高可视度防风外套，防风防泼水，夜间保暖极佳。",
+        "tag": "防风保暖 · 外套",
+    },
+    "palm_sunhat": {
+        "name": "椰叶编织遮阳帽",
+        "desc": "宽大椰叶与韧藤编织而成的轻便草帽，有效遮挡毒辣烈日，减缓水分流失。",
+        "tag": "遮阳防晒 · 头饰",
+    },
+    "shell_necklace": {
+        "name": "潮汐贝壳挂坠",
+        "desc": "用坚硬五彩海贝与韧皮细绳串起的颈间护符，海风吹过时发出清脆声响，令人心神宁静。",
+        "tag": "安神 · 颈饰",
+    },
 }
+
+
+def _enrich_item_meta(raw_item: Any) -> Dict[str, Any]:
+    """Normalize an inventory or outfit item dict and enrich missing fields from ITEM_META."""
+    item = dict(raw_item) if isinstance(raw_item, dict) else {"id": str(raw_item), "name": str(raw_item)}
+    item_id = item.get("id", "")
+    if item_id in ITEM_META:
+        meta = ITEM_META[item_id]
+        if not item.get("name") or item["name"] == item_id:
+            item["name"] = meta["name"]
+        if not item.get("icon") and meta.get("icon"):
+            item["icon"] = meta["icon"]
+        if not item.get("desc") and meta.get("desc"):
+            item["desc"] = meta["desc"]
+        if not item.get("tag") and meta.get("tag"):
+            item["tag"] = meta["tag"]
+    return item
 
 
 class GameSession:
@@ -253,16 +305,7 @@ class GameSession:
         added_items: List[Dict[str, Any]] = []
         if "add_inventory" in delta and isinstance(delta["add_inventory"], list):
             for raw_item in delta["add_inventory"]:
-                item = dict(raw_item) if isinstance(raw_item, dict) else {"id": str(raw_item), "name": str(raw_item)}
-                item_id = item.get("id", "")
-                if item_id in ITEM_META:
-                    meta = ITEM_META[item_id]
-                    if not item.get("name") or item["name"] == item_id:
-                        item["name"] = meta["name"]
-                    if not item.get("icon") and meta.get("icon"):
-                        item["icon"] = meta["icon"]
-                    if not item.get("desc") and meta.get("desc"):
-                        item["desc"] = meta["desc"]
+                item = _enrich_item_meta(raw_item)
                 self.player_state.inventory.append(item)
                 added_items.append(item)
 
@@ -271,6 +314,35 @@ class GameSession:
         else:
             for item in added_items:
                 patches.append({"op": "add", "path": "/inventory/-", "value": item})
+
+        # Process outfit & accessories updates (partial slot patch + unequip)
+        outfit_changed = False
+        unequip_list = delta.get("unequip_outfit")
+        if unequip_list:
+            targets = [unequip_list] if isinstance(unequip_list, str) else list(unequip_list)
+            for target in targets:
+                if target in self.player_state.outfit:
+                    self.player_state.outfit.pop(target, None)
+                    outfit_changed = True
+                else:
+                    for slot_k, slot_v in list(self.player_state.outfit.items()):
+                        if isinstance(slot_v, dict) and slot_v.get("id") == target:
+                            self.player_state.outfit.pop(slot_k, None)
+                            outfit_changed = True
+
+        outfit_updates = delta.get("outfit") or delta.get("equip_outfit")
+        if isinstance(outfit_updates, dict):
+            for slot, raw_piece in outfit_updates.items():
+                if raw_piece is None or raw_piece == "" or raw_piece == {}:
+                    if slot in self.player_state.outfit:
+                        self.player_state.outfit.pop(slot, None)
+                        outfit_changed = True
+                else:
+                    self.player_state.outfit[slot] = _enrich_item_meta(raw_piece)
+                    outfit_changed = True
+
+        if outfit_changed:
+            patches.append({"op": "replace", "path": "/outfit", "value": dict(self.player_state.outfit)})
 
         if "available_actions" in delta and isinstance(delta["available_actions"], list):
             self.dynamic_actions = [a for a in delta["available_actions"] if isinstance(a, dict)]
@@ -319,6 +391,11 @@ class AGUIBridge:
             f"{item.get('name', item.get('id', ''))} (id: {item.get('id', '')})"
             for item in session.player_state.inventory
         ]
+        outfit_desc = [
+            f"{slot}: {piece.get('name', piece.get('id', ''))}"
+            for slot, piece in (session.player_state.outfit or {}).items()
+            if isinstance(piece, dict) and (piece.get("name") or piece.get("id"))
+        ]
 
         history_block = ""
         if session.history:
@@ -336,6 +413,7 @@ class AGUIBridge:
 - HP：{session.player_state.hp} / SAN：{session.player_state.san} / 金币：{session.player_state.gold}
 - 生存与角色属性：{session.player_state.attributes}
 - 背包物品：{inv_desc or '空'}
+- 当前穿着与配饰：{outfit_desc or '常规随身衣物'}
 - 剧本变量（含时间/昼夜/进度）：{session.player_state.variables}
 - 当前所在场景：{curr_scene.title if curr_scene else curr_scene_id} ({curr_scene_id})
 
@@ -362,6 +440,10 @@ class AGUIBridge:
    - 仔细分辨玩家输入的具体动词与目标，严格按玩家当前行动的字面意图推进，切勿强行套用无关的预设选项结局！
    - 例如：若玩家自由输入“捡起防水金属盒，洗干净带走”，其目的是**获得并随身携带金属盒本身**，必须如实描写捡起并清洗金属盒，并在 `add_inventory` 中加入 `metal_box`（防水金属盒），绝不要在玩家未要求打开/搜查盒内物品时擅自改为“在盒里翻找打火机”。
    - 凡玩家明确拾取、清洗带走、制作或获得的实体物品，都必须在 `state_delta.add_inventory` 中准确写入物品（包含 `id`、`name`、`desc`），确保背包栏真实同步。
+   - **打火机与生火/烹饪的真实意图响应（绝对红线）**：若玩家明确输入使用打火机（lighter）点火、生火、引燃甘草或枯枝、搭建火堆或进行烹饪煮食，且玩家背包中已拥有打火机（id: lighter）：
+     ① 必须承认打火机是现成的核心火源！严禁无视玩家背包内的打火机，严禁谎称“没有火源”或无端判定点火失败！
+     ② 必须成功点燃火焰：在 state_delta.variables 中明确写入 `"fire_started": true`，并在 visuals.hero_image 给出篝火特写插图 `/assets/illustrations/campfire.png`。
+     ③ 若玩家同时进行了煮食物/烤食物：只要背包中有可烹饪物品（如 raw_crab、wild_food、coconut、fresh_water 等），必须在叙述中生动描绘火烤烹饪与熟食香气，在 state_delta.remove_inventory 中扣除对应食材，并通过 attributes_delta 大幅增加饱食度（fullness: +30~+40）与体力（stamina: +15~+25）！
 2. 叙事文本与对话分明：生动叙述环境与行动结果，NPC 发言请以 角色名: “对话内容” 格式清晰表达。严禁在叙述文本中直接泄漏具体图片文件路径。
 3. 视觉舞台导演原则（ag-slg-director）：
    - 背景稳定性：不要在普通的对话轮换背景；仅在发生场景转移或环境巨变时更新 visuals.background。
@@ -381,6 +463,7 @@ class AGUIBridge:
   "time_cost": 1,
   "add_inventory": [{{"id": "item_id", "name": "道具名", "desc": "描述"}}],
   "remove_inventory": ["consumed_item_id"],
+  "outfit": {{"outer": {{"id": "jacket_id", "name": "穿戴服装名", "desc": "描述", "tag": "状态/加成"}}}},
   "variables": {{"variable_key": "variable_value"}},
   "available_actions": [
     {{"id": "dynamic_act_1", "label": "新的情境行动", "type": "interact"}}
@@ -438,6 +521,18 @@ class AGUIBridge:
             if gain_item not in existing_add_ids:
                 add_list.append({"id": gain_item, "name": gain_item})
                 merged["add_inventory"] = add_list
+
+        # Equip / unequip outfit pieces
+        equip_outfit = outcome.get("equip_outfit")
+        if isinstance(equip_outfit, dict):
+            outfit_dict = dict(merged.get("outfit") or {})
+            for slot, piece in equip_outfit.items():
+                if slot not in outfit_dict:
+                    outfit_dict[slot] = piece
+            if outfit_dict:
+                merged["outfit"] = outfit_dict
+        if outcome.get("unequip_outfit") and "unequip_outfit" not in merged:
+            merged["unequip_outfit"] = outcome["unequip_outfit"]
 
         # Consume item(s)
         rem_list = list(merged.get("remove_inventory") or merged.get("consume_inventory") or [])
@@ -531,6 +626,8 @@ class AGUIBridge:
                     delta = dict(matched_action.on_success or {})
                     if "gain_item" in delta:
                         delta["add_inventory"] = [{"id": delta["gain_item"]}]
+                    if "equip_outfit" in delta and "outfit" not in delta:
+                        delta["outfit"] = delta["equip_outfit"]
                     if "variables" not in delta and matched_action.id == "scavenge_bottle":
                         delta["variables"] = {"found_bottle": True}
                     if "time_cost" not in delta:
@@ -567,6 +664,8 @@ class AGUIBridge:
                 delta = dict(matched_action.on_success or {})
                 if "gain_item" in delta:
                     delta["add_inventory"] = [{"id": delta["gain_item"]}]
+                if "equip_outfit" in delta and "outfit" not in delta:
+                    delta["outfit"] = delta["equip_outfit"]
                 if matched_action.id == "pickup_metal_box" and "visuals" not in delta:
                     delta["visuals"] = {"hero_image": "【物品特写】洗净泥沙的防水金属盒"}
                 if "time_cost" not in delta:
@@ -593,15 +692,60 @@ class AGUIBridge:
         else:
             # Open-ended scenario resolution
             if session.scenario_id == "island_survival":
-                narration = (
-                    f"你迎着扑面而来的海风，在险恶的孤岛环境中尝试【{clean_action}】。\n\n"
-                    f"沙滩与灌木间回荡着你的脚步声，潮水在不远处涨落起伏。虽然并未立即触发某种机关或质变，"
-                    f"但这番探寻让你对周遭的地形与动静有了更深入的把握。体力略有消耗，但你的求生意志愈加坚定。"
+                has_lighter = any(
+                    (isinstance(i, dict) and i.get("id") == "lighter")
+                    for i in (session.player_state.inventory or [])
                 )
-                delta = {
-                    "time_cost": 1,
-                    "attributes_delta": {"stamina": -3, "hydration": -2},
-                }
+                fire_terms = ("打火机", "火机", "点火", "生火", "引燃", "点燃", "火堆", "篝火", "甘草", "枯草", "升火", "烧火")
+                cook_terms = ("煮", "烤", "吃", "食", "饭", "烹", "蟹", "肉")
+                wants_fire = any(k in clean_action for k in fire_terms)
+                wants_cook = any(k in clean_action for k in cook_terms)
+
+                if wants_fire and has_lighter:
+                    delta["variables"] = {"fire_started": True}
+                    delta["visuals"] = {"hero_image": "/assets/illustrations/campfire.png"}
+                    inv_ids = [
+                        (i.get("id") if isinstance(i, dict) else str(i))
+                        for i in (session.player_state.inventory or [])
+                    ]
+                    if wants_cook and ("raw_crab" in inv_ids or "wild_food" in inv_ids or "coconut" in inv_ids):
+                        target_food = "raw_crab" if "raw_crab" in inv_ids else ("wild_food" if "wild_food" in inv_ids else "coconut")
+                        delta["remove_inventory"] = [target_food]
+                        delta["attributes_delta"] = {"fullness": 35, "stamina": 16, "temperature": 1}
+                        delta["san_delta"] = 6
+                        delta["time_cost"] = 1
+                        food_desc = "新鲜海蟹" if target_food == "raw_crab" else ("采摘坚果" if target_food == "wild_food" else "烤椰肉")
+                        narration = (
+                            f"你从背包中稳稳取出防风打火机。咔哒一声脆响，强劲的橙蓝色防风火苗猛烈喷吐，迅速引燃了收集堆叠的干燥甘草与枯枝！\n\n"
+                            f"【行动成功】火舌飞快舔舐木柴，一堆明亮温暖的篝火在身前熊熊燃烧起来，彻底驱散了周遭的湿冷海风与野兽威胁！\n\n"
+                            f"紧接着，你将背包中的{food_desc}架在篝火上炙烤。火焰将食物烤得滋滋作响、通红滚烫，诱人的焦香海鲜肉气在四周弥漫！\n\n"
+                            f"你大快朵颐吃下温热熟透的食物，空虚的胃部被彻底充实，体温与体力大幅回升，精神为之一振！"
+                        )
+                    else:
+                        delta["attributes_delta"] = {"stamina": -4, "temperature": 1}
+                        delta["san_delta"] = 5
+                        delta["time_cost"] = 1
+                        narration = (
+                            f"你从背包中取出可靠的防风打火机，拇指一擦打火轮，稳定的火苗立刻喷吐而出！\n\n"
+                            f"【行动成功】防风打火机精准引燃了干燥的甘草与引火碎木，火焰腾空而起，生起了一堆明亮温暖的篝火！周围的湿冷瞬间消散。\n\n"
+                            f"稳定的火源已经就绪，接下来可以随时在篝火上烧水、煮熟食材或安然过夜。"
+                        )
+                elif wants_fire and not has_lighter:
+                    delta["time_cost"] = 1
+                    narration = (
+                        f"你试图在四周寻找火源生火，但你在随身背包中仔细翻找后发现并没有携带打火机。\n\n"
+                        f"海风呼啸而过，未处理的干柴无法凭空引燃。或许可以在沙滩散落的客机残骸或防水金属盒中搜寻生火工具。"
+                    )
+                else:
+                    narration = (
+                        f"你迎着扑面而来的海风，在险恶的孤岛环境中尝试【{clean_action}】。\n\n"
+                        f"沙滩与灌木间回荡着你的脚步声，潮水在不远处涨落起伏。虽然并未立即触发某种机关或质变，"
+                        f"但这番探寻让你对周遭的地形与动静有了更深入的把握。体力略有消耗，但你的求生意志愈加坚定。"
+                    )
+                    delta = {
+                        "time_cost": 1,
+                        "attributes_delta": {"stamina": -3, "hydration": -2},
+                    }
             else:
                 narration = (
                     f"幽暗的公馆大厅中蜡烛影影绰绰，窗外寒鸦惊啼。你谨慎地尝试【{clean_action}】。\n\n"
@@ -670,7 +814,34 @@ class AGUIBridge:
                     return act, False
             return None, False
 
-        # 3. Substring or domain keyword match across eligible actions
+        # 3. Fire-making & cooking intent-aware resolution
+        fire_terms = ("点火", "生火", "升火", "引燃", "点燃", "篝火", "火堆", "烧火", "甘草", "枯草")
+        cook_terms = ("煮", "烤", "热食", "烹饪", "做饭", "煮食", "烤食", "熟食")
+        wants_fire = any(v in clean_input for v in fire_terms)
+        wants_cook = any(v in clean_input for v in cook_terms)
+        has_lighter = any(
+            (isinstance(i, dict) and i.get("id") == "lighter")
+            for i in (player_state.inventory or [])
+        )
+
+        # Composite action: player wants to both light fire AND cook/eat food
+        # Do not collapse to a single-step preset action; let the open-ended handler fulfill both
+        if wants_fire and wants_cook:
+            return None, False
+
+        if wants_fire and has_lighter:
+            for act_id in ("beach_campfire", "coastal_campfire", "light_campfire", "craft_campfire"):
+                act = next((a for a in eligible_actions if a.id == act_id), None)
+                if act:
+                    return act, False
+
+        if wants_cook:
+            for act_id in ("beach_cook_food", "coastal_cook_food", "cook_food_on_fire", "cook_meal"):
+                act = next((a for a in eligible_actions if a.id == act_id), None)
+                if act:
+                    return act, False
+
+        # 4. Substring or domain keyword match across eligible actions
         kw_map = {
             "scavenge_bottle": ["玻璃瓶", "瓶子", "漂流瓶"],
             "search_luggage": ["行李", "打火机"],
@@ -680,11 +851,15 @@ class AGUIBridge:
             "cut_vines": ["藤蔓", "老藤", "割藤"],
             "collect_fresh_water": ["泉水", "甘泉", "装水", "打水"],
             "gather_coconuts": ["椰子", "采摘椰子", "摘椰子"],
-            "craft_campfire": ["生火", "点火", "篝火", "升火"],
-            "light_campfire": ["生火", "点火", "篝火", "升火"],
-            "craft_rope": ["搓绳", "编织绳索", "做绳子", "编绳"],
+            "beach_campfire": ["生火", "点火", "篝火", "火堆", "引燃", "点燃", "升火"],
+            "coastal_campfire": ["生火", "点火", "篝火", "火堆", "引燃", "点燃", "升火"],
+            "light_campfire": ["生火", "点火", "篝火", "火堆", "引燃", "点燃", "升火"],
+            "craft_campfire": ["生火", "点火", "篝火", "火堆", "引燃", "点燃", "升火"],
+            "beach_cook_food": ["烤蟹", "烤肉", "煮食", "烤食物", "煮食物", "做饭", "烹饪"],
+            "coastal_cook_food": ["烤肉", "烤蟹", "烤椰子", "煮食", "烤食物", "煮食物", "做饭", "烹饪"],
+            "cook_food_on_fire": ["烤肉", "烤蟹", "煮食", "烤食物", "煮食物", "做饭", "热食"],
             "cook_meal": ["烤肉", "烤蟹", "做饭", "烹饪"],
-            "cook_food_on_fire": ["烤肉", "烤蟹", "做饭", "热食"],
+            "craft_rope": ["搓绳", "编织绳索", "做绳子", "编绳"],
             "rest_by_fire": ["休息", "睡觉", "过夜"],
             "rest_by_campfire": ["休息", "睡觉", "过夜"],
         }

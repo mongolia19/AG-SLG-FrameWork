@@ -17,6 +17,37 @@ initial_player_state:
     - id: "magnifying_glass"
       name: "复古放大镜"
       desc: "用于观察细微线索"
+  outfit:
+    head:
+      id: "felt_fedora"
+      name: "黑色毛毡礼帽"
+      desc: "帽檐正不断滴落冷雨的英伦风呢帽，能勉强遮挡夜风。"
+      tag: "防雨 · 头饰"
+    outer:
+      id: "soaked_trench_coat"
+      name: "湿透的深灰风衣"
+      desc: "厚重的防水长风衣，衣摆沾满山路泥泞，内侧暗袋缝着记事本。"
+      tag: "防风 · 外套"
+    top:
+      id: "wool_vest"
+      name: "暗纹羊毛马甲"
+      desc: "贴身保暖的深色针织马甲，保持着些许体温。"
+      tag: "保暖 · 上装"
+    bottom:
+      id: "dress_trousers"
+      name: "深灰条纹长裤"
+      desc: "剪裁合体的毛呢长裤，方便夜间快步行动。"
+      tag: "轻便 · 下装"
+    shoes:
+      id: "muddy_oxfords"
+      name: "沾泥的牛津皮鞋"
+      desc: "硬底牛津皮鞋，踏在公馆石阶上会发出沉闷回响。"
+      tag: "正装 · 鞋履"
+    accessory:
+      id: "silver_pocket_watch"
+      name: "银质怀表与调查员徽章"
+      desc: "刻有侦探事务所编号的银质怀表，嘀嗒走字声在雨夜中格外清晰。"
+      tag: "身份凭证 · 配饰"
   variables:
     discovered_secret_passage: false
     butler_trust: 10

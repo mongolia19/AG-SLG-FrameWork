@@ -9,6 +9,14 @@ export interface InventoryItem {
   icon?: string;
 }
 
+export interface OutfitItem {
+  id: string;
+  name: string;
+  desc?: string;
+  icon?: string;
+  tag?: string;
+}
+
 export interface PlayerState {
   name: string;
   hp: number;
@@ -16,6 +24,7 @@ export interface PlayerState {
   gold: number;
   attributes: PlayerAttributeMap;
   inventory: InventoryItem[];
+  outfit?: Record<string, OutfitItem | null>;
   variables: Record<string, any>;
   current_scene: string;
 }

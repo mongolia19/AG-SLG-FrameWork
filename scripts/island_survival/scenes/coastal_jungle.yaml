@@ -165,6 +165,58 @@ actions:
     time_cost: 1
     message: 你折断并收集了几根质地密实的硬木树枝，不仅能当作火柴堆的耐烧底料，还能充当防身木棍。
   on_failure: null
+- id: coastal_campfire
+  label: 在林间背风空地用打火机与枯枝生起篝火
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    has_item: lighter
+    variables:
+      fire_started: false
+  effects: null
+  source: null
+  on_success:
+    variables:
+      fire_started: true
+    visuals:
+      hero_image: /assets/illustrations/campfire.png
+    attributes_delta:
+      stamina: -5
+      temperature: 1
+    san_delta: 6
+    time_cost: 1
+    message: 你利用打火机点燃枯叶干枝，篝火在林间空地升腾而起，浓烟将蚊虫与潮气尽数驱离！
+  on_failure: null
+- id: coastal_cook_food
+  label: 在篝火余烬上烤熟海产与食材
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    variables:
+      fire_started: true
+    has_any_item:
+    - raw_crab
+    - coconut
+  effects: null
+  source: null
+  on_success:
+    consume_any_item:
+    - raw_crab
+    - coconut
+    attributes_delta:
+      fullness: 32
+      stamina: 16
+      temperature: 1
+    san_delta: 6
+    time_cost: 1
+    message: 篝火余烬将食物烤得滚烫喷香，热气腾腾的食物咽下腹中，带来极大的安全感与充沛体力！
+  on_failure: null
 - id: build_jungle_shelter
   label: 用硬木树枝与纤维绳搭建防风庇护所
   type: interact
@@ -217,6 +269,31 @@ actions:
       stamina: 10
     san_delta: 3
     message: 甘泉滋润了干裂的嘴唇，体能逐渐恢复。
+  on_failure: null
+- id: weave_palm_sunhat
+  label: 采集宽大椰叶与韧藤编织「椰叶遮阳帽」戴在头上
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    not_has_outfit: palm_sunhat
+  effects: null
+  source: null
+  on_success:
+    equip_outfit:
+      head:
+        id: palm_sunhat
+        name: 椰叶编织遮阳帽
+        desc: 宽大椰叶与韧藤编织而成的轻便草帽，有效遮挡毒辣烈日，减缓水分流失。
+        tag: 遮阳防晒 · 头饰
+    attributes_delta:
+      stamina: -5
+      hydration: 4
+    san_delta: 3
+    time_cost: 1
+    message: 你撕下几片宽大柔韧的嫩椰叶，用细藤交错编出一顶厚实宽檐的遮阳草帽扣在头上，炙烤头顶的暑气立刻消散！
   on_failure: null
 - id: venture_deep_jungle
   label: 拨开高耸蕨类植物，向丛林深处进发

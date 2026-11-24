@@ -1,16 +1,119 @@
 import { useState } from 'react';
-import { PlayerState, InventoryItem } from '../../types';
-import { Heart, Brain, Coins, Backpack, MapPin, X, ShieldAlert, Droplets, Utensils, Zap, Thermometer, Sun, Moon, Clock, RotateCcw } from 'lucide-react';
+import { PlayerState, InventoryItem, OutfitItem } from '../../types';
+import {
+  Heart,
+  Brain,
+  Coins,
+  Backpack,
+  MapPin,
+  X,
+  ShieldAlert,
+  Droplets,
+  Utensils,
+  Zap,
+  Thermometer,
+  Sun,
+  Moon,
+  Clock,
+  RotateCcw,
+  RefreshCw,
+  Shirt,
+  Sparkles,
+  Watch,
+  Footprints,
+  Gem,
+  Shield,
+} from 'lucide-react';
+
+interface OutfitSlotMeta {
+  slot: string;
+  label: string;
+  category: 'clothing' | 'accessory';
+  emptyHint: string;
+}
+
+const CLOTHING_SLOTS: OutfitSlotMeta[] = [
+  { slot: 'head', label: '头部 / 帽饰', category: 'clothing', emptyHint: '未佩戴帽饰' },
+  { slot: 'outer', label: '外套 / 防护', category: 'clothing', emptyHint: '未穿着外套' },
+  { slot: 'top', label: '上装', category: 'clothing', emptyHint: '未穿着上装' },
+  { slot: 'bottom', label: '下装', category: 'clothing', emptyHint: '未穿着下装' },
+  { slot: 'shoes', label: '鞋履', category: 'clothing', emptyHint: '赤足（未穿鞋）' },
+];
+
+const DEFAULT_ACCESSORY_SLOTS: OutfitSlotMeta[] = [
+  { slot: 'accessory', label: '随身配饰', category: 'accessory', emptyHint: '暂无配饰' },
+  { slot: 'wrist', label: '腕部配饰', category: 'accessory', emptyHint: '空置腕饰槽' },
+  { slot: 'neck', label: '颈部挂件', category: 'accessory', emptyHint: '空置颈饰槽' },
+];
+
+const SLOT_LABEL_MAP: Record<string, string> = {
+  head: '头饰',
+  outer: '外套',
+  top: '上装',
+  bottom: '下装',
+  shoes: '鞋履',
+  accessory: '配饰',
+  wrist: '腕饰',
+  neck: '颈饰',
+  waist: '腰饰',
+  charm: '护符',
+};
+
+function renderSlotIcon(slot: string, className = 'w-4 h-4') {
+  switch (slot) {
+    case 'head':
+      return <Sparkles className={`${className} text-amber-400`} />;
+    case 'outer':
+      return <Shield className={`${className} text-sky-400`} />;
+    case 'top':
+    case 'bottom':
+      return <Shirt className={`${className} text-indigo-400`} />;
+    case 'shoes':
+      return <Footprints className={`${className} text-emerald-400`} />;
+    case 'wrist':
+      return <Watch className={`${className} text-cyan-400`} />;
+    default:
+      return <Gem className={`${className} text-violet-400`} />;
+  }
+}
 
 interface GameHUDProps {
   playerState: PlayerState;
   currentSceneTitle: string;
   onResetGame?: () => void;
+  onSyncScenario?: () => void;
+  isSyncing?: boolean;
+  syncFeedback?: string | null;
 }
 
-export default function GameHUD({ playerState, currentSceneTitle, onResetGame }: GameHUDProps) {
+export default function GameHUD({
+  playerState,
+  currentSceneTitle,
+  onResetGame,
+  onSyncScenario,
+  isSyncing = false,
+  syncFeedback = null,
+}: GameHUDProps) {
   const [showInventory, setShowInventory] = useState(false);
+  const [showOutfit, setShowOutfit] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<InventoryItem | null>(null);
+  const [hoveredOutfit, setHoveredOutfit] = useState<{ slotLabel: string; item: OutfitItem } | null>(null);
+
+  const outfitMap = playerState.outfit || {};
+  const equippedEntries = Object.entries(outfitMap).filter(
+    (entry): entry is [string, OutfitItem] => Boolean(entry[1] && entry[1].name)
+  );
+  const clothingSlotKeys = new Set(CLOTHING_SLOTS.map((s) => s.slot));
+  const defaultAccessoryKeys = new Set(DEFAULT_ACCESSORY_SLOTS.map((s) => s.slot));
+  const extraAccessorySlots: OutfitSlotMeta[] = equippedEntries
+    .filter(([slot]) => !clothingSlotKeys.has(slot) && !defaultAccessoryKeys.has(slot))
+    .map(([slot]) => ({
+      slot,
+      label: SLOT_LABEL_MAP[slot] || `配饰 (${slot})`,
+      category: 'accessory',
+      emptyHint: '空置配饰槽',
+    }));
+  const accessorySlots = [...DEFAULT_ACCESSORY_SLOTS, ...extraAccessorySlots];
 
   const hpPercent = Math.max(0, Math.min(100, playerState.hp));
   const sanPercent = Math.max(0, Math.min(100, playerState.san));
@@ -141,14 +244,28 @@ export default function GameHUD({ playerState, currentSceneTitle, onResetGame }:
           )}
         </div>
 
-        {/* 右侧：金币与道具背包按钮 */}
-        <div className="flex items-center gap-3">
+        {/* 右侧：金币、服装配饰与道具背包按钮 */}
+        <div className="flex items-center gap-2.5">
           {playerState.gold > 0 && (
             <div className="flex items-center gap-1 text-xs font-medium text-amber-300 bg-amber-950/40 border border-amber-800/50 px-2.5 py-1 rounded-md">
               <Coins className="w-3.5 h-3.5 text-amber-400" />
               <span>{playerState.gold}</span>
             </div>
           )}
+
+          <button
+            onClick={() => setShowOutfit(true)}
+            className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-200 rounded-md border border-indigo-500/40 transition relative shadow-sm"
+            title="查看当前穿着与随身配饰"
+          >
+            <Shirt className="w-3.5 h-3.5 text-indigo-400" />
+            <span>服装栏</span>
+            {equippedEntries.length > 0 && (
+              <span className="bg-indigo-500 text-white font-bold rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
+                {equippedEntries.length}
+              </span>
+            )}
+          </button>
 
           <button
             onClick={() => setShowInventory(true)}
@@ -163,6 +280,27 @@ export default function GameHUD({ playerState, currentSceneTitle, onResetGame }:
               </span>
             )}
           </button>
+
+          {onSyncScenario && (
+            <button
+              onClick={onSyncScenario}
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border transition shadow-sm ${
+                isSyncing
+                  ? 'text-indigo-300 bg-indigo-950/60 border-indigo-700/60'
+                  : 'text-slate-300 hover:text-indigo-300 hover:bg-indigo-950/30 border-slate-700/60 hover:border-indigo-800/40'
+              }`}
+              title="即时从 Studio 同步最新的剧本与场景修改"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-indigo-400' : ''}`} />
+              <span className="hidden sm:inline">同步剧本</span>
+            </button>
+          )}
+
+          {syncFeedback && (
+            <div className="absolute top-12 right-6 px-3 py-1 text-[11px] font-medium bg-indigo-900/90 text-indigo-200 border border-indigo-500/50 rounded-lg shadow-lg animate-in fade-in zoom-in-95 duration-150 z-50">
+              ✓ {syncFeedback}
+            </div>
+          )}
 
           {onResetGame && (
             <button
@@ -180,6 +318,208 @@ export default function GameHUD({ playerState, currentSceneTitle, onResetGame }:
           )}
         </div>
       </header>
+
+      {/* 快捷服装与配饰展示条 */}
+      <div className="flex items-center gap-2 px-6 py-1.5 bg-slate-950/85 border-b border-slate-800/80 text-xs overflow-x-auto no-scrollbar z-20">
+        <button
+          onClick={() => setShowOutfit(true)}
+          className="flex items-center gap-1.5 text-[11px] font-semibold text-indigo-300 hover:text-indigo-200 shrink-0 pr-2 border-r border-slate-800 transition"
+          title="点击展开完整服装与配饰栏"
+        >
+          <Shirt className="w-3.5 h-3.5 text-indigo-400" />
+          <span>当前穿着与配饰</span>
+        </button>
+
+        {equippedEntries.length === 0 ? (
+          <button
+            onClick={() => setShowOutfit(true)}
+            className="text-[11px] text-slate-500 hover:text-slate-300 italic transition"
+          >
+            暂无穿戴记录 · 点击查看服装与配饰槽位
+          </button>
+        ) : (
+          <div className="flex items-center gap-1.5 min-w-0">
+            {equippedEntries.map(([slot, piece]) => (
+              <button
+                key={slot}
+                onClick={() => setShowOutfit(true)}
+                title={`${SLOT_LABEL_MAP[slot] || slot}: ${piece.name}${piece.desc ? ` — ${piece.desc}` : ''}`}
+                className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-900/90 hover:bg-slate-800 border border-slate-700/70 hover:border-indigo-500/50 text-[11px] text-slate-200 shrink-0 transition"
+              >
+                {renderSlotIcon(slot, 'w-3 h-3')}
+                <span className="text-slate-400">{SLOT_LABEL_MAP[slot] || slot}:</span>
+                <span className="font-medium text-indigo-200">{piece.name}</span>
+                {piece.tag && (
+                  <span className="hidden md:inline text-[10px] text-amber-300/80 bg-amber-950/40 px-1 rounded border border-amber-800/30">
+                    {piece.tag}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 服装与配饰详情弹窗 */}
+      {showOutfit && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#181b24] border border-slate-700 rounded-xl max-w-2xl w-full p-5 shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <Shirt className="w-5 h-5 text-indigo-400" />
+                <h3 className="font-semibold text-slate-100">角色服装与配饰栏</h3>
+                <span className="text-xs text-slate-500 font-mono">
+                  (已穿戴 {equippedEntries.length} 件)
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  setShowOutfit(false);
+                  setHoveredOutfit(null);
+                }}
+                className="p-1 text-slate-400 hover:text-slate-100 rounded-lg hover:bg-slate-800 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="py-4 max-h-[65vh] overflow-y-auto space-y-5">
+              {/* 服装穿着槽位 */}
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-indigo-300 mb-2.5 flex items-center gap-1.5">
+                  <Shirt className="w-3.5 h-3.5" />
+                  <span>当前穿着（服饰部位）</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {CLOTHING_SLOTS.map(({ slot, label, emptyHint }) => {
+                    const piece = outfitMap[slot];
+                    return (
+                      <div
+                        key={slot}
+                        onMouseEnter={() => piece && setHoveredOutfit({ slotLabel: label, item: piece })}
+                        onMouseLeave={() => setHoveredOutfit(null)}
+                        onClick={() => piece && setHoveredOutfit({ slotLabel: label, item: piece })}
+                        className={`p-3 rounded-lg border transition flex items-start gap-3 ${
+                          piece
+                            ? 'bg-slate-900/90 hover:bg-slate-800 border-slate-700/80 hover:border-indigo-500/50 cursor-pointer'
+                            : 'bg-slate-950/50 border-slate-800/80 border-dashed opacity-70'
+                        }`}
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center shrink-0">
+                          {piece?.icon ? (
+                            <img src={piece.icon} alt={piece.name} className="w-7 h-7 object-contain rounded" />
+                          ) : (
+                            renderSlotIcon(slot, 'w-4 h-4')
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-mono uppercase text-slate-400">{label}</span>
+                            {piece?.tag && (
+                              <span className="text-[10px] text-amber-300 bg-amber-950/50 border border-amber-800/40 px-1.5 py-0.2 rounded shrink-0">
+                                {piece.tag}
+                              </span>
+                            )}
+                          </div>
+                          {piece ? (
+                            <>
+                              <div className="text-sm font-semibold text-indigo-200 truncate mt-0.5">
+                                {piece.name}
+                              </div>
+                              <div className="text-xs text-slate-400 mt-0.5 line-clamp-1">
+                                {piece.desc || '当前穿戴的随身衣物'}
+                              </div>
+                            </>
+                          ) : (
+                            <div className="text-xs text-slate-500 italic mt-1">{emptyHint}</div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 配饰与挂件槽位 */}
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-violet-300 mb-2.5 flex items-center gap-1.5">
+                  <Gem className="w-3.5 h-3.5" />
+                  <span>配饰与随身挂件</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {accessorySlots.map(({ slot, label, emptyHint }) => {
+                    const piece = outfitMap[slot];
+                    return (
+                      <div
+                        key={slot}
+                        onMouseEnter={() => piece && setHoveredOutfit({ slotLabel: label, item: piece })}
+                        onMouseLeave={() => setHoveredOutfit(null)}
+                        onClick={() => piece && setHoveredOutfit({ slotLabel: label, item: piece })}
+                        className={`p-3 rounded-lg border transition flex items-start gap-3 ${
+                          piece
+                            ? 'bg-slate-900/90 hover:bg-slate-800 border-slate-700/80 hover:border-violet-500/50 cursor-pointer'
+                            : 'bg-slate-950/50 border-slate-800/80 border-dashed opacity-70'
+                        }`}
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center shrink-0">
+                          {piece?.icon ? (
+                            <img src={piece.icon} alt={piece.name} className="w-7 h-7 object-contain rounded" />
+                          ) : (
+                            renderSlotIcon(slot, 'w-4 h-4')
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-mono uppercase text-slate-400">{label}</span>
+                            {piece?.tag && (
+                              <span className="text-[10px] text-violet-300 bg-violet-950/50 border border-violet-800/40 px-1.5 py-0.2 rounded shrink-0">
+                                {piece.tag}
+                              </span>
+                            )}
+                          </div>
+                          {piece ? (
+                            <>
+                              <div className="text-sm font-semibold text-violet-200 truncate mt-0.5">
+                                {piece.name}
+                              </div>
+                              <div className="text-xs text-slate-400 mt-0.5 line-clamp-1">
+                                {piece.desc || '随身佩戴的小件配饰'}
+                              </div>
+                            </>
+                          ) : (
+                            <div className="text-xs text-slate-500 italic mt-1">{emptyHint}</div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {hoveredOutfit && (
+              <div className="p-2.5 bg-slate-900 border border-indigo-900/50 rounded-lg text-xs text-slate-300 mb-3 animate-in fade-in duration-100">
+                <span className="text-indigo-300 font-semibold">
+                  [{hoveredOutfit.slotLabel}] {hoveredOutfit.item.name}:{' '}
+                </span>
+                {hoveredOutfit.item.desc || '没有更多详细描述。'}
+              </div>
+            )}
+
+            <div className="pt-3 border-t border-slate-800 text-right">
+              <button
+                onClick={() => {
+                  setShowOutfit(false);
+                  setHoveredOutfit(null);
+                }}
+                className="px-4 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md transition"
+              >
+                关闭
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 背包弹窗 */}
       {showInventory && (

@@ -18,6 +18,27 @@ initial_player_state:
     constitution: 12
     perception: 13
   inventory: []
+  outfit:
+    top:
+      id: "torn_linen_shirt"
+      name: "撕裂的白色亚麻衬衫"
+      desc: "迫降时被海水浸湿又在烈日下微干的机舱休闲衬衫，袖口略有撕裂。"
+      tag: "微湿 · 轻便"
+    bottom:
+      id: "khaki_cargo_pants"
+      name: "卡其色速干长裤"
+      desc: "耐磨的多口袋工装长裤，裤脚沾满细沙，能阻挡灌木枝刺刮伤。"
+      tag: "耐磨 · 下装"
+    shoes:
+      id: "sandy_sneakers"
+      name: "沾沙的运动跑鞋"
+      desc: "鞋底厚实防滑，能保护双脚不在尖锐礁石与碎珊瑚上割伤。"
+      tag: "防滑 · 鞋履"
+    wrist:
+      id: "broken_watch"
+      name: "停摆的机械腕表"
+      desc: "表盘玻璃在撞击时裂开了一道细纹，指针停在凌晨 3:14，金属表壳可反射阳光求救。"
+      tag: "腕饰 · 可反光"
   variables:
     day: 1
     time_slot: "上午"

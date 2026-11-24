@@ -128,3 +128,65 @@ async def test_fallback_director_pickup_metal_box_not_hijacked_to_lighter():
     assert "lighter" not in inv_ids
     assert session.player_state.variables.get("found_metal_box") is True
     assert session.player_state.variables.get("found_lighter") is False
+
+
+@pytest.mark.asyncio
+async def test_fallback_director_lighter_campfire_and_cooking():
+    """Player with lighter in inventory ignites fire and cooks food without being told there is no fire source."""
+    mgr = ScenarioManager()
+    driver = EmptyMockDriver()
+    bridge = AGUIBridge(scenario_mgr=mgr, driver=driver)
+
+    session = bridge.get_or_create_session("test_lighter_fire_thread", "island_survival")
+    # Grant lighter and raw_crab to player inventory
+    session.player_state.inventory.append({
+        "id": "lighter",
+        "name": "防风打火机",
+        "desc": "军用级防水防风打火机",
+    })
+    session.player_state.inventory.append({
+        "id": "raw_crab",
+        "name": "肥硕海蟹",
+        "desc": "刚捕获的活青蟹",
+    })
+    assert session.player_state.variables.get("fire_started") is False
+
+    inp = RunAgentInput(
+        thread_id="test_lighter_fire_thread",
+        run_id="run_fire_1",
+        messages=[
+            {
+                "id": "msg-fire-1",
+                "role": "user",
+                "content": [{"type": "text", "text": "从背包中取出打火机点燃甘草进而引燃火堆，开始煮食物"}],
+            }
+        ],
+        forwarded_props={"scenario_id": "island_survival"},
+    )
+
+    events = []
+    async for raw in bridge.stream_play(inp):
+        events.append(raw)
+
+    import json
+    narrative_parts = []
+    for raw in events:
+        for line in raw.strip().split("\n"):
+            if line.startswith("data: "):
+                payload = json.loads(line[6:])
+                if payload.get("type") == "TEXT_MESSAGE_CONTENT":
+                    narrative_parts.append(payload.get("delta", ""))
+    narrative_text = "".join(narrative_parts)
+
+    # Must NOT claim lack of fire source
+    assert "没有火源" not in narrative_text
+    assert "打火机" in narrative_text
+    assert "篝火" in narrative_text
+
+    # Fire must be started!
+    assert session.player_state.variables.get("fire_started") is True
+
+    # Crab should be cooked/consumed, fullness increased
+    inv_ids = [item.get("id") for item in session.player_state.inventory]
+    assert "raw_crab" not in inv_ids
+    assert session.player_state.attributes.get("fullness") > 60

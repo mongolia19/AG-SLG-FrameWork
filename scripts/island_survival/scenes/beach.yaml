@@ -225,6 +225,54 @@ actions:
     time_cost: 1
     message: 你抱回了一捆经过烈日暴晒的干燥树枝，是生火和搭建庇护所的必备基础素材。
   on_failure: null
+- id: beach_campfire
+  label: 在沙滩背风处用浮木与打火机生起温暖篝火
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    has_item: lighter
+    variables:
+      fire_started: false
+  effects: null
+  source: null
+  on_success:
+    variables:
+      fire_started: true
+    visuals:
+      hero_image: /assets/illustrations/campfire.png
+    attributes_delta:
+      stamina: -4
+      temperature: 1
+    san_delta: 6
+    time_cost: 1
+    message: 咔哒！防风打火机喷吐出蓝红色的稳定火舌，轻松引燃了细碎的干燥浮木。熊熊燃烧的沙滩篝火驱散了海风的寒意与未知的黑暗！
+  on_failure: null
+- id: beach_cook_food
+  label: 在沙滩篝火上架起木签，将海蟹烤得金黄酥脆
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    variables:
+      fire_started: true
+    has_item: raw_crab
+  effects: null
+  source: null
+  on_success:
+    consume_item: raw_crab
+    attributes_delta:
+      fullness: 35
+      stamina: 16
+      temperature: 1
+    san_delta: 6
+    time_cost: 1
+    message: 海蟹在篝火上方滋滋作响，外壳烤得通红，散发出浓郁诱人的焦香海鲜香气！你剥开蟹壳大口咀嚼温热紧实的蟹肉，饱食度大幅回升，干劲十足！
+  on_failure: null
 - id: eat_raw_crab
   label: 迫不得已：直接敲开生海蟹充饥（有肠胃风险）
   type: check
@@ -279,6 +327,63 @@ actions:
       stamina: 10
     san_delta: 3
     message: 清冽的泉水滑入干渴的喉咙，你长舒一口气，将空玻璃瓶小心收好。
+  on_failure: null
+- id: scavenge_pilot_windbreaker
+  label: 翻找残骸座椅旁的救生包，换上「失事机长防风夹克」
+  type: check
+  target_npc: null
+  target_scene: null
+  skill: perception
+  difficulty: 9
+  condition:
+    not_has_outfit: pilot_windbreaker
+  effects: null
+  source: null
+  on_success:
+    equip_outfit:
+      outer:
+        id: pilot_windbreaker
+        name: 失事机长防风夹克
+        desc: 在残骸附近搜获的橙灰拼色高可视度防风外套，防风防泼水，夜间保暖极佳。
+        tag: 防风保暖 · 外套
+    attributes_delta:
+      stamina: -4
+      temperature: 1
+    san_delta: 4
+    time_cost: 1
+    message: 你从扭曲的机舱座椅旁拉出一只救生背包，翻出并穿上了那件醒目的失事机长防风夹克，海风带来的寒意顿时减轻不少！
+  on_failure:
+    attributes_delta:
+      stamina: -5
+      hydration: -3
+    time_cost: 1
+    message: 残骸金属变形严重，背包拉链被沙砾卡死，暂时没能把衣物扯出来。
+- id: craft_shell_necklace
+  label: 用五彩海贝与纤维绳串起「潮汐贝壳挂坠」戴在颈间
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    has_item:
+    - seashell
+    - rope
+    not_has_outfit: shell_necklace
+  effects: null
+  source: null
+  on_success:
+    consume_item: seashell
+    equip_outfit:
+      neck:
+        id: shell_necklace
+        name: 潮汐贝壳挂坠
+        desc: 用坚硬五彩海贝与韧皮细绳串起的颈间护符，海风吹过时发出清脆声响，令人心神宁静。
+        tag: 安神 · 颈饰
+    san_delta: 6
+    attributes_delta:
+      stamina: -2
+    message: 你将打磨光滑的五彩海贝用坚韧纤维细绳串起挂在颈间，清脆的贝壳碰撞声让你在孤岛的焦虑平复了不少。
   on_failure: null
 - id: enter_coastal_jungle
   label: 离开沙滩，向海边丛林前进

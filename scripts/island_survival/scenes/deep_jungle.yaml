@@ -167,17 +167,16 @@ actions:
   skill: survival
   difficulty: 8
   condition:
-    has_item:
-    - lighter
-    - branches
+    has_item: lighter
     variables:
       fire_started: false
   effects: null
   source: null
   on_success:
-    consume_item: branches
     variables:
       fire_started: true
+    visuals:
+      hero_image: /assets/illustrations/campfire.png
     attributes_delta:
       stamina: -6
       temperature: 1

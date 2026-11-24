@@ -19,6 +19,7 @@ class PlayerState(BaseModel):
         "intelligence": 10,
     })
     inventory: List[Dict[str, Any]] = Field(default_factory=list)
+    outfit: Dict[str, Any] = Field(default_factory=dict)
     variables: Dict[str, Any] = Field(default_factory=dict)
     current_scene: str = ""
 
@@ -104,6 +105,24 @@ def evaluate_action_condition(
         forb = condition["not_has_item"]
         forbs = [forb] if isinstance(forb, str) else list(forb)
         if any(f in inv_ids for f in forbs):
+            return False
+
+    outfit_ids = {
+        item.get("id", "")
+        for item in (player_state.outfit or {}).values()
+        if isinstance(item, dict) and item.get("id")
+    }
+
+    if "has_outfit" in condition:
+        req = condition["has_outfit"]
+        reqs = [req] if isinstance(req, str) else list(req)
+        if not all(r in outfit_ids for r in reqs):
+            return False
+
+    if "not_has_outfit" in condition:
+        forb = condition["not_has_outfit"]
+        forbs = [forb] if isinstance(forb, str) else list(forb)
+        if any(f in outfit_ids for f in forbs):
             return False
 
     if "variables" in condition and isinstance(condition["variables"], dict):

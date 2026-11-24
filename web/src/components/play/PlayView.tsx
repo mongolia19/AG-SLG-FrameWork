@@ -14,9 +14,13 @@ import ActionPanel from './ActionPanel';
 
 interface PlayViewProps {
   scenarioId?: string;
+  isActive?: boolean;
 }
 
-export default function PlayView({ scenarioId = 'black_crow_manor' }: PlayViewProps) {
+export default function PlayView({
+  scenarioId = 'black_crow_manor',
+  isActive = true,
+}: PlayViewProps) {
   const [scenario, setScenario] = useState<ScenarioSpec | null>(null);
   const [playerState, setPlayerState] = useState<PlayerState | null>(null);
   const [messages, setMessages] = useState<StoryMessage[]>([]);
@@ -25,6 +29,8 @@ export default function PlayView({ scenarioId = 'black_crow_manor' }: PlayViewPr
   const [diceEvent, setDiceEvent] = useState<DiceCheckEvent | null>(null);
   const [activeVisuals, setActiveVisuals] = useState<VisualLayer | null>(null);
   const [dynamicActions, setDynamicActions] = useState<ActionOption[] | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
 
   // 会话与运行 ID
   const threadIdRef = useRef<string>(`session-${scenarioId}-${Date.now()}`);
@@ -42,6 +48,7 @@ export default function PlayView({ scenarioId = 'black_crow_manor' }: PlayViewPr
     const initPlayer = sc.world.initial_player_state;
     setPlayerState({
       ...initPlayer,
+      outfit: initPlayer.outfit ? { ...initPlayer.outfit } : {},
       current_scene: initPlayer.current_scene || sc.world.initial_scene,
     });
 
@@ -79,7 +86,10 @@ export default function PlayView({ scenarioId = 'black_crow_manor' }: PlayViewPr
           if (rawSaved) {
             const saved = JSON.parse(rawSaved);
             if (saved && saved.playerState && Array.isArray(saved.messages) && saved.messages.length > 0) {
-              setPlayerState(saved.playerState);
+              setPlayerState({
+                ...saved.playerState,
+                outfit: saved.playerState.outfit ?? data.world.initial_player_state.outfit ?? {},
+              });
               setMessages(saved.messages);
               setActiveVisuals(saved.activeVisuals || null);
               setDynamicActions(saved.dynamicActions || null);
@@ -97,6 +107,49 @@ export default function PlayView({ scenarioId = 'black_crow_manor' }: PlayViewPr
       .catch((err) => {
         console.error(err);
       });
+  }, [scenarioId]);
+
+  // 静默同步 Studio 最新的剧本与场景修改，保持玩家已有背包、属性与剧情历史
+  const refreshScenario = async (showNotice = false) => {
+    setIsSyncing(true);
+    try {
+      const res = await fetch(`/api/scenarios/${scenarioId}`);
+      if (res.ok) {
+        const data: ScenarioSpec = await res.json();
+        setScenario(data);
+        if (showNotice) {
+          setSyncFeedback('已同步 Studio 最新修改');
+          setTimeout(() => setSyncFeedback(null), 2500);
+        }
+      }
+    } catch (e) {
+      console.warn('Live sync scenario failed:', e);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // 1.1 当从 Studio 切换到 Play 模式时，立即静默拉取最新剧本
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (isActive) {
+      refreshScenario(true);
+    }
+  }, [isActive]);
+
+  // 1.2 监听 Studio 场景保存或导入的广播事件，即时同步
+  useEffect(() => {
+    const handleUpdate = (e: any) => {
+      if (!e.detail?.scenarioId || e.detail.scenarioId === scenarioId) {
+        refreshScenario(true);
+      }
+    };
+    window.addEventListener('ag_slg_scenario_updated', handleUpdate);
+    return () => window.removeEventListener('ag_slg_scenario_updated', handleUpdate);
   }, [scenarioId]);
 
   // 自动将进度写回 LocalStorage，确保切换模式或刷新页面绝不丢状态
@@ -239,6 +292,7 @@ export default function PlayView({ scenarioId = 'black_crow_manor' }: PlayViewPr
         attributes: { ...(prev.attributes || {}) },
         variables: { ...(prev.variables || {}) },
         inventory: [...(prev.inventory || [])],
+        outfit: { ...(prev.outfit || {}) },
       };
       for (const patch of patches) {
         if (patch.path === '/current_scene') {
@@ -261,6 +315,17 @@ export default function PlayView({ scenarioId = 'black_crow_manor' }: PlayViewPr
           next.inventory = Array.isArray(patch.value) ? patch.value : [];
         } else if (patch.path === '/inventory/-') {
           next.inventory = [...next.inventory, patch.value];
+        } else if (patch.path === '/outfit') {
+          next.outfit = patch.value && typeof patch.value === 'object' ? { ...patch.value } : {};
+        } else if (patch.path.startsWith('/outfit/')) {
+          const slotKey = patch.path.replace('/outfit/', '');
+          const nextOutfit = { ...(next.outfit || {}) };
+          if (patch.op === 'remove' || !patch.value) {
+            delete nextOutfit[slotKey];
+          } else {
+            nextOutfit[slotKey] = patch.value;
+          }
+          next.outfit = nextOutfit;
         }
       }
       return next;
@@ -469,6 +534,9 @@ export default function PlayView({ scenarioId = 'black_crow_manor' }: PlayViewPr
         playerState={playerState}
         currentSceneTitle={currentScene?.title || currentSceneId}
         onResetGame={() => handleResetGame()}
+        onSyncScenario={() => refreshScenario(true)}
+        isSyncing={isSyncing}
+        syncFeedback={syncFeedback}
       />
 
       {/* 剧情主视窗与立绘图层 */}

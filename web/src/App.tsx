@@ -81,7 +81,7 @@ export default function App() {
 
       <main className="flex-1 flex overflow-hidden relative">
         <div className={`flex-1 flex flex-col h-full w-full ${mode === 'play' ? '' : 'hidden'}`}>
-          <PlayView scenarioId={selectedScenario} />
+          <PlayView scenarioId={selectedScenario} isActive={mode === 'play'} />
         </div>
         <div className={`flex-1 flex flex-col h-full w-full ${mode === 'studio' ? '' : 'hidden'}`}>
           <StudioView scenarioId={selectedScenario} />

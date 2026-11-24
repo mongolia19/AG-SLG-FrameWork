@@ -60,6 +60,9 @@ export default function StudioView({ scenarioId = 'black_crow_manor' }: StudioVi
       });
       if (res.ok) {
         await loadScenarioData(true);
+        window.dispatchEvent(
+          new CustomEvent('ag_slg_scenario_updated', { detail: { scenarioId } })
+        );
       }
     } catch (err) {
       console.error(err);
@@ -83,6 +86,9 @@ export default function StudioView({ scenarioId = 'black_crow_manor' }: StudioVi
       });
       if (res.ok) {
         await loadScenarioData(false);
+        window.dispatchEvent(
+          new CustomEvent('ag_slg_scenario_updated', { detail: { scenarioId } })
+        );
       } else {
         const err = await res.json();
         alert(`导入剧本包失败: ${err.detail || '未知原因'}`);
@@ -195,7 +201,12 @@ export default function StudioView({ scenarioId = 'black_crow_manor' }: StudioVi
         {/* 右侧：Studio Co-pilot 编剧助手 */}
         <AuthoringChat
           scenarioId={scenarioId}
-          onScenarioUpdated={() => loadScenarioData(true)}
+          onScenarioUpdated={() => {
+            loadScenarioData(true);
+            window.dispatchEvent(
+              new CustomEvent('ag_slg_scenario_updated', { detail: { scenarioId } })
+            );
+          }}
         />
       </div>
     </div>

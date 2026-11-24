@@ -467,3 +467,77 @@ async def test_regression_badcase_scene_structures_and_visuals_not_leaked_on_tra
     assert deep_scene.hero_image == ""
     deep_decs = resolve_scene_decorations(deep_scene, session.player_state)
     assert not any(d.category == "structure" for d in deep_decs)
+
+
+# ============================================================================
+# BAD CASE 8: Scenario switching must isolate dialogue history and player state
+# Reported: "切换剧本后 对话历史等内容不跟着变化"
+# ============================================================================
+@pytest.mark.asyncio
+async def test_regression_badcase_scenario_switching_isolation():
+    """Bad Case 8: Switching between scenarios must guarantee complete isolation of scenes, state and dialogues."""
+    from httpx import ASGITransport, AsyncClient
+    from server.app import app, bridge as app_bridge
+    from server.agent_driver import MockAgentDriver
+
+    mgr = ScenarioManager()
+    # 1. 验证剧本列表中包含全部剧本且各剧本初始设定独立
+    summaries = mgr.list_scenario_summaries()
+    scenario_ids = [s["id"] for s in summaries]
+    assert "island_survival" in scenario_ids
+    assert "wow_elwynn_rpg" in scenario_ids
+    assert "black_crow_manor" in scenario_ids
+
+    spec_island = mgr.load_scenario("island_survival")
+    spec_wow = mgr.load_scenario("wow_elwynn_rpg")
+    assert spec_island.world.id == "island_survival"
+    assert spec_island.world.initial_scene == "beach"
+    assert spec_island.world.initial_player_state.name == "幸存者"
+
+    assert spec_wow.world.id == "wow_elwynn_rpg"
+    assert spec_wow.world.initial_scene == "northshire_abbey"
+    assert spec_wow.world.initial_player_state.name == "艾泽拉斯新兵"
+    wow_inv_names = [it["name"] for it in spec_wow.world.initial_player_state.inventory]
+    assert any("炉石" in n for n in wow_inv_names)
+
+    # 2. 模拟分别建立 island 与 wow 会话，验证会话间状态完全隔离
+    app_bridge.driver = MockAgentDriver(mock_responses=["你环顾修道院广场。"])
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        # A. 运行 island_survival 回合
+        res_island = await ac.post(
+            "/api/play/run",
+            json={
+                "thread_id": "test_switch_session_island",
+                "run_id": "run-switch-1",
+                "messages": [{"id": "m1", "role": "user", "content": [{"type": "text", "text": "检查沙滩"}]}],
+                "forwarded_props": {"scenario_id": "island_survival"},
+            },
+        )
+        assert res_island.status_code == 200
+
+        # B. 运行 wow_elwynn_rpg 回合
+        res_wow = await ac.post(
+            "/api/play/run",
+            json={
+                "thread_id": "test_switch_session_wow",
+                "run_id": "run-switch-2",
+                "messages": [{"id": "m2", "role": "user", "content": [{"type": "text", "text": "查看北郡征召榜"}]}],
+                "forwarded_props": {"scenario_id": "wow_elwynn_rpg"},
+            },
+        )
+        assert res_wow.status_code == 200
+
+        # C. 验证从 bridge 获取的会话状态相互隔离，无任何串染
+        session_island = app_bridge.get_or_create_session("test_switch_session_island", "island_survival")
+        session_wow = app_bridge.get_or_create_session("test_switch_session_wow", "wow_elwynn_rpg")
+
+        assert session_island.scenario_id == "island_survival"
+        assert session_island.player_state.current_scene == "beach"
+        assert session_island.player_state.name == "幸存者"
+
+        assert session_wow.scenario_id == "wow_elwynn_rpg"
+        assert session_wow.player_state.current_scene == "northshire_abbey"
+        assert session_wow.player_state.name == "艾泽拉斯新兵"
+        assert "炉石" in [it["id"] for it in session_wow.player_state.inventory]
+        assert "lighter" not in [it.get("id") for it in session_wow.player_state.inventory]
+

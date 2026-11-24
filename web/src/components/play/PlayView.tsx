@@ -53,10 +53,13 @@ export default function PlayView({
       current_scene: initPlayer.current_scene || sc.world.initial_scene,
     });
 
+    const initialSceneNode = sc.scenes[initPlayer.current_scene || sc.world.initial_scene];
     const openingText =
       scenarioId === 'island_survival'
         ? `海浪轰鸣，烈日高悬。你在一阵剧烈的咳嗽中清醒过来，口鼻中满是咸涩的海水与细沙。\n你作为一名空难幸存者漂流到了未知的荒岛沙滩上，眼前是一望无际的汪洋与茂密的未涉密林……\n体力正在流失，必须尽快搜查散落物资、寻找纯净淡水，并准备生火度过危机重重的夜晚！`
-        : `暴风雨笼罩着荒凉的群山，古老的${sc.world.title}如同一头黑色的巨兽盘踞在悬崖之上。\n你作为${initPlayer.name}，踏上了通往公馆大门的石阶……`;
+        : scenarioId === 'wow_elwynn_rpg'
+        ? (initialSceneNode?.description || `晨祷钟声在艾尔文森林的薄雾中回荡，北郡修道院的石砌广场上战旗猎猎。\n作为艾泽拉斯的新兵，法戈第矿洞的危机正等待着你去平息！`)
+        : (initialSceneNode?.description || `暴风雨笼罩着荒凉的群山，古老的${sc.world.title}如同一头黑色的巨兽盘踞在悬崖之上。\n你作为${initPlayer.name}，踏上了通往公馆大门的石阶……`);
 
     threadIdRef.current = `session-${scenarioId}-${Date.now()}`;
     setActiveVisuals(null);
@@ -86,7 +89,15 @@ export default function PlayView({
           const rawSaved = localStorage.getItem(`ag_slg_save_${scenarioId}`);
           if (rawSaved) {
             const saved = JSON.parse(rawSaved);
-            if (saved && saved.playerState && Array.isArray(saved.messages) && saved.messages.length > 0) {
+            const isValidScenarioMatch =
+              saved &&
+              (!saved.scenarioId || saved.scenarioId === scenarioId) &&
+              saved.playerState &&
+              data.scenes[saved.playerState.current_scene] &&
+              Array.isArray(saved.messages) &&
+              saved.messages.length > 0;
+
+            if (isValidScenarioMatch) {
               setPlayerState({
                 ...saved.playerState,
                 outfit: saved.playerState.outfit ?? data.world.initial_player_state.outfit ?? {},
@@ -96,6 +107,9 @@ export default function PlayView({
               setDynamicActions(saved.dynamicActions || null);
               threadIdRef.current = saved.threadId || `session-${scenarioId}-${Date.now()}`;
               return;
+            } else {
+              console.warn(`Saved state for ${scenarioId} is invalid or from another scenario, reinitializing.`);
+              localStorage.removeItem(`ag_slg_save_${scenarioId}`);
             }
           }
         } catch (err) {
@@ -156,6 +170,8 @@ export default function PlayView({
   // 自动将进度写回 LocalStorage，确保切换模式或刷新页面绝不丢状态
   useEffect(() => {
     if (!scenario || !playerState || messages.length === 0) return;
+    // 关键防御：如果当前在内存中的剧本世界 ID 与当前 scenarioId 不一致，严禁串写存档
+    if (scenario.world.id !== scenarioId) return;
     try {
       const payload = {
         scenarioId,

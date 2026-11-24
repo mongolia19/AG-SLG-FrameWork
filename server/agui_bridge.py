@@ -6,6 +6,7 @@ RunStarted -> TextMessage* -> StateDelta / ToolCall -> RunFinished.
 
 import asyncio
 import json
+import random
 import re
 import uuid
 from typing import Any, AsyncIterator, Dict, List, Optional
@@ -29,11 +30,187 @@ from server.scenario_manager import (
     ActionOption,
     evaluate_action_condition,
     resolve_scene_actions,
+    resolve_scene_decorations,
 )
 
 
 TIME_SLOTS = ["清晨", "上午", "下午", "黄昏", "夜晚", "深夜"]
 SURVIVAL_CLAMP_100 = {"stamina", "hydration", "fullness"}
+SCENE_SCOPED_STRUCT_DEFAULTS: Dict[str, Any] = {
+    "fire_started": False,
+    "shelter_level": 0,
+    "water_collector_built": False,
+}
+
+WEATHER_CATALOG: Dict[str, Dict[str, Any]] = {
+    "clear": {
+        "labels_by_slot": {
+            "清晨": "晴空微暖",
+            "上午": "晴朗炎热",
+            "下午": "烈日酷热",
+            "黄昏": "落日余晖",
+            "夜晚": "夜色星沉",
+            "深夜": "静谧星夜",
+        },
+        "atmosphere": "晴空炙烤、海天一色",
+        "night_atmosphere": "星光微寒、海浪低吟",
+        "cue": "日光穿透云隙洒下，海天交界处一片澄明，空气中带着干爽的温热。",
+        "night_cue": "夜空清澈无云，微冷的星月光洒在沙地与树梢之间。",
+    },
+    "cloudy": {
+        "labels_by_slot": {
+            "清晨": "阴云微凉",
+            "上午": "阴天多云",
+            "下午": "乌云蔽日",
+            "黄昏": "阴沉暮色",
+            "夜晚": "阴云蔽月",
+            "深夜": "黑云压夜",
+        },
+        "atmosphere": "阴云压顶、闷热阴沉",
+        "night_atmosphere": "黑云蔽月、沉闷压抑",
+        "cue": "厚重的铅灰色云层遮住了天日，海面褪去亮色，空气潮湿闷沉，似有风雨酝酿。",
+        "night_cue": "浓重的阴云遮蔽了星月，四周陷入比往常更加深沉的黑暗与闷潮。",
+    },
+    "windy": {
+        "labels_by_slot": {
+            "清晨": "海风微急",
+            "上午": "海风呼啸",
+            "下午": "狂风劲吹",
+            "黄昏": "海风骤起",
+            "夜晚": "夜风呼啸",
+            "深夜": "凛冽狂风",
+        },
+        "atmosphere": "狂风呼啸、林叶翻飞",
+        "night_atmosphere": "夜风凛冽、涛声怒吼",
+        "cue": "劲急的海风卷着咸涩水汽迎面刮来，椰林与灌木剧烈摇晃，沙尘与落叶随风翻飞。",
+        "night_cue": "凛冽的夜风在林间与礁石缝隙中呜咽穿行，气温随之明显下降。",
+    },
+    "rain": {
+        "labels_by_slot": {
+            "清晨": "晨雨淅沥",
+            "上午": "细雨绵绵",
+            "下午": "阵雨淅沥",
+            "黄昏": "暮雨潇潇",
+            "夜晚": "夜雨淅沥",
+            "深夜": "冷雨凄凄",
+        },
+        "atmosphere": "雨丝绵密、湿润清凉",
+        "night_atmosphere": "夜雨微寒、水滴淅沥",
+        "cue": "细密的雨点敲打着阔叶与沙面，带来久违的清凉水汽，也让人衣衫渐湿。",
+        "night_cue": "冰凉的夜雨淅沥落下，周围草木湿滑，空气中寒意加重。",
+    },
+    "storm": {
+        "labels_by_slot": {
+            "清晨": "暴风雨临",
+            "上午": "狂风暴雨",
+            "下午": "雷雨倾盆",
+            "黄昏": "风暴骤起",
+            "夜晚": "暴雨夜袭",
+            "深夜": "雷暴狂风",
+        },
+        "atmosphere": "电闪雷鸣、狂风暴雨",
+        "night_atmosphere": "雷暴交加、黑浪翻涌",
+        "cue": "狂风裹挟着豆大的雨点倾盆而下，远处海面雷声滚滚，能见度骤降，寒意透骨。",
+        "night_cue": "电闪雷鸣撕裂夜幕，狂风暴雨猛烈拍打着岛屿，露天火源与体温都面临严峻考验。",
+    },
+    "foggy": {
+        "labels_by_slot": {
+            "清晨": "海雾微凉",
+            "上午": "薄雾未散",
+            "下午": "海雾弥漫",
+            "黄昏": "暮雾沉沉",
+            "夜晚": "夜雾笼罩",
+            "深夜": "浓雾深重",
+        },
+        "atmosphere": "海雾弥漫、视野朦胧",
+        "night_atmosphere": "浓雾锁岛、幽暗迷离",
+        "cue": "乳白色的潮湿海雾贴着地面与海面缓缓流淌，十步之外的轮廓都变得朦胧。",
+        "night_cue": "浓重的夜雾吞没了远处的海岸与密林，水汽凝结在衣领与眉梢。",
+    },
+}
+
+WEATHER_TRANSITIONS: Dict[str, List[tuple[str, float]]] = {
+    "clear": [("cloudy", 0.35), ("windy", 0.25), ("clear", 0.25), ("foggy", 0.15)],
+    "cloudy": [("rain", 0.35), ("windy", 0.25), ("cloudy", 0.20), ("clear", 0.20)],
+    "windy": [("cloudy", 0.30), ("storm", 0.25), ("rain", 0.20), ("windy", 0.15), ("clear", 0.10)],
+    "rain": [("storm", 0.25), ("cloudy", 0.30), ("rain", 0.25), ("clear", 0.20)],
+    "storm": [("rain", 0.40), ("windy", 0.30), ("cloudy", 0.20), ("storm", 0.10)],
+    "foggy": [("clear", 0.40), ("cloudy", 0.30), ("windy", 0.20), ("foggy", 0.10)],
+}
+
+
+def classify_weather_type(weather_label: str, explicit_type: str = "") -> str:
+    """Resolve canonical weather category from label or explicit type."""
+    if explicit_type in WEATHER_CATALOG:
+        return explicit_type
+    label = (weather_label or "").strip()
+    if any(k in label for k in ("暴雨", "雷暴", "雷雨", "风暴")):
+        return "storm"
+    if any(k in label for k in ("雨",)):
+        return "rain"
+    if any(k in label for k in ("风",)):
+        return "windy"
+    if any(k in label for k in ("阴", "乌云", "黑云", "多云")):
+        return "cloudy"
+    if any(k in label for k in ("雾",)):
+        return "foggy"
+    return "clear"
+
+
+def advance_weather(
+    current_label: str,
+    current_type: str,
+    new_slot: str,
+    duration: int = 1,
+    rng: Optional[random.Random] = None,
+) -> tuple[str, str, int]:
+    """Advance weather state smoothly across clear, cloudy, windy, rain, storm, and foggy."""
+    cur_type = classify_weather_type(current_label, current_type)
+    candidates = list(WEATHER_TRANSITIONS.get(cur_type, WEATHER_TRANSITIONS["clear"]))
+
+    # Prevent getting stuck in the exact same weather type for too many consecutive turns
+    if duration >= 2:
+        filtered = [(w, p) for w, p in candidates if w != cur_type]
+        if filtered:
+            candidates = filtered
+
+    # Fog is most common around dawn/deep night
+    if new_slot not in ("清晨", "深夜"):
+        candidates = [(w, p * 0.4 if w == "foggy" else p) for w, p in candidates]
+
+    picker = rng or random
+    total_w = sum(p for _, p in candidates)
+    pick = picker.uniform(0, total_w)
+    acc = 0.0
+    next_type = candidates[0][0]
+    for w_type, weight in candidates:
+        acc += weight
+        if pick <= acc:
+            next_type = w_type
+            break
+
+    slot_labels = WEATHER_CATALOG[next_type]["labels_by_slot"]
+    next_label = slot_labels.get(new_slot, list(slot_labels.values())[0])
+    next_duration = duration + 1 if next_type == cur_type else 1
+    return next_label, next_type, next_duration
+
+
+def get_weather_atmosphere(weather_label: str, weather_type: str = "", time_slot: str = "") -> str:
+    """Return concise visual atmosphere phrase matching weather and time of day."""
+    w_type = classify_weather_type(weather_label, weather_type)
+    entry = WEATHER_CATALOG.get(w_type, WEATHER_CATALOG["clear"])
+    if time_slot in ("夜晚", "深夜"):
+        return entry["night_atmosphere"]
+    return entry["atmosphere"]
+
+
+def get_weather_narrative_cue(weather_label: str, weather_type: str = "", time_slot: str = "") -> str:
+    """Return short ambient narrative description matching weather and time of day."""
+    w_type = classify_weather_type(weather_label, weather_type)
+    entry = WEATHER_CATALOG.get(w_type, WEATHER_CATALOG["clear"])
+    if time_slot in ("夜晚", "深夜"):
+        return entry["night_cue"]
+    return entry["cue"]
 
 
 def _clamp_attr(key: str, value: int) -> int:
@@ -214,6 +391,18 @@ class GameSession:
             if new_scene != prev_scene and "available_actions" not in delta:
                 self.dynamic_actions = []
             patches.append({"op": "replace", "path": "/current_scene", "value": new_scene})
+            if new_scene != prev_scene:
+                for base_key, default_val in SCENE_SCOPED_STRUCT_DEFAULTS.items():
+                    scoped_key = f"{new_scene}_{base_key}"
+                    if scoped_key in self.player_state.variables:
+                        synced_val = self.player_state.variables[scoped_key]
+                        self.player_state.variables[base_key] = synced_val
+                        patches.append({"op": "add", "path": f"/variables/{base_key}", "value": synced_val})
+                    elif base_key in self.player_state.variables and any(
+                        vk.endswith(f"_{base_key}") for vk in self.player_state.variables
+                    ):
+                        self.player_state.variables[base_key] = default_val
+                        patches.append({"op": "add", "path": f"/variables/{base_key}", "value": default_val})
 
         if "hp" in delta:
             self.player_state.hp = max(0, min(100, int(delta["hp"])))
@@ -237,9 +426,63 @@ class GameSession:
             patches.append({"op": "replace", "path": "/gold", "value": self.player_state.gold})
 
         if "variables" in delta and isinstance(delta["variables"], dict):
-            for k, v in delta["variables"].items():
+            active_scene = self.player_state.current_scene
+            delta_vars = delta["variables"]
+            for k, v in delta_vars.items():
                 self.player_state.variables[k] = v
                 patches.append({"op": "add", "path": f"/variables/{k}", "value": v})
+                if active_scene and k in SCENE_SCOPED_STRUCT_DEFAULTS:
+                    scoped_key = f"{active_scene}_{k}"
+                    if scoped_key not in delta_vars:
+                        self.player_state.variables[scoped_key] = v
+                        patches.append({"op": "add", "path": f"/variables/{scoped_key}", "value": v})
+                elif active_scene:
+                    for base_key in SCENE_SCOPED_STRUCT_DEFAULTS:
+                        if k == f"{active_scene}_{base_key}" and base_key not in delta_vars:
+                            self.player_state.variables[base_key] = v
+                            patches.append({"op": "add", "path": f"/variables/{base_key}", "value": v})
+            if "weather" in delta_vars and "weather_type" not in delta_vars:
+                inferred_type = classify_weather_type(str(delta_vars["weather"]))
+                self.player_state.variables["weather_type"] = inferred_type
+                self.player_state.variables["weather_duration"] = 1
+                patches.append({"op": "add", "path": "/variables/weather_type", "value": inferred_type})
+                patches.append({"op": "add", "path": "/variables/weather_duration", "value": 1})
+
+        if "add_structures" in delta and isinstance(delta["add_structures"], list):
+            existing_structs = list(self.player_state.variables.get("built_structures") or [])
+            target_scene_default = delta.get("current_scene") or self.player_state.current_scene
+            seen_struct_keys = {
+                (s.get("id"), s.get("scene_id") or "")
+                for s in existing_structs
+                if isinstance(s, dict) and s.get("id")
+            }
+            struct_added = False
+            for raw_struct in delta["add_structures"]:
+                if isinstance(raw_struct, dict) and raw_struct.get("id"):
+                    sid = str(raw_struct["id"])
+                    struct_scene = str(raw_struct.get("scene_id") or target_scene_default or "").strip()
+                    if (sid, struct_scene) not in seen_struct_keys:
+                        entry = {
+                            "id": sid,
+                            "name": raw_struct.get("name", sid),
+                            "image": raw_struct.get("image", ""),
+                            "side": raw_struct.get("side", "left"),
+                            "caption": raw_struct.get("caption", raw_struct.get("name", sid)),
+                            "tooltip": raw_struct.get("tooltip", ""),
+                            "category": "structure",
+                            "tag": raw_struct.get("tag", "已建成"),
+                            "scene_id": struct_scene,
+                        }
+                        existing_structs.append(entry)
+                        seen_struct_keys.add((sid, struct_scene))
+                        struct_added = True
+            if struct_added:
+                self.player_state.variables["built_structures"] = existing_structs
+                patches.append({
+                    "op": "add",
+                    "path": "/variables/built_structures",
+                    "value": existing_structs,
+                })
 
         if "time_cost" in delta and delta["time_cost"]:
             steps = int(delta["time_cost"])
@@ -259,19 +502,24 @@ class GameSession:
                 self.player_state.variables["turn_count"] = new_turn
                 patches.append({"op": "add", "path": "/variables/turn_count", "value": new_turn})
 
-                # Adjust weather label to match time of day
-                weather_by_slot = {
-                    "清晨": "海雾微凉",
-                    "上午": "晴朗炎热",
-                    "下午": "烈日酷热",
-                    "黄昏": "海风渐起",
-                    "夜晚": "夜寒星沉",
-                    "深夜": "凛冽夜风",
-                }
-                if "weather" in self.player_state.variables:
-                    w = weather_by_slot.get(new_slot, self.player_state.variables["weather"])
-                    self.player_state.variables["weather"] = w
-                    patches.append({"op": "add", "path": "/variables/weather", "value": w})
+                # Dynamically advance weather (clear / cloudy / windy / rain / storm / foggy)
+                explicit_weather = (
+                    isinstance(delta.get("variables"), dict)
+                    and "weather" in delta["variables"]
+                )
+                if "weather" in self.player_state.variables and not explicit_weather:
+                    cur_w = str(self.player_state.variables.get("weather") or "")
+                    cur_type = str(self.player_state.variables.get("weather_type") or "")
+                    cur_dur = int(self.player_state.variables.get("weather_duration") or 1)
+                    next_w, next_type, next_dur = advance_weather(
+                        cur_w, cur_type, new_slot, duration=cur_dur
+                    )
+                    self.player_state.variables["weather"] = next_w
+                    self.player_state.variables["weather_type"] = next_type
+                    self.player_state.variables["weather_duration"] = next_dur
+                    patches.append({"op": "add", "path": "/variables/weather", "value": next_w})
+                    patches.append({"op": "add", "path": "/variables/weather_type", "value": next_type})
+                    patches.append({"op": "add", "path": "/variables/weather_duration", "value": next_dur})
 
         # Track attribute modifications (relative delta first, then explicit overrides)
         attr_updates: Dict[str, int] = {}
@@ -471,6 +719,18 @@ class AGUIBridge:
         scene_hero = curr_scene.hero_image or (curr_scene.visuals.hero_image if curr_scene and curr_scene.visuals else "")
         scene_fg = curr_scene.foreground or (curr_scene.visuals.foreground if curr_scene and curr_scene.visuals else "")
         scene_atmo = curr_scene.visuals.atmosphere if (curr_scene and curr_scene.visuals) else "阴冷、静谧"
+        cur_weather = str((session.player_state.variables or {}).get("weather") or "")
+        cur_weather_type = str((session.player_state.variables or {}).get("weather_type") or "")
+        cur_slot = str((session.player_state.variables or {}).get("time_slot") or "")
+        if cur_weather:
+            weather_atmo = get_weather_atmosphere(cur_weather, cur_weather_type, cur_slot)
+            scene_atmo = f"{scene_atmo} · {weather_atmo}"
+        resolved_decs = resolve_scene_decorations(curr_scene, session.player_state)
+        built_structs = [
+            f"{d.name} ({'左侧图像区' if d.side == 'left' else '右侧图像区'})"
+            for d in resolved_decs
+            if d.category == "structure"
+        ]
         inv_desc = [
             f"{item.get('name', item.get('id', ''))} (id: {item.get('id', '')})"
             for item in session.player_state.inventory
@@ -510,7 +770,8 @@ class AGUIBridge:
 - 生存与角色属性：{session.player_state.attributes}
 - 背包物品：{inv_desc or '空'}
 - 当前穿着与配饰：{outfit_desc or '常规随身衣物'}
-- 剧本变量（含时间/昼夜/进度）：{session.player_state.variables}
+- 剧本变量（含时间/昼夜/气象/进度）：{session.player_state.variables}
+- 当前气象与环境基调：{cur_weather or '未设定'}（氛围：{scene_atmo}）
 - 当前所在场景：{curr_scene.title if curr_scene else curr_scene_id} ({curr_scene_id})
 
 当前场景预设视觉资源：
@@ -518,6 +779,7 @@ class AGUIBridge:
 - 焦点插图 (Hero Image): {scene_hero or '无'}
 - 前景立绘 (Foreground): {scene_fg or '无'}
 - 环境氛围 (Atmosphere): {scene_atmo}
+- 左右侧图像区已建成耐用设施 (Built Camp Structures): {built_structs or '暂无'}
 
 当前场景环境描述：
 {scene_desc}
@@ -553,10 +815,12 @@ class AGUIBridge:
    - 背景稳定性：不要在普通的对话轮换背景；仅在发生场景转移或环境巨变时更新 visuals.background。
    - 角色立绘调度：与具体 NPC 对话时，设置 visuals.foreground 为其立绘；玩家独处检定或离开时置空。
    - 焦点特写镜头：当玩家成功发现关键线索、拾获或搜查物品、或遭遇高潮事件时，在 visuals.hero_image 给出特写插图路径或语义描述（如“【物品特写】洗净泥沙的防水金属盒”）。
+   - 左右侧耐用设施展示：当玩家在生存中建成耐用物品（如窝棚、篝火火堆、雨水收集器），务必在 `state_delta.variables` 中设置当前场景对应的状态标识（或 `shelter_level` / `fire_started` / `water_collector_built`）；若建成了额外自定义耐用设施，可通过 `state_delta.add_structures`（含 `id`, `name`, `image`, `side: "left"|"right"`, `caption`, `tooltip`, `scene_id`）使其展示在当前场景的左右两侧图像区。
+   - **场景隔离原则（严禁跨场景带出）**：当玩家离开当前场景前往新场景（`current_scene` 变更）时，必须同步更新 `visuals.background` 为目标场景底图，清空原场景的临时立绘与特写（将 `visuals.foreground` 与 `visuals.hero_image` 置空 `""` 或设为新场景自身资源），且**绝不可**将原场景建成的设施（如原场景的窝棚、篝火、雨水收集器等）带入新场景！每个场景的已建设施仅归属其建造所在场景。
 5. 数值与动态选项演算（非常重要）：
    - 若玩家进食、饮水、休息、劳作或受环境影响，务必在 state_delta 中通过 `attributes_delta` 真实更新对应属性（如 `fullness` 饱食度、`hydration` 水分、`stamina` 体力、`temperature` 体温），消耗掉的食材/饮水通过 `remove_inventory` 列出道具 id 移除。
-   - 行动耗时可通过 `time_cost`（整数，如 1 表示推进一个时段：清晨→上午→下午→黄昏→夜晚→深夜）推进时间。
-   - 如因剧情变化衍生出新的临时行动选项，可通过 `available_actions` 提供动态选项列表；预设场景选项也会随状态与时间自动刷新。
+   - 行动耗时可通过 `time_cost`（整数，如 1 表示推进一个时段：清晨→上午→下午→黄昏→夜晚→深夜）推进时间；系统也会随时间推进自然演替阴天、晴朗、刮风、阵雨、暴雨、海雾等天气变化，你也可根据剧情在 `variables.weather` 主动触发天气转折（如骤起狂风或突降暴雨），并在叙述与 `visuals.atmosphere` 中生动展现风雨冷暖与防风夹克/遮阳帽/窝棚/岩洞带来的真实影响。
+   - 如因剧情变化衍生出新的临时行动选项，可通过 `available_actions` 提供动态选项列表；预设场景选项也会随状态、时间与天气自动刷新。
 6. 若产生场景转移、数值变化、道具增减、时间推进或视觉变更，在回复最末尾附带一个 ```state_delta 代码块：
 ```state_delta
 {{
@@ -757,6 +1021,21 @@ class AGUIBridge:
         if "metal_box" in inv_ids and any(k in clean_action for k in ("水", "煮", "装", "存", "盒")):
             tool_mod += 1
             tool_reasons.append("防水金属盒(+1)")
+        variables = player_state.variables or {}
+        curr_scene = player_state.current_scene or ""
+        shelter_val = variables.get(f"{curr_scene}_shelter_level") if curr_scene and f"{curr_scene}_shelter_level" in variables else variables.get("shelter_level", 0)
+        fire_val = variables.get(f"{curr_scene}_fire_started") if curr_scene and f"{curr_scene}_fire_started" in variables else variables.get("fire_started")
+
+        if (shelter_val or 0) >= 1 and any(
+            k in clean_action for k in ("休息", "睡", "过夜", "庇护", "窝棚", "躲", "避雨")
+        ):
+            tool_mod += 2
+            tool_reasons.append("稳固防风窝棚(+2)")
+        if fire_val and any(
+            k in clean_action for k in ("夜", "寒", "烤", "煮", "火", "守夜")
+        ):
+            tool_mod += 1
+            tool_reasons.append("温暖营地篝火(+1)")
 
         # 4. Physical condition penalties/bonuses
         cond_mod = 0
@@ -778,7 +1057,31 @@ class AGUIBridge:
             cond_mod -= 2
             cond_reasons.append("饥肠辘辘(-2)")
 
-        total_mod = attr_mod + outfit_mod + tool_mod + cond_mod
+        # 5. Dynamic weather modifiers
+        weather_mod = 0
+        weather_reasons = []
+        weather_label = str(variables.get("weather") or "")
+        weather_type = classify_weather_type(weather_label, str(variables.get("weather_type") or ""))
+        if weather_type in ("windy", "storm"):
+            if any(k in clean_action for k in ("火", "点", "燃", "烧")) and (shelter_val or 0) == 0 and "lighter" not in inv_ids:
+                weather_mod -= 2
+                weather_reasons.append("狂风干扰生火(-2)")
+        if weather_type == "storm" and (shelter_val or 0) == 0 and not outfit.get("outer"):
+            weather_mod -= 1
+            weather_reasons.append("暴雨湿滑受阻(-1)")
+        if weather_type in ("windy", "rain", "storm") and outfit.get("outer"):
+            weather_mod += 1
+            weather_reasons.append("防风防水护佑(+1)")
+        if weather_type == "clear" and outfit.get("head") and any(
+            k in clean_action for k in ("采", "摘", "捡", "抓", "搜", "寻", "攀", "挖")
+        ):
+            weather_mod += 1
+            weather_reasons.append("遮阳防晒护佑(+1)")
+        if weather_type == "foggy" and skill == "perception":
+            weather_mod -= 1
+            weather_reasons.append("海雾遮蔽视线(-1)")
+
+        total_mod = attr_mod + outfit_mod + tool_mod + cond_mod + weather_mod
         total = roll + total_mod
 
         # Graded evaluation
@@ -802,6 +1105,8 @@ class AGUIBridge:
             reason_parts.extend(tool_reasons)
         if cond_reasons:
             reason_parts.extend(cond_reasons)
+        if weather_reasons:
+            reason_parts.extend(weather_reasons)
 
         return {
             "skill": skill,
@@ -997,15 +1302,74 @@ class AGUIBridge:
                         f"海风呼啸而过，未处理的干柴无法凭空引燃。或许可以在沙滩散落的客机残骸或防水金属盒中搜寻生火工具。"
                     )
                 else:
-                    narration = (
-                        f"你迎着扑面而来的海风，在险恶的孤岛环境中尝试【{clean_action}】。\n\n"
-                        f"沙滩与灌木间回荡着你的脚步声，潮水在不远处涨落起伏。虽然并未立即触发某种机关或质变，"
-                        f"但这番探寻让你对周遭的地形与动静有了更深入的把握。体力略有消耗，但你的求生意志愈加坚定。"
-                    )
-                    delta = {
-                        "time_cost": 1,
-                        "attributes_delta": {"stamina": -3, "hydration": -2},
-                    }
+                    inv_ids = [
+                        (i.get("id") if isinstance(i, dict) else str(i))
+                        for i in (session.player_state.inventory or [])
+                    ]
+                    shelter_terms = ("窝棚", "庇护所", "遮蔽所", "木棚", "搭棚", "搭建营地")
+                    collector_terms = ("集水器", "雨水收集", "接水", "集水装置")
+                    wants_shelter = any(k in clean_action for k in shelter_terms)
+                    wants_collector = any(k in clean_action for k in collector_terms)
+
+                    if wants_shelter:
+                        if "branches" in inv_ids and "rope" in inv_ids:
+                            delta["remove_inventory"] = ["branches", "rope"]
+                            delta["variables"] = {"shelter_level": 1}
+                            delta["visuals"] = {"hero_image": "/assets/props/shelter.png"}
+                            delta["attributes_delta"] = {"stamina": -14, "hydration": -8, "fullness": -6, "temperature": 1}
+                            delta["san_delta"] = 8
+                            delta["time_cost"] = 1
+                            narration = (
+                                "你将干燥硬木枝干斜靠在背风处，用坚韧的纤维绳反复绞紧主梁，再铺上宽大椰叶封顶。\n\n"
+                                "【建造成功】一座结实耐用的防风窝棚拔地而起，已稳稳立在营地边缘的视觉区！从此你拥有了遮风挡雨、安心休整的稳固据点。"
+                            )
+                        else:
+                            missing = []
+                            if "branches" not in inv_ids:
+                                missing.append("干燥树枝浮木")
+                            if "rope" not in inv_ids:
+                                missing.append("坚韧纤维绳")
+                            delta["time_cost"] = 1
+                            narration = (
+                                f"你选好了搭建防风窝棚的背风平地，但翻找背包后发现还缺少关键建材：{'、'.join(missing)}。\n\n"
+                                "收集齐树枝与纤维绳后，即可随时搭起这座耐用的荒岛庇护所。"
+                            )
+                    elif wants_collector:
+                        if "glass_bottle" in inv_ids and "rope" in inv_ids:
+                            delta["remove_inventory"] = ["glass_bottle", "rope"]
+                            delta["variables"] = {"water_collector_built": True}
+                            delta["visuals"] = {"hero_image": "/assets/props/water_collector.png"}
+                            delta["attributes_delta"] = {"stamina": -10, "hydration": -4}
+                            delta["san_delta"] = 5
+                            delta["time_cost"] = 1
+                            narration = (
+                                "你用木架支起漏斗状的大片热带阔叶，以纤维绳扎实固定，再将厚壁玻璃瓶安放在导流叶尖下方。\n\n"
+                                "【建造成功】简易雨水收集器已搭建完毕并展示在营地侧栏！露水与雨水正沿着叶脉一滴滴汇入瓶中。"
+                            )
+                        else:
+                            missing = []
+                            if "glass_bottle" not in inv_ids:
+                                missing.append("厚壁玻璃瓶")
+                            if "rope" not in inv_ids:
+                                missing.append("坚韧纤维绳")
+                            delta["time_cost"] = 1
+                            narration = (
+                                f"你想架设一套持续蓄水的雨水收集器，但目前缺少关键构件：{'、'.join(missing)}。"
+                            )
+                    else:
+                        w_label = str((session.player_state.variables or {}).get("weather") or "")
+                        w_type = str((session.player_state.variables or {}).get("weather_type") or "")
+                        w_slot = str((session.player_state.variables or {}).get("time_slot") or "")
+                        w_cue = get_weather_narrative_cue(w_label, w_type, w_slot)
+                        narration = (
+                            f"你在险恶的孤岛环境中尝试【{clean_action}】。{w_cue}\n\n"
+                            f"沙滩与灌木间回荡着你的脚步声，潮水在不远处涨落起伏。虽然并未立即触发某种机关或质变，"
+                            f"但这番探寻让你对周遭的地形与动静有了更深入的把握。体力略有消耗，但你的求生意志愈加坚定。"
+                        )
+                        delta = {
+                            "time_cost": 1,
+                            "attributes_delta": {"stamina": -3, "hydration": -2},
+                        }
             else:
                 narration = (
                     f"幽暗的公馆大厅中蜡烛影影绰绰，窗外寒鸦惊啼。你谨慎地尝试【{clean_action}】。\n\n"
@@ -1016,6 +1380,15 @@ class AGUIBridge:
                     "time_cost": 1,
                     "san_delta": -1,
                 }
+
+        if session.scenario_id == "island_survival" and (delta.get("time_cost") or 0) > 0:
+            w_label = str((session.player_state.variables or {}).get("weather") or "")
+            w_type = str((session.player_state.variables or {}).get("weather_type") or "")
+            w_slot = str((session.player_state.variables or {}).get("time_slot") or "")
+            if w_label and w_label not in narration:
+                w_cue = get_weather_narrative_cue(w_label, w_type, w_slot)
+                if w_cue not in narration:
+                    narration = f"{narration}\n\n【气象实况 · {w_label}】{w_cue}"
 
         formatted = f"{narration}\n\n```state_delta\n{json.dumps(delta, ensure_ascii=False, indent=2)}\n```\n"
         return formatted, delta
@@ -1120,6 +1493,18 @@ class AGUIBridge:
             "cook_food_on_fire": ["烤肉", "烤蟹", "煮食", "烤食物", "煮食物", "做饭", "热食"],
             "cook_meal": ["烤肉", "烤蟹", "做饭", "烹饪"],
             "craft_rope": ["搓绳", "编织绳索", "做绳子", "编绳"],
+            "build_beach_shelter": ["窝棚", "庇护所", "搭棚", "遮蔽所"],
+            "build_jungle_shelter": ["窝棚", "庇护所", "搭棚", "遮蔽所"],
+            "build_deep_shelter": ["窝棚", "庇护所", "搭棚", "遮蔽所"],
+            "build_water_collector_beach": ["集水器", "雨水收集", "接水装置"],
+            "build_water_collector_coastal": ["集水器", "雨水收集", "接水装置"],
+            "build_water_collector_deep": ["集水器", "雨水收集", "接水装置"],
+            "collect_water_beach": ["接水喝", "喝集水器", "取集水"],
+            "collect_water_coastal": ["接水喝", "喝集水器", "取集水"],
+            "collect_water_deep": ["接水喝", "喝集水器", "取集水"],
+            "rest_in_shelter_beach": ["窝棚休息", "进窝棚", "庇护所休息"],
+            "rest_in_shelter_coastal": ["窝棚休息", "进窝棚", "庇护所休息"],
+            "rest_in_shelter_deep": ["窝棚休息", "进窝棚", "庇护所休息"],
             "rest_by_fire": ["休息", "睡觉", "过夜"],
             "rest_by_campfire": ["休息", "睡觉", "过夜"],
         }
@@ -1293,6 +1678,40 @@ class AGUIBridge:
                 delta_dict, matched_action, check_passed, session.player_state
             )
 
+        next_scene_id = delta_dict.get("current_scene")
+        if next_scene_id and next_scene_id != pre_scene_id:
+            target_scene_obj = self.scenario_mgr.get_scene(session.scenario_id, next_scene_id)
+            if target_scene_obj and isinstance(delta_dict.get("visuals"), dict):
+                pre_bg = (
+                    pre_scene.background
+                    or (pre_scene.visuals.background if pre_scene.visuals else "")
+                ) if pre_scene else ""
+                target_bg = target_scene_obj.background or (
+                    target_scene_obj.visuals.background if target_scene_obj.visuals else ""
+                )
+                target_fg = target_scene_obj.foreground or (
+                    target_scene_obj.visuals.foreground if target_scene_obj.visuals else ""
+                )
+                target_hero = target_scene_obj.hero_image or (
+                    target_scene_obj.visuals.hero_image if target_scene_obj.visuals else ""
+                )
+                target_atmo = (
+                    target_scene_obj.visuals.atmosphere if target_scene_obj.visuals else ""
+                )
+                vis = dict(delta_dict["visuals"])
+                if not vis.get("background") or (
+                    pre_bg and target_bg and vis.get("background") == pre_bg and target_bg != pre_bg
+                ):
+                    vis["background"] = target_bg
+                if "foreground" not in vis:
+                    vis["foreground"] = target_fg
+                if "hero_image" not in vis:
+                    vis["hero_image"] = target_hero
+                if "atmosphere" not in vis and target_atmo:
+                    vis["atmosphere"] = target_atmo
+                vis.pop("decorations", None)
+                delta_dict["visuals"] = vis
+
         if eval_res and "check_result" not in delta_dict:
             delta_dict["check_result"] = eval_res
 
@@ -1322,6 +1741,26 @@ class AGUIBridge:
             curr_scene_after = self.scenario_mgr.get_scene(
                 session.scenario_id, session.player_state.current_scene
             )
+            if any(p.get("path") == "/variables/weather" for p in patches) and not any(
+                p.get("path") == "/visuals" for p in patches
+            ):
+                base_atmo = (
+                    curr_scene_after.visuals.atmosphere
+                    if (curr_scene_after and curr_scene_after.visuals and curr_scene_after.visuals.atmosphere)
+                    else ""
+                )
+                w_label = str(session.player_state.variables.get("weather") or "")
+                w_type = str(session.player_state.variables.get("weather_type") or "")
+                w_slot = str(session.player_state.variables.get("time_slot") or "")
+                w_atmo = get_weather_atmosphere(w_label, w_type, w_slot)
+                live_atmo = f"{base_atmo} · {w_atmo}" if base_atmo else w_atmo
+                patches.append(
+                    {
+                        "op": "replace",
+                        "path": "/visuals",
+                        "value": {"atmosphere": live_atmo},
+                    }
+                )
             resolved_actions = resolve_scene_actions(
                 curr_scene_after, session.player_state, session.dynamic_actions
             )
@@ -1374,6 +1813,19 @@ visuals:
   foreground: ""
   hero_image: ""
   atmosphere: "幽暗密闭、阴冷"
+  decorations:
+    - id: "built_shelter"
+      name: "防风窝棚"
+      image: "/assets/props/shelter.png"
+      side: "left"
+      category: "structure"
+      tag: "已建成"
+      caption: "树枝窝棚"
+      tooltip: "已建成的耐用防风庇护所"
+      condition:
+        variables:
+          shelter_level:
+            gte: 1
 npcs:
   - id: "npc_id"
     name: "NPC名字"

@@ -58,6 +58,9 @@ export interface PropDecoration {
   side: 'left' | 'right';
   caption?: string;
   tooltip?: string;
+  category?: 'env' | 'structure' | string;
+  tag?: string;
+  condition?: Record<string, any>;
 }
 
 export interface VisualLayer {

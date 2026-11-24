@@ -44,6 +44,8 @@ initial_player_state:
     time_slot: "上午"
     turn_count: 0
     weather: "晴朗炎热"
+    weather_type: "clear"
+    weather_duration: 1
     fire_started: false
     water_purified: false
     found_metal_box: false
@@ -52,3 +54,18 @@ initial_player_state:
     found_bottle: false
     collected_branches: 0
     shelter_level: 0
+    water_collector_built: false
+    drying_rack_built: false
+    beach_fire_started: false
+    beach_shelter_level: 0
+    beach_water_collector_built: false
+    coastal_jungle_fire_started: false
+    coastal_jungle_shelter_level: 0
+    coastal_jungle_water_collector_built: false
+    deep_jungle_fire_started: false
+    deep_jungle_shelter_level: 0
+    deep_jungle_water_collector_built: false
+    sea_cave_fire_started: false
+    sea_cave_shelter_level: 0
+    sea_cave_water_collector_built: false
+    built_structures: []

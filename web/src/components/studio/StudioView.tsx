@@ -28,7 +28,7 @@ export default function StudioView({ scenarioId = 'black_crow_manor' }: StudioVi
       if (!res.ok) throw new Error('Failed to load scenario');
       const data: ScenarioSpec = await res.json();
       setScenario(data);
-      if (!selectedSceneId && data.world.initial_scene) {
+      if (data.world.initial_scene && (!selectedSceneId || !data.scenes[selectedSceneId])) {
         setSelectedSceneId(data.world.initial_scene);
       }
 

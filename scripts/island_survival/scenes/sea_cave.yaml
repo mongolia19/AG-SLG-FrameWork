@@ -1,0 +1,174 @@
+id: sea_cave
+title: 海蚀避风岩洞
+background: /assets/scenes/island_beach.png
+foreground: ''
+hero_image: /assets/props/rocks.png
+music: /assets/bgm/ocean_waves.mp3
+description: '沿着沙滩北侧潮湿的玄武岩礁攀行片刻，岩壁下方豁然出现一处天然形成的海蚀岩洞。
+
+  厚实的火山岩穹顶将炽热日光、狂风与暴雨牢牢挡在洞外，洞内虽略显幽暗阴凉，却保留着难得的干燥地面。
+
+  岩壁高处的石缝偶尔渗出清冽山泉滴水，洞口望出去恰好能俯瞰整片海湾的风云变幻，是荒岛上绝佳的天然避风港。
+
+  '
+visuals:
+  background: /assets/scenes/island_beach.png
+  foreground: ''
+  hero_image: /assets/props/rocks.png
+  atmosphere: 岩壁幽凉、遮风避雨、潮声回荡
+  decorations:
+  - id: cave_rocks
+    name: 海蚀玄武岩壁
+    image: /assets/props/rocks.png
+    side: left
+    caption: 天然岩洞
+    tooltip: 厚实坚固的海蚀岩壁，能完美抵御海岛狂风与暴风雨
+  - id: cave_shells
+    name: 潮汐海螺堆
+    image: /assets/props/seashell.png
+    side: right
+    caption: 岩缝贝壳
+    tooltip: 高潮位涨水时留在洞口岩隙中的海螺与贝壳
+  - id: built_campfire
+    name: 岩洞篝火
+    image: /assets/illustrations/campfire.png
+    side: right
+    caption: 避风火堆
+    tooltip: 在岩洞深处生起的稳定篝火，不受洞外狂风暴雨侵扰
+  - id: built_water_collector
+    name: 岩壁接水器
+    image: /assets/props/water_collector.png
+    side: left
+    caption: 滴水收集
+    tooltip: 承接岩壁渗水与洞口雨水的持续淡水装置
+decorations: []
+npcs: []
+actions:
+- id: gather_cave_driftwood
+  label: 在干燥的高处岩架搜集前人或海潮遗留的干柴
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    not_has_item: branches
+  effects: null
+  source: null
+  on_success:
+    gain_item: branches
+    attributes_delta:
+      stamina: -3
+      hydration: -1
+    time_cost: 1
+    message: 你在远离海浪的高处岩架摸到了一捆存放已久的干燥木柴，即使外面阴雨连绵也依然干爽易燃！
+  on_failure: null
+- id: drink_cave_drip_water
+  label: 接饮岩壁石灰岩缝隙渗出的清冽山泉滴水
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    attributes:
+      hydration:
+        lt: 95
+  effects: null
+  source: null
+  on_success:
+    attributes_delta:
+      hydration: 22
+      stamina: 5
+    san_delta: 2
+    time_cost: 1
+    message: 经过岩层自然过滤的冰凉水珠一滴滴落入掌心，入口甘洌，暂时缓解了干渴。
+  on_failure: null
+- id: light_cave_campfire
+  label: 在避风的岩洞深处用打火机生起篝火
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    has_item: lighter
+    variables:
+      sea_cave_fire_started: false
+  effects: null
+  source: null
+  on_success:
+    variables:
+      sea_cave_fire_started: true
+    visuals:
+      hero_image: /assets/illustrations/campfire.png
+    attributes_delta:
+      stamina: -4
+      temperature: 1
+    san_delta: 7
+    time_cost: 1
+    message: 岩洞内完全不受海风吹袭，打火机一擦即燃，橙红火光瞬间将潮湿冰冷的石壁映照得温暖明亮！
+  on_failure: null
+- id: rest_in_sea_cave
+  label: 在遮风避雨的天然岩洞内安心休整（恢复体力与体温）
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    attributes:
+      stamina:
+        lt: 95
+  effects: null
+  source: null
+  on_success:
+    attributes_delta:
+      stamina: 32
+      temperature: 1
+      hydration: -4
+      fullness: -5
+    san_delta: 7
+    time_cost: 1
+    message: 岩洞隔绝了外界的烈日或风雨侵袭，你靠着岩壁闭目养神，体力与体温稳步回升。
+  on_failure: null
+- id: observe_storm_from_cave
+  label: 守在洞口安全地观察海面阴晴风雨变化
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    weather_in:
+    - 阴天
+    - 刮风
+    - 雨天
+    - 海雾
+  effects: null
+  source: null
+  on_success:
+    attributes_delta:
+      stamina: 4
+      hydration: -1
+    san_delta: 4
+    time_cost: 1
+    message: 你站在干燥的岩洞掩体下静观外头风雨翻涌、云层聚散，庆幸自己找到了这处天然庇护所，时间悄然推移。
+  on_failure: null
+- id: exit_sea_cave_to_beach
+  label: 离开避风岩洞，沿礁石小路返回孤岛沙滩
+  type: transition
+  target_npc: null
+  target_scene: beach
+  skill: null
+  difficulty: null
+  condition: null
+  effects:
+    attributes_delta:
+      stamina: -4
+      hydration: -2
+      fullness: -2
+    time_cost: 1
+  source: null
+  on_success: null
+  on_failure: null

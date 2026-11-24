@@ -15,6 +15,11 @@ import {
   Sun,
   Moon,
   Clock,
+  Cloud,
+  CloudRain,
+  CloudLightning,
+  Wind,
+  CloudFog,
   RotateCcw,
   RefreshCw,
   Shirt,
@@ -132,7 +137,46 @@ export default function GameHUD({
   const day = playerState.variables?.day;
   const timeSlot = playerState.variables?.time_slot as string | undefined;
   const weather = playerState.variables?.weather as string | undefined;
+  const rawWeatherType = (playerState.variables?.weather_type as string | undefined) || '';
   const isNight = timeSlot === '夜晚' || timeSlot === '深夜';
+
+  const resolveWeatherCategory = (label?: string, wType?: string) => {
+    if (wType) return wType;
+    const text = label || '';
+    if (/暴雨|雷暴|雷雨|风暴/.test(text)) return 'storm';
+    if (/雨/.test(text)) return 'rain';
+    if (/风/.test(text)) return 'windy';
+    if (/阴|乌云|黑云|多云/.test(text)) return 'cloudy';
+    if (/雾/.test(text)) return 'foggy';
+    return 'clear';
+  };
+  const weatherCategory = resolveWeatherCategory(weather, rawWeatherType);
+
+  const weatherBadgeTone =
+    weatherCategory === 'storm'
+      ? 'bg-slate-900/90 border-sky-500/50 text-sky-200'
+      : weatherCategory === 'rain'
+        ? 'bg-sky-950/60 border-sky-700/50 text-sky-200'
+        : weatherCategory === 'windy'
+          ? 'bg-teal-950/60 border-teal-700/50 text-teal-200'
+          : weatherCategory === 'cloudy'
+            ? 'bg-slate-800/80 border-slate-600/60 text-slate-200'
+            : weatherCategory === 'foggy'
+              ? 'bg-zinc-900/75 border-zinc-600/50 text-zinc-200'
+              : isNight
+                ? 'bg-indigo-950/60 border-indigo-700/50 text-indigo-200'
+                : 'bg-amber-950/40 border-amber-700/40 text-amber-200';
+
+  const renderTimeWeatherIcon = () => {
+    if (weatherCategory === 'storm') return <CloudLightning className="w-3.5 h-3.5 text-sky-300 animate-pulse" />;
+    if (weatherCategory === 'rain') return <CloudRain className="w-3.5 h-3.5 text-sky-400" />;
+    if (weatherCategory === 'windy') return <Wind className="w-3.5 h-3.5 text-teal-300" />;
+    if (weatherCategory === 'cloudy') return <Cloud className="w-3.5 h-3.5 text-slate-300" />;
+    if (weatherCategory === 'foggy') return <CloudFog className="w-3.5 h-3.5 text-zinc-300" />;
+    if (isNight) return <Moon className="w-3.5 h-3.5 text-indigo-300" />;
+    if (timeSlot) return <Sun className="w-3.5 h-3.5 text-amber-400" />;
+    return <Clock className="w-3.5 h-3.5 text-slate-400" />;
+  };
 
   return (
     <>
@@ -159,22 +203,12 @@ export default function GameHUD({
             <span className="font-medium text-slate-200">{currentSceneTitle || playerState.current_scene}</span>
           </div>
 
-          {(day !== undefined || timeSlot) && (
+          {(day !== undefined || timeSlot || weather) && (
             <div
-              className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border ${
-                isNight
-                  ? 'bg-indigo-950/60 border-indigo-700/50 text-indigo-200'
-                  : 'bg-amber-950/40 border-amber-700/40 text-amber-200'
-              }`}
-              title="当前游戏时间与天气"
+              className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border transition-colors duration-500 ${weatherBadgeTone}`}
+              title="当前游戏时间与天气变化"
             >
-              {isNight ? (
-                <Moon className="w-3.5 h-3.5 text-indigo-300" />
-              ) : timeSlot ? (
-                <Sun className="w-3.5 h-3.5 text-amber-400" />
-              ) : (
-                <Clock className="w-3.5 h-3.5 text-slate-400" />
-              )}
+              {renderTimeWeatherIcon()}
               <span className="font-medium">
                 {day !== undefined ? `第${day}天` : ''}
                 {timeSlot ? ` · ${timeSlot}` : ''}

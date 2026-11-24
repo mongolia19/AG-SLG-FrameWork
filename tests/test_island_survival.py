@@ -61,6 +61,10 @@ def test_island_survival_assets_exist():
         assert (root_dir / "props" / "vines.png").exists()
         assert (root_dir / "props" / "rocks.png").exists()
 
+        # Built durable survival structure props
+        assert (root_dir / "props" / "shelter.png").exists()
+        assert (root_dir / "props" / "water_collector.png").exists()
+
 
 
 def test_island_survival_decorations_and_margin_props():
@@ -383,3 +387,111 @@ async def test_custom_pickup_metal_box_with_llm_preserves_intent():
     next_prompt = bridge.build_play_prompt(session, "打开金属盒看看里面有什么")
     assert "近期剧情回溯" in next_prompt
     assert "玩家意图忠实原则" in next_prompt
+
+
+@pytest.mark.asyncio
+async def test_built_durable_structures_appear_in_side_decorations():
+    """Verify shelter, campfire, water collector, and dynamic structures appear in left/right decorations only after being built."""
+    from server.scenario_manager import resolve_scene_decorations
+    from server.agui_bridge import AGUIBridge
+    from tests.test_fallback_director import EmptyMockDriver
+
+    sm = ScenarioManager()
+    local_bridge = AGUIBridge(scenario_mgr=sm, driver=EmptyMockDriver())
+    thread_id = "test-built-structures-thread"
+    session = local_bridge.get_or_create_session(thread_id, "island_survival")
+    beach = sm.get_scene("island_survival", "beach")
+    assert beach is not None
+
+    # 1. Initially, no built structures are shown in decorations
+    initial_decs = resolve_scene_decorations(beach, session.player_state)
+    initial_ids = {d.id for d in initial_decs}
+    assert "palm_beach" in initial_ids
+    assert "built_shelter" not in initial_ids
+    assert "built_campfire" not in initial_ids
+    assert "built_water_collector" not in initial_ids
+
+    # 2. Give materials and build shelter via freeform input
+    session.player_state.inventory.extend([
+        {"id": "branches", "name": "干燥树枝浮木"},
+        {"id": "rope", "name": "坚韧纤维绳"},
+        {"id": "lighter", "name": "防风打火机"},
+        {"id": "glass_bottle", "name": "厚壁玻璃瓶"},
+    ])
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        # Use global bridge for HTTP endpoint check
+        srv_session = bridge.get_or_create_session(thread_id, "island_survival")
+        srv_session.player_state.inventory = list(session.player_state.inventory)
+        bridge.driver = EmptyMockDriver()
+
+        # Build shelter
+        res_shelter = await ac.post(
+            "/api/play/run",
+            json={
+                "thread_id": thread_id,
+                "run_id": "run-build-shelter",
+                "messages": [{"id": "m1", "role": "user", "content": [{"type": "text", "text": "用树枝和纤维绳搭建防风窝棚"}]}],
+                "forwarded_props": {"scenario_id": "island_survival"},
+            },
+        )
+        assert res_shelter.status_code == 200
+        s1 = (await ac.get(f"/api/session/{thread_id}/state")).json()
+        assert s1["player_state"]["variables"]["shelter_level"] >= 1
+        dec_map_1 = {d["id"]: d for d in s1["decorations"]}
+        assert "built_shelter" in dec_map_1
+        assert dec_map_1["built_shelter"]["side"] == "left"
+        assert dec_map_1["built_shelter"]["category"] == "structure"
+        assert "built_campfire" not in dec_map_1
+
+        # Light campfire
+        res_fire = await ac.post(
+            "/api/play/run",
+            json={
+                "thread_id": thread_id,
+                "run_id": "run-light-fire",
+                "messages": [{"id": "m2", "role": "user", "content": [{"type": "text", "text": "用打火机点燃树枝生起篝火"}]}],
+                "forwarded_props": {"scenario_id": "island_survival"},
+            },
+        )
+        assert res_fire.status_code == 200
+        s2 = (await ac.get(f"/api/session/{thread_id}/state")).json()
+        assert s2["player_state"]["variables"]["fire_started"] is True
+        dec_map_2 = {d["id"]: d for d in s2["decorations"]}
+        assert "built_shelter" in dec_map_2
+        assert "built_campfire" in dec_map_2
+        assert dec_map_2["built_campfire"]["side"] == "right"
+        assert dec_map_2["built_campfire"]["category"] == "structure"
+
+        # Re-supply rope (consumed by shelter construction) and build water collector
+        srv_session.player_state.inventory.append({"id": "rope", "name": "坚韧纤维绳"})
+        res_wc = await ac.post(
+            "/api/play/run",
+            json={
+                "thread_id": thread_id,
+                "run_id": "run-build-wc",
+                "messages": [{"id": "m3", "role": "user", "content": [{"type": "text", "text": "搭建简易雨水收集器"}]}],
+                "forwarded_props": {"scenario_id": "island_survival"},
+            },
+        )
+        assert res_wc.status_code == 200
+        s3 = (await ac.get(f"/api/session/{thread_id}/state")).json()
+        assert s3["player_state"]["variables"]["water_collector_built"] is True
+        dec_map_3 = {d["id"]: d for d in s3["decorations"]}
+        assert "built_water_collector" in dec_map_3
+        assert dec_map_3["built_water_collector"]["side"] == "left"
+
+    # 3. Verify dynamic custom structure via add_structures delta
+    srv_session.apply_delta({
+        "add_structures": [
+            {
+                "id": "custom_drying_rack",
+                "name": "木制晾晒架",
+                "image": "/assets/items/branches.png",
+                "side": "right",
+                "caption": "营地晾晒架",
+            }
+        ]
+    })
+    final_decs = resolve_scene_decorations(beach, srv_session.player_state)
+    assert any(d.id == "custom_drying_rack" and d.side == "right" and d.category == "structure" for d in final_decs)

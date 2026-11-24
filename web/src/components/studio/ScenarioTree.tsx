@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ScenarioSpec, SceneNode } from '../../types';
 import { Network, CheckCircle2, MapPin, Sparkles } from 'lucide-react';
 
@@ -23,6 +23,13 @@ export default function ScenarioTree({
   const [editDesc, setEditDesc] = useState(selectedScene?.description || '');
   const [editBg, setEditBg] = useState(selectedScene?.background || '');
   const [editHero, setEditHero] = useState(selectedScene?.hero_image || '');
+
+  useEffect(() => {
+    setEditTitle(selectedScene?.title || '');
+    setEditDesc(selectedScene?.description || '');
+    setEditBg(selectedScene?.background || '');
+    setEditHero(selectedScene?.hero_image || '');
+  }, [selectedScene?.id, selectedScene?.title, selectedScene?.description, selectedScene?.background, selectedScene?.hero_image]);
 
   // 场景列表
   const sceneList = Object.values(scenario.scenes);
@@ -169,6 +176,47 @@ export default function ScenarioTree({
                   />
                 </div>
               </div>
+
+              {(selectedScene.visuals?.decorations || selectedScene.decorations || []).length > 0 && (
+                <div className="pt-2 border-t border-slate-800/80">
+                  <div className="text-[11px] text-slate-400 mb-2 font-medium">
+                    左右两侧图像区物件 (环境道具 & 条件建造设施)
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {(selectedScene.visuals?.decorations || selectedScene.decorations || []).map((dec, idx) => (
+                      <div
+                        key={dec.id || idx}
+                        className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-950/80 border border-slate-800 text-xs"
+                      >
+                        <img
+                          src={dec.image}
+                          alt={dec.name}
+                          className="w-9 h-9 rounded object-cover border border-slate-800 shrink-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-slate-200 font-medium truncate">{dec.name}</span>
+                            <span
+                              className={`text-[9px] font-mono px-1 rounded border shrink-0 ${
+                                dec.category === 'structure'
+                                  ? 'text-emerald-300 bg-emerald-950/60 border-emerald-700/40'
+                                  : 'text-amber-300 bg-amber-950/50 border-amber-800/40'
+                              }`}
+                            >
+                              {dec.side === 'left' ? '左栏' : '右栏'} · {dec.tag || (dec.category === 'structure' ? '设施' : '环境')}
+                            </span>
+                          </div>
+                          {dec.condition && (
+                            <div className="text-[10px] text-slate-500 font-mono truncate mt-0.5">
+                              显示条件: {JSON.stringify(dec.condition)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 场景环境描述 */}

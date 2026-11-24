@@ -23,24 +23,70 @@ visuals:
     side: left
     caption: 高耸椰树
     tooltip: 海风拂动的椰子树，上面挂满青椰
+    category: env
+    tag: ''
+    condition: null
   - id: crab_beach
     name: 敏捷沙蟹
     image: /assets/props/crab.png
     side: left
     caption: 爬行红蟹
     tooltip: 在潮湿沙滩上飞速爬行的海蟹
+    category: env
+    tag: ''
+    condition: null
   - id: shell_beach
     name: 五彩海贝
     image: /assets/props/seashell.png
     side: right
     caption: 天然贝壳
     tooltip: 潮汐卷上沙滩的坚硬海螺与贝壳
+    category: env
+    tag: ''
+    condition: null
   - id: rock_beach
     name: 潮间黑礁
     image: /assets/props/rocks.png
     side: right
     caption: 海蚀礁石
     tooltip: 被海浪冲刷千百年的火山岩礁石
+    category: env
+    tag: ''
+    condition: null
+  - id: built_shelter
+    name: 防风窝棚
+    image: /assets/props/shelter.png
+    side: left
+    caption: 树枝窝棚
+    tooltip: 用浮木、椰叶与纤维绳搭建的稳固防风庇护所，可遮风挡雨并安心休整
+    category: structure
+    tag: 已建成
+    condition:
+      variables:
+        beach_shelter_level:
+          gte: 1
+  - id: built_water_collector
+    name: 雨水收集器
+    image: /assets/props/water_collector.png
+    side: left
+    caption: 集水装置
+    tooltip: 阔叶漏斗与厚壁玻璃瓶组成的持续淡水收集装置
+    category: structure
+    tag: 已建成
+    condition:
+      variables:
+        beach_water_collector_built: true
+  - id: built_campfire
+    name: 温暖篝火
+    image: /assets/illustrations/campfire.png
+    side: right
+    caption: 营地火堆
+    tooltip: 持续燃烧的生存篝火，可用于烤制食物、煮沸淡水与驱散夜寒野兽
+    category: structure
+    tag: 已建成
+    condition:
+      variables:
+        beach_fire_started: true
 decorations: []
 npcs: []
 actions:
@@ -235,12 +281,12 @@ actions:
   condition:
     has_item: lighter
     variables:
-      fire_started: false
+      beach_fire_started: false
   effects: null
   source: null
   on_success:
     variables:
-      fire_started: true
+      beach_fire_started: true
     visuals:
       hero_image: /assets/illustrations/campfire.png
     attributes_delta:
@@ -259,7 +305,7 @@ actions:
   difficulty: null
   condition:
     variables:
-      fire_started: true
+      beach_fire_started: true
     has_item: raw_crab
   effects: null
   source: null
@@ -384,6 +430,216 @@ actions:
     attributes_delta:
       stamina: -2
     message: 你将打磨光滑的五彩海贝用坚韧纤维细绳串起挂在颈间，清脆的贝壳碰撞声让你在孤岛的焦虑平复了不少。
+  on_failure: null
+- id: build_beach_shelter
+  label: 用浮木树枝与纤维绳搭建海滩防风窝棚
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    has_item:
+    - branches
+    - rope
+    variables:
+      beach_shelter_level:
+        lt: 1
+  effects: null
+  source: null
+  on_success:
+    consume_items:
+    - branches
+    - rope
+    variables:
+      beach_shelter_level: 1
+    visuals:
+      hero_image: /assets/props/shelter.png
+    attributes_delta:
+      stamina: -14
+      hydration: -8
+      fullness: -6
+      temperature: 1
+    san_delta: 8
+    time_cost: 1
+    message: 你在沙滩高处背风椰林旁架起浮木主梁，用纤维绳扎紧并覆上宽大椰叶，一座稳固耐用的防风窝棚就此建成，并呈现在营地左侧图像区！
+  on_failure: null
+- id: build_water_collector_beach
+  label: 用玻璃瓶、椰叶与纤维绳搭建简易雨水收集器
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    has_item:
+    - glass_bottle
+    - rope
+    variables:
+      beach_water_collector_built: false
+  effects: null
+  source: null
+  on_success:
+    consume_items:
+    - glass_bottle
+    - rope
+    variables:
+      beach_water_collector_built: true
+    visuals:
+      hero_image: /assets/props/water_collector.png
+    attributes_delta:
+      stamina: -10
+      hydration: -4
+    san_delta: 5
+    time_cost: 1
+    message: 你支起木架固定阔叶导流漏斗，将厚壁玻璃瓶安放在叶尖下方，简易雨水收集器已建成并常驻营地左侧图像区！
+  on_failure: null
+- id: collect_water_beach
+  label: 从已建成的雨水收集器接取清凉淡水饮用
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    variables:
+      beach_water_collector_built: true
+    attributes:
+      hydration:
+        lt: 95
+  effects: null
+  source: null
+  on_success:
+    attributes_delta:
+      hydration: 28
+      stamina: 8
+    san_delta: 3
+    time_cost: 1
+    message: 玻璃瓶中已蓄满过滤后的清冽雨水与露水，你畅饮一番，干渴感瞬间消退。
+  on_failure: null
+- id: rest_in_shelter_beach
+  label: 钻进已建成的防风窝棚遮荫休整（恢复体力与理智）
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    variables:
+      beach_shelter_level:
+        gte: 1
+    attributes:
+      stamina:
+        lt: 95
+  effects: null
+  source: null
+  on_success:
+    attributes_delta:
+      stamina: 35
+      hydration: -5
+      fullness: -6
+      temperature: 1
+    san_delta: 6
+    time_cost: 1
+    message: 你钻进阴凉挡风的树枝窝棚闭目休整，海风的喧嚣被隔绝在外，体力与心神快速恢复。
+  on_failure: null
+- id: scavenge_storm_flotsam
+  label: 趁风雨大作，搜寻被巨浪冲上沙滩的新鲜漂流木（天气专属）
+  type: check
+  target_npc: null
+  target_scene: null
+  skill: perception
+  difficulty: 10
+  condition:
+    weather_in:
+    - 刮风
+    - 雨天
+    not_has_item: branches
+  effects: null
+  source: null
+  on_success:
+    gain_item: branches
+    attributes_delta:
+      stamina: -7
+      hydration: -2
+      temperature: -1
+    time_cost: 1
+    message: 狂风巨浪不断将碎木与海藻拍上岸滩，你顶着风雨抢回了一捆粗壮实用的浮木树枝！
+  on_failure:
+    attributes_delta:
+      stamina: -8
+      temperature: -1
+    san_delta: -2
+    time_cost: 1
+    message: 迎头打来的浪花差点将你卷倒，视线被雨水模糊，没能捞到趁手的浮木。
+- id: shelter_beach_wind_rain
+  label: 躲进海滩防风窝棚避风躲雨（恢复体温与心神）
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    weather_in:
+    - 刮风
+    - 雨天
+    variables:
+      beach_shelter_level:
+        gte: 1
+  effects: null
+  source: null
+  on_success:
+    attributes_delta:
+      stamina: 14
+      temperature: 1
+      fullness: -3
+    san_delta: 6
+    time_cost: 1
+    message: 呼啸的海风与冰冷雨水被厚实的椰叶棚顶牢牢隔绝在外，你在干燥的窝棚内喘息回暖，情绪平复了不少。
+  on_failure: null
+- id: beach_observe_weather
+  label: 登上潮间黑礁观测云层与海风走向（预判天气）
+  type: check
+  target_npc: null
+  target_scene: null
+  skill: perception
+  difficulty: 9
+  condition:
+    weather_in:
+    - 阴天
+    - 晴天
+    - 海雾
+  effects: null
+  source: null
+  on_success:
+    attributes_delta:
+      stamina: -2
+      hydration: -1
+    san_delta: 4
+    time_cost: 1
+    message: 你登上高处礁石细察天际云脚与海浪涌向，对接下来几小时的风雨潮汐有了清晰预判，心里踏实了许多。
+  on_failure:
+    attributes_delta:
+      stamina: -3
+      hydration: -2
+    time_cost: 1
+    message: 远海天色晦暗迷离，云层变换莫测，一时难以判断风暴究竟何时压境。
+- id: enter_sea_cave
+  label: 沿着北侧礁石攀行，探入天然避风海蚀岩洞
+  type: transition
+  target_npc: null
+  target_scene: sea_cave
+  skill: null
+  difficulty: null
+  condition: null
+  effects:
+    attributes_delta:
+      stamina: -5
+      hydration: -3
+      fullness: -3
+    time_cost: 1
+  source: null
+  on_success: null
   on_failure: null
 - id: enter_coastal_jungle
   label: 离开沙滩，向海边丛林前进

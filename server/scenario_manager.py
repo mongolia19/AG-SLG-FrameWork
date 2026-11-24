@@ -77,6 +77,58 @@ def _compare_value(actual: Any, expected: Any) -> bool:
     return actual == expected
 
 
+def _match_weather_condition(
+    weather_str: str,
+    weather_type: str,
+    targets: List[str],
+) -> bool:
+    """Match current weather label/type against declarative condition keywords."""
+    w_str = (weather_str or "").strip()
+    w_type = (weather_type or "").strip().lower()
+    if not w_str and not w_type:
+        return False
+
+    alias_map = {
+        "晴天": {"clear"},
+        "晴朗": {"clear"},
+        "clear": {"clear"},
+        "阴天": {"cloudy"},
+        "多云": {"cloudy"},
+        "cloudy": {"cloudy"},
+        "overcast": {"cloudy"},
+        "刮风": {"windy", "storm"},
+        "大风": {"windy", "storm"},
+        "狂风": {"windy", "storm"},
+        "windy": {"windy", "storm"},
+        "wind": {"windy", "storm"},
+        "雨天": {"rain", "storm"},
+        "下雨": {"rain", "storm"},
+        "小雨": {"rain"},
+        "阵雨": {"rain"},
+        "rain": {"rain", "storm"},
+        "暴雨": {"storm"},
+        "雷暴": {"storm"},
+        "storm": {"storm"},
+        "海雾": {"foggy"},
+        "雾天": {"foggy"},
+        "foggy": {"foggy"},
+        "fog": {"foggy"},
+    }
+
+    for raw_target in targets:
+        target = str(raw_target).strip()
+        if not target:
+            continue
+        if target == w_str or target.lower() == w_type:
+            return True
+        if target in w_str:
+            return True
+        mapped_types = alias_map.get(target.lower()) or alias_map.get(target)
+        if mapped_types and w_type in mapped_types:
+            return True
+    return False
+
+
 def evaluate_action_condition(
     condition: Optional[Dict[str, Any]], player_state: PlayerState
 ) -> bool:
@@ -143,6 +195,19 @@ def evaluate_action_condition(
     if "time_slot_not_in" in condition and time_slot in condition["time_slot_not_in"]:
         return False
 
+    weather_str = str(player_state.variables.get("weather") or "")
+    weather_type = str(player_state.variables.get("weather_type") or "")
+    if "weather_in" in condition:
+        targets = condition["weather_in"]
+        target_list = [targets] if isinstance(targets, str) else list(targets or [])
+        if not _match_weather_condition(weather_str, weather_type, target_list):
+            return False
+    if "weather_not_in" in condition:
+        targets = condition["weather_not_in"]
+        target_list = [targets] if isinstance(targets, str) else list(targets or [])
+        if _match_weather_condition(weather_str, weather_type, target_list):
+            return False
+
     if "min_day" in condition:
         day = int(player_state.variables.get("day", 1) or 1)
         if day < int(condition["min_day"]):
@@ -190,6 +255,60 @@ class PropDecoration(BaseModel):
     side: str = "left"  # "left" or "right"
     caption: str = ""
     tooltip: str = ""
+    category: str = "env"  # "env" (环境) or "structure" (建造/设施)
+    tag: str = ""  # optional badge label, e.g. "已建成" / "设施" / "环境"
+    condition: Optional[Dict[str, Any]] = None
+
+
+def resolve_scene_decorations(
+    scene: Optional["SceneNode"],
+    player_state: PlayerState,
+) -> List[PropDecoration]:
+    """Filter scene decorations by declarative conditions and append dynamic built structures."""
+    resolved: List[PropDecoration] = []
+    seen_ids = set()
+
+    raw_decs: List[PropDecoration] = []
+    if scene:
+        if scene.visuals and scene.visuals.decorations:
+            raw_decs = list(scene.visuals.decorations)
+        elif scene.decorations:
+            raw_decs = list(scene.decorations)
+
+    for dec in raw_decs:
+        if evaluate_action_condition(dec.condition, player_state):
+            resolved.append(dec)
+            seen_ids.add(dec.id)
+
+    built_list = (player_state.variables or {}).get("built_structures")
+    if isinstance(built_list, list):
+        curr_scene_id = scene.id if scene else player_state.current_scene
+        for raw_item in built_list:
+            if not isinstance(raw_item, dict):
+                continue
+            target_scene = raw_item.get("scene_id")
+            if not target_scene or (curr_scene_id and target_scene != curr_scene_id):
+                continue
+            dec_id = str(raw_item.get("id", "")).strip()
+            if not dec_id or dec_id in seen_ids:
+                continue
+            try:
+                dec = PropDecoration(
+                    id=dec_id,
+                    name=str(raw_item.get("name", dec_id)),
+                    image=str(raw_item.get("image", "")),
+                    side=str(raw_item.get("side", "left")) if raw_item.get("side") in ("left", "right") else "left",
+                    caption=str(raw_item.get("caption", raw_item.get("name", dec_id))),
+                    tooltip=str(raw_item.get("tooltip", "")),
+                    category=str(raw_item.get("category", "structure")),
+                    tag=str(raw_item.get("tag", "已建成")),
+                )
+                resolved.append(dec)
+                seen_ids.add(dec_id)
+            except Exception:
+                continue
+
+    return resolved
 
 
 class VisualLayer(BaseModel):

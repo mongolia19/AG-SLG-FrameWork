@@ -2,7 +2,7 @@ id: deep_jungle
 title: 丛林深处
 background: /assets/scenes/deep_jungle.png
 foreground: ''
-hero_image: /assets/illustrations/campfire.png
+hero_image: ''
 music: /assets/bgm/deep_woods.mp3
 description: '光线在此处骤然暗淡，遮天蔽日的百年古木将天际分割成细碎的绿斑。
 
@@ -14,7 +14,7 @@ description: '光线在此处骤然暗淡，遮天蔽日的百年古木将天际
 visuals:
   background: /assets/scenes/deep_jungle.png
   foreground: ''
-  hero_image: /assets/illustrations/campfire.png
+  hero_image: ''
   atmosphere: 古木森森、幽暗潮湿、溪流潺潺
   decorations:
   - id: vines_deep
@@ -29,6 +29,40 @@ visuals:
     side: right
     caption: 溪涧苔石
     tooltip: 清冽山泉浸润冲刷的深色玄武岩石
+  - id: built_shelter
+    name: 防风窝棚
+    image: /assets/props/shelter.png
+    side: left
+    caption: 树枝窝棚
+    tooltip: 用硬木树枝、阔叶与纤维绳搭建的稳固防风庇护所，可遮风挡雨并安心休整
+    category: structure
+    tag: 已建成
+    condition:
+      variables:
+        deep_jungle_shelter_level:
+          gte: 1
+  - id: built_water_collector
+    name: 雨水收集器
+    image: /assets/props/water_collector.png
+    side: left
+    caption: 集水装置
+    tooltip: 阔叶漏斗与厚壁玻璃瓶组成的持续淡水收集装置
+    category: structure
+    tag: 已建成
+    condition:
+      variables:
+        deep_jungle_water_collector_built: true
+  - id: built_campfire
+    name: 温暖篝火
+    image: /assets/illustrations/campfire.png
+    side: right
+    caption: 营地火堆
+    tooltip: 持续燃烧的生存篝火，可用于烤制食物、煮沸淡水与驱散夜寒野兽
+    category: structure
+    tag: 已建成
+    condition:
+      variables:
+        deep_jungle_fire_started: true
 decorations: []
 npcs: []
 actions:
@@ -70,7 +104,7 @@ actions:
   condition:
     has_item: metal_box
     variables:
-      fire_started: true
+      deep_jungle_fire_started: true
       water_purified: false
   effects: null
   source: null
@@ -169,12 +203,12 @@ actions:
   condition:
     has_item: lighter
     variables:
-      fire_started: false
+      deep_jungle_fire_started: false
   effects: null
   source: null
   on_success:
     variables:
-      fire_started: true
+      deep_jungle_fire_started: true
     visuals:
       hero_image: /assets/illustrations/campfire.png
     attributes_delta:
@@ -200,13 +234,13 @@ actions:
     not_has_item: lighter
     has_item: branches
     variables:
-      fire_started: false
+      deep_jungle_fire_started: false
   effects: null
   source: null
   on_success:
     consume_item: branches
     variables:
-      fire_started: true
+      deep_jungle_fire_started: true
     attributes_delta:
       stamina: -18
       hydration: -12
@@ -284,7 +318,7 @@ actions:
   difficulty: null
   condition:
     variables:
-      fire_started: true
+      deep_jungle_fire_started: true
     has_any_item:
     - raw_crab
     - wild_food
@@ -306,6 +340,119 @@ actions:
     time_cost: 1
     message: 跳动的火舌将食材烤得焦香四溢！一顿滚烫美味的热食下肚，饥饿感一扫而空，浑身充满暖意与力量。
   on_failure: null
+- id: build_deep_shelter
+  label: 用硬木树枝与纤维绳在古树旁搭建防风窝棚
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    has_item:
+    - branches
+    - rope
+    variables:
+      deep_jungle_shelter_level:
+        lt: 1
+  effects: null
+  source: null
+  on_success:
+    consume_items:
+    - branches
+    - rope
+    variables:
+      deep_jungle_shelter_level: 1
+    visuals:
+      hero_image: /assets/props/shelter.png
+    attributes_delta:
+      stamina: -15
+      hydration: -8
+      fullness: -8
+      temperature: 1
+    san_delta: 8
+    time_cost: 1
+    message: 你借着古树根部搭建起一座厚实防潮的林间防风窝棚，已展示在左侧图像区，从此风餐露宿变成可靠营地！
+  on_failure: null
+- id: build_water_collector_deep
+  label: 用玻璃瓶、阔叶与纤维绳搭建密林雨水收集器
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    has_item:
+    - glass_bottle
+    - rope
+    variables:
+      deep_jungle_water_collector_built: false
+  effects: null
+  source: null
+  on_success:
+    consume_items:
+    - glass_bottle
+    - rope
+    variables:
+      deep_jungle_water_collector_built: true
+    visuals:
+      hero_image: /assets/props/water_collector.png
+    attributes_delta:
+      stamina: -10
+      hydration: -4
+    san_delta: 5
+    time_cost: 1
+    message: 你在树冠滴水处支起阔叶漏斗与玻璃瓶，雨水收集器已就位并展示在左侧图像区！
+  on_failure: null
+- id: collect_water_deep
+  label: 饮用雨水收集器中汇聚的纯净甘水
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    variables:
+      deep_jungle_water_collector_built: true
+    attributes:
+      hydration:
+        lt: 95
+  effects: null
+  source: null
+  on_success:
+    attributes_delta:
+      hydration: 28
+      stamina: 8
+    san_delta: 3
+    time_cost: 1
+    message: 收集器滤出的清凉山雾水与雨水甘甜解渴，体能迅速恢复。
+  on_failure: null
+- id: rest_in_shelter_deep
+  label: 在已建成的防风窝棚内安稳休整（大幅恢复体力）
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    variables:
+      deep_jungle_shelter_level:
+        gte: 1
+    attributes:
+      stamina:
+        lt: 95
+  effects: null
+  source: null
+  on_success:
+    attributes_delta:
+      stamina: 38
+      hydration: -5
+      fullness: -6
+      temperature: 1
+    hp_delta: 5
+    san_delta: 8
+    time_cost: 1
+    message: 你在防风窝棚中垫着干草安稳休整，躲避了林间潮气与蚊虫，精力充沛地醒来。
+  on_failure: null
 - id: rest_by_campfire
   label: 围着篝火安心休息过夜（恢复体力并推进时间）
   type: interact
@@ -315,7 +462,7 @@ actions:
   difficulty: null
   condition:
     variables:
-      fire_started: true
+      deep_jungle_fire_started: true
     time_slot_in:
     - 黄昏
     - 夜晚
@@ -353,6 +500,54 @@ actions:
       hydration: -8
     time_cost: 1
     message: 你靠在盘根错节的树干旁闭目养神片刻，呼吸渐渐平稳下来。
+  on_failure: null
+- id: drink_rain_from_leaves
+  label: 捧起大型芋叶汇集的清凉雨水直饮解渴（雨天专属）
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    weather_in:
+    - 雨天
+    attributes:
+      hydration:
+        lt: 95
+  effects: null
+  source: null
+  on_success:
+    attributes_delta:
+      hydration: 24
+      stamina: 6
+    san_delta: 3
+    time_cost: 1
+    message: 雨丝穿透层层树冠滴落在宽阔叶面上，汇聚成一捧清凉甘甜的雨水，饮下后疲惫与燥渴一扫而空。
+  on_failure: null
+- id: warm_up_by_deep_fire
+  label: 围坐林间篝火烘干湿衣并驱寒（阴雨/大风专属）
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    weather_in:
+    - 阴天
+    - 刮风
+    - 雨天
+    variables:
+      deep_jungle_fire_started: true
+  effects: null
+  source: null
+  on_success:
+    attributes_delta:
+      stamina: 15
+      temperature: 1
+      hydration: -2
+    san_delta: 6
+    time_cost: 1
+    message: 潮湿阴冷的林风在温暖跳跃的火光前退散，你将衣角烤干，体表温度与安全感稳步回升。
   on_failure: null
 - id: return_coastal_jungle
   label: 顺着来时的标记退回海边丛林

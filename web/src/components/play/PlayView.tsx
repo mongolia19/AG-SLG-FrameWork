@@ -34,6 +34,7 @@ export default function PlayView({
 
   // 会话与运行 ID
   const threadIdRef = useRef<string>(`session-${scenarioId}-${Date.now()}`);
+  const latestSceneIdRef = useRef<string>('');
 
   // 重置游戏为初始状态
   const handleResetGame = (currentScenario?: ScenarioSpec | null) => {
@@ -172,6 +173,7 @@ export default function PlayView({
   }, [scenarioId, scenario, playerState, messages, activeVisuals, dynamicActions]);
 
   const currentSceneId = playerState?.current_scene || scenario?.world.initial_scene || '';
+  latestSceneIdRef.current = currentSceneId;
   const currentScene: SceneNode | undefined = scenario?.scenes[currentSceneId];
 
   // 根据玩家当前状态（背包、变量、属性、时间）评估预设行动的可见性
@@ -228,6 +230,53 @@ export default function PlayView({
     if ('time_slot_not_in' in condition && condition.time_slot_not_in.includes(timeSlot)) {
       return false;
     }
+    const matchWeatherTargets = (targets: string[]): boolean => {
+      const wStr = String(state.variables?.weather || '').trim();
+      const wType = String(state.variables?.weather_type || '').trim().toLowerCase();
+      if (!wStr && !wType) return false;
+      const aliasMap: Record<string, string[]> = {
+        晴天: ['clear'],
+        晴朗: ['clear'],
+        clear: ['clear'],
+        阴天: ['cloudy'],
+        多云: ['cloudy'],
+        cloudy: ['cloudy'],
+        overcast: ['cloudy'],
+        刮风: ['windy', 'storm'],
+        大风: ['windy', 'storm'],
+        狂风: ['windy', 'storm'],
+        windy: ['windy', 'storm'],
+        wind: ['windy', 'storm'],
+        雨天: ['rain', 'storm'],
+        下雨: ['rain', 'storm'],
+        小雨: ['rain'],
+        阵雨: ['rain'],
+        rain: ['rain', 'storm'],
+        暴雨: ['storm'],
+        雷暴: ['storm'],
+        storm: ['storm'],
+        海雾: ['foggy'],
+        雾天: ['foggy'],
+        foggy: ['foggy'],
+        fog: ['foggy'],
+      };
+      return targets.some((raw) => {
+        const t = String(raw).trim();
+        if (!t) return false;
+        if (t === wStr || t.toLowerCase() === wType) return true;
+        if (wStr.includes(t)) return true;
+        const mapped = aliasMap[t.toLowerCase()] || aliasMap[t];
+        return Boolean(mapped && mapped.includes(wType));
+      });
+    };
+    if ('weather_in' in condition) {
+      const list = Array.isArray(condition.weather_in) ? condition.weather_in : [condition.weather_in];
+      if (!matchWeatherTargets(list)) return false;
+    }
+    if ('weather_not_in' in condition) {
+      const list = Array.isArray(condition.weather_not_in) ? condition.weather_not_in : [condition.weather_not_in];
+      if (matchWeatherTargets(list)) return false;
+    }
     if ('min_day' in condition) {
       const day = Number(state.variables?.day ?? 1);
       if (day < Number(condition.min_day)) return false;
@@ -242,37 +291,82 @@ export default function PlayView({
           evaluateActionCondition(act.condition, playerState)
         );
 
-  // 动态合成视觉图层（剧本静态配置 + Agent 在线调度）
+  // 动态合成视觉图层（剧本静态配置 + 条件建造设施 + Agent 在线调度）
+  const rawSceneDecorations =
+    activeVisuals?.decorations ||
+    currentScene?.visuals?.decorations ||
+    currentScene?.decorations ||
+    [];
+
+  const filteredSceneDecorations = rawSceneDecorations.filter((dec) =>
+    evaluateActionCondition(dec.condition, playerState)
+  );
+
+  const dynamicBuiltStructures = Array.isArray(playerState?.variables?.built_structures)
+    ? playerState!.variables.built_structures
+        .filter(
+          (item: any) =>
+            item &&
+            typeof item === 'object' &&
+            item.id &&
+            item.image &&
+            item.scene_id === currentScene?.id &&
+            !filteredSceneDecorations.some((d) => d.id === item.id)
+        )
+        .map((item: any) => ({
+          id: String(item.id),
+          name: String(item.name || item.id),
+          image: String(item.image),
+          side: (item.side === 'right' ? 'right' : 'left') as 'left' | 'right',
+          caption: item.caption ? String(item.caption) : String(item.name || item.id),
+          tooltip: item.tooltip ? String(item.tooltip) : '',
+          category: String(item.category || 'structure'),
+          tag: String(item.tag || '已建成'),
+        }))
+    : [];
+
+  const mergedDecorations = [...dynamicBuiltStructures, ...filteredSceneDecorations];
+
   const effectiveScene: SceneNode | undefined = currentScene
     ? {
         ...currentScene,
         visuals: {
           ...(currentScene.visuals || {}),
           ...(activeVisuals || {}),
+          decorations: mergedDecorations,
         },
         background: activeVisuals?.background || currentScene.visuals?.background || currentScene.background,
         foreground: activeVisuals?.foreground !== undefined ? activeVisuals.foreground : (currentScene.visuals?.foreground || currentScene.foreground),
         hero_image: activeVisuals?.hero_image !== undefined ? activeVisuals.hero_image : (currentScene.visuals?.hero_image || currentScene.hero_image),
-        decorations: activeVisuals?.decorations || currentScene.visuals?.decorations || currentScene.decorations || [],
+        decorations: mergedDecorations,
       }
     : undefined;
 
   // 辅助函数：应用 JSON-Patch 状态变化
   const applyStateDeltas = (patches: Array<{ op: string; path: string; value: any }>) => {
     let sceneSwitched = false;
+    let hasCheckResult = false;
     let nextVisualsPatch: VisualLayer | null = null;
     let nextDynamicActions: ActionOption[] | null | undefined = undefined;
 
     for (const patch of patches) {
       if (patch.path === '/current_scene') {
         sceneSwitched = true;
+        if (typeof patch.value === 'string' && patch.value) {
+          latestSceneIdRef.current = patch.value;
+        }
       } else if (patch.path === '/visuals') {
         nextVisualsPatch = patch.value;
       } else if (patch.path === '/available_actions') {
         nextDynamicActions = Array.isArray(patch.value) ? patch.value : null;
       } else if (patch.path === '/check_result' && patch.value) {
+        hasCheckResult = true;
         setDiceEvent(patch.value);
       }
+    }
+
+    if (sceneSwitched && !hasCheckResult) {
+      setDiceEvent(null);
     }
 
     if (sceneSwitched && !nextVisualsPatch) {
@@ -448,12 +542,13 @@ export default function PlayView({
 
       // 判断是否以 NPC 对话为主
       const isDialogue = displayText.includes('“') && displayText.includes('”');
+      const resolvedScene = scenario?.scenes[latestSceneIdRef.current] || currentScene;
       setMessages((prev) => [
         ...prev,
         {
           id: `assistant-${Date.now()}`,
           kind: isDialogue ? 'dialogue' : 'narrator',
-          speaker: isDialogue ? currentScene?.npcs?.[0]?.name : undefined,
+          speaker: isDialogue ? resolvedScene?.npcs?.[0]?.name : undefined,
           content: displayText,
           timestamp: Date.now(),
         },
@@ -542,6 +637,8 @@ export default function PlayView({
         currentScene={effectiveScene}
         streamingText={streamingText}
         isStreaming={isStreaming}
+        weather={playerState.variables?.weather}
+        weatherType={playerState.variables?.weather_type}
       />
 
       {/* 底部行动与决策面板 */}

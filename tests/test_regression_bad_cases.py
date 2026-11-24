@@ -311,3 +311,159 @@ def test_regression_badcase_studio_scene_modification_live_sync():
         # Revert
         beach.description = orig_desc
         mgr.save_scene("island_survival", beach)
+
+
+# ============================================================================
+# BAD CASE 7: Scene-built structures & visuals leaked into new scene on transition
+# Reported: "切换场景后 在原来的场景的东西也被带到了新的场景 修复这个问题！"
+# ============================================================================
+@pytest.mark.asyncio
+async def test_regression_badcase_scene_structures_and_visuals_not_leaked_on_transition():
+    """Bad Case 7: Structures and stale visuals from the previous scene must NOT carry over to a new scene."""
+    from httpx import ASGITransport, AsyncClient
+    from server.app import app, bridge as app_bridge
+    from server.agent_driver import MockAgentDriver
+    from server.scenario_manager import resolve_scene_decorations
+
+    app_bridge.driver = EmptyMockDriver()
+    thread_id = "test_bc7_scene_isolation"
+    session = app_bridge.get_or_create_session(thread_id, "island_survival")
+    session.player_state.inventory = [
+        {"id": "branches", "name": "干燥树枝浮木"},
+        {"id": "rope", "name": "坚韧纤维绳"},
+        {"id": "lighter", "name": "防风打火机"},
+        {"id": "glass_bottle", "name": "厚壁玻璃瓶"},
+    ]
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        # 1. Build shelter, campfire, water collector, and a custom structure on beach
+        await ac.post(
+            "/api/play/run",
+            json={
+                "thread_id": thread_id,
+                "run_id": "bc7-1",
+                "messages": [{"id": "m1", "role": "user", "content": [{"type": "text", "text": "用树枝和纤维绳搭建防风窝棚"}]}],
+                "forwarded_props": {"scenario_id": "island_survival"},
+            },
+        )
+        session.player_state.inventory.append({"id": "rope", "name": "坚韧纤维绳"})
+        await ac.post(
+            "/api/play/run",
+            json={
+                "thread_id": thread_id,
+                "run_id": "bc7-2",
+                "messages": [{"id": "m2", "role": "user", "content": [{"type": "text", "text": "用打火机点燃树枝生起篝火"}]}],
+                "forwarded_props": {"scenario_id": "island_survival"},
+            },
+        )
+        await ac.post(
+            "/api/play/run",
+            json={
+                "thread_id": thread_id,
+                "run_id": "bc7-3",
+                "messages": [{"id": "m3", "role": "user", "content": [{"type": "text", "text": "搭建简易雨水收集器"}]}],
+                "forwarded_props": {"scenario_id": "island_survival"},
+            },
+        )
+        session.apply_delta({
+            "add_structures": [
+                {
+                    "id": "custom_drying_rack",
+                    "name": "沙滩晾晒架",
+                    "image": "/assets/items/branches.png",
+                    "side": "right",
+                }
+            ]
+        })
+
+        beach_state = (await ac.get(f"/api/session/{thread_id}/state")).json()
+        beach_dec_ids = {d["id"] for d in beach_state["decorations"]}
+        assert {"built_shelter", "built_campfire", "built_water_collector", "custom_drying_rack"} <= beach_dec_ids
+
+        # 2. Transition from beach -> coastal_jungle
+        await ac.post(
+            "/api/play/run",
+            json={
+                "thread_id": thread_id,
+                "run_id": "bc7-4",
+                "messages": [{"id": "m4", "role": "user", "content": [{"type": "text", "text": "【转移场景】离开沙滩，向海边丛林前进"}]}],
+                "forwarded_props": {"scenario_id": "island_survival", "action_id": "enter_coastal_jungle"},
+            },
+        )
+
+        cj_state = (await ac.get(f"/api/session/{thread_id}/state")).json()
+        assert cj_state["player_state"]["current_scene"] == "coastal_jungle"
+        cj_dec_ids = {d["id"] for d in cj_state["decorations"]}
+        assert "built_shelter" not in cj_dec_ids
+        assert "built_campfire" not in cj_dec_ids
+        assert "built_water_collector" not in cj_dec_ids
+        assert "custom_drying_rack" not in cj_dec_ids
+
+        cj_action_ids = {a["id"] for a in cj_state["available_actions"]}
+        assert "rest_in_shelter_coastal" not in cj_action_ids
+        assert "collect_water_coastal" not in cj_action_ids
+        assert "coastal_cook_food" not in cj_action_ids
+        assert "coastal_campfire" in cj_action_ids
+
+        # Adjudication in coastal_jungle must not get beach shelter/fire bonuses
+        adj = app_bridge.evaluate_agent_adjudication(
+            skill="survival",
+            base_dc=10,
+            player_state=session.player_state,
+            clean_action="在丛林里过夜休息",
+            client_roll=10,
+        )
+        assert "稳固防风窝棚" not in adj["reason"]
+        assert "温暖营地篝火" not in adj["reason"]
+
+        # 3. Return to beach -> beach structures are still preserved on beach
+        await ac.post(
+            "/api/play/run",
+            json={
+                "thread_id": thread_id,
+                "run_id": "bc7-5",
+                "messages": [{"id": "m5", "role": "user", "content": [{"type": "text", "text": "【转移场景】原路返回视线开阔的沙滩"}]}],
+                "forwarded_props": {"scenario_id": "island_survival", "action_id": "return_to_beach"},
+            },
+        )
+        back_state = (await ac.get(f"/api/session/{thread_id}/state")).json()
+        assert back_state["player_state"]["current_scene"] == "beach"
+        back_dec_ids = {d["id"] for d in back_state["decorations"]}
+        assert {"built_shelter", "built_campfire", "built_water_collector", "custom_drying_rack"} <= back_dec_ids
+
+        # 4. LLM transition with stale background & omitted foreground/hero_image is sanitized
+        app_bridge.driver = MockAgentDriver(mock_responses=[
+            (
+                "你拨开灌木走进了海边丛林。\n\n"
+                "```state_delta\n"
+                '{"current_scene": "coastal_jungle", "visuals": {"background": "/assets/scenes/island_beach.png"}}\n'
+                "```"
+            )
+        ])
+        res_llm = await ac.post(
+            "/api/play/run",
+            json={
+                "thread_id": thread_id,
+                "run_id": "bc7-6",
+                "messages": [{"id": "m6", "role": "user", "content": [{"type": "text", "text": "前往海边丛林"}]}],
+                "forwarded_props": {"scenario_id": "island_survival"},
+            },
+        )
+        assert res_llm.status_code == 200
+        state_deltas = []
+        for line in res_llm.text.strip().split("\n"):
+            if line.startswith("data: "):
+                ev = json.loads(line[6:])
+                if ev.get("type") == "STATE_DELTA":
+                    state_deltas.extend(ev.get("delta", []))
+        vis_patch = next(p["value"] for p in state_deltas if p.get("path") == "/visuals")
+        assert vis_patch["background"] == "/assets/scenes/coastal_jungle.png"
+        assert vis_patch["foreground"] == ""
+        assert vis_patch["hero_image"] == ""
+
+    # 5. Deep jungle has no pre-lit campfire hero_image or beach decorations
+    deep_scene = app_bridge.scenario_mgr.get_scene("island_survival", "deep_jungle")
+    assert deep_scene is not None
+    assert deep_scene.hero_image == ""
+    deep_decs = resolve_scene_decorations(deep_scene, session.player_state)
+    assert not any(d.category == "structure" for d in deep_decs)

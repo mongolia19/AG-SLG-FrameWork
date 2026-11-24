@@ -12,7 +12,12 @@ from ag_ui.core import RunAgentInput
 
 from server.agent_driver import AgyDriver, CodexDriver, MockAgentDriver, BaseAgentDriver
 from server.agui_bridge import AGUIBridge
-from server.scenario_manager import ScenarioManager, SceneNode, resolve_scene_actions
+from server.scenario_manager import (
+    ScenarioManager,
+    SceneNode,
+    resolve_scene_actions,
+    resolve_scene_decorations,
+)
 
 app = FastAPI(title="AG-SLG-FrameWork Bridge Server", version="0.1.0")
 
@@ -148,11 +153,13 @@ def get_session_state(thread_id: str):
     resolved_actions = resolve_scene_actions(
         curr_scene, session.player_state, session.dynamic_actions
     )
+    resolved_decorations = resolve_scene_decorations(curr_scene, session.player_state)
     return {
         "thread_id": thread_id,
         "scenario_id": session.scenario_id,
         "player_state": session.player_state.model_dump(),
         "available_actions": [a.model_dump() for a in resolved_actions],
+        "decorations": [d.model_dump() for d in resolved_decorations],
         "agent_conversation_id": session.agent_conversation_id,
     }
 

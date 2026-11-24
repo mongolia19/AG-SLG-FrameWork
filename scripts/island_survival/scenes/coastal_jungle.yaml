@@ -35,6 +35,40 @@ visuals:
     side: right
     caption: 青苔滚石
     tooltip: 散落在腐殖土上的苔藓石块
+  - id: built_shelter
+    name: 防风窝棚
+    image: /assets/props/shelter.png
+    side: left
+    caption: 树枝窝棚
+    tooltip: 用硬木树枝、椰叶与纤维绳搭建的稳固防风庇护所，可遮风挡雨并安心休整
+    category: structure
+    tag: 已建成
+    condition:
+      variables:
+        coastal_jungle_shelter_level:
+          gte: 1
+  - id: built_water_collector
+    name: 雨水收集器
+    image: /assets/props/water_collector.png
+    side: left
+    caption: 集水装置
+    tooltip: 阔叶漏斗与厚壁玻璃瓶组成的持续淡水收集装置
+    category: structure
+    tag: 已建成
+    condition:
+      variables:
+        coastal_jungle_water_collector_built: true
+  - id: built_campfire
+    name: 温暖篝火
+    image: /assets/illustrations/campfire.png
+    side: right
+    caption: 营地火堆
+    tooltip: 持续燃烧的生存篝火，可用于烤制食物、煮沸淡水与驱散夜寒野兽
+    category: structure
+    tag: 已建成
+    condition:
+      variables:
+        coastal_jungle_fire_started: true
 decorations: []
 npcs: []
 actions:
@@ -74,8 +108,7 @@ actions:
   skill: survival
   difficulty: 9
   condition:
-    variables:
-      found_rope: false
+    not_has_item: rope
   effects: null
   source: null
   on_success:
@@ -175,12 +208,12 @@ actions:
   condition:
     has_item: lighter
     variables:
-      fire_started: false
+      coastal_jungle_fire_started: false
   effects: null
   source: null
   on_success:
     variables:
-      fire_started: true
+      coastal_jungle_fire_started: true
     visuals:
       hero_image: /assets/illustrations/campfire.png
     attributes_delta:
@@ -199,7 +232,7 @@ actions:
   difficulty: null
   condition:
     variables:
-      fire_started: true
+      coastal_jungle_fire_started: true
     has_any_item:
     - raw_crab
     - coconut
@@ -229,7 +262,7 @@ actions:
     - branches
     - rope
     variables:
-      shelter_level:
+      coastal_jungle_shelter_level:
         lt: 1
   effects: null
   source: null
@@ -238,14 +271,95 @@ actions:
     - branches
     - rope
     variables:
-      shelter_level: 1
+      coastal_jungle_shelter_level: 1
+    visuals:
+      hero_image: /assets/props/shelter.png
     attributes_delta:
       stamina: -15
       hydration: -10
       fullness: -8
     san_delta: 8
     time_cost: 1
-    message: 你用纤维绳将硬木交叉捆绑在树干间，搭起一座能遮风挡雨的稳固树枝庇护所！
+    message: 你用纤维绳将硬木交叉捆绑在树干间并铺满椰叶，搭起一座能遮风挡雨的稳固防风窝棚，现已常驻营地左侧图像区！
+  on_failure: null
+- id: build_water_collector_coastal
+  label: 用玻璃瓶、阔叶与纤维绳搭建林间雨水收集器
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    has_item:
+    - glass_bottle
+    - rope
+    variables:
+      coastal_jungle_water_collector_built: false
+  effects: null
+  source: null
+  on_success:
+    consume_items:
+    - glass_bottle
+    - rope
+    variables:
+      coastal_jungle_water_collector_built: true
+    visuals:
+      hero_image: /assets/props/water_collector.png
+    attributes_delta:
+      stamina: -10
+      hydration: -4
+    san_delta: 5
+    time_cost: 1
+    message: 你在林间空地架起三角木架与阔叶漏斗，稳妥接上玻璃瓶，简易雨水收集器已建成并展示在左侧图像区！
+  on_failure: null
+- id: collect_water_coastal
+  label: 从已建成的雨水收集器取水畅饮
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    variables:
+      coastal_jungle_water_collector_built: true
+    attributes:
+      hydration:
+        lt: 95
+  effects: null
+  source: null
+  on_success:
+    attributes_delta:
+      hydration: 28
+      stamina: 8
+    san_delta: 3
+    time_cost: 1
+    message: 收集器滴落的天然甘泉与雨水盛满半瓶，饮下后暑热全消。
+  on_failure: null
+- id: rest_in_shelter_coastal
+  label: 在已建成的防风窝棚内遮风小憩（恢复体力与理智）
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    variables:
+      coastal_jungle_shelter_level:
+        gte: 1
+    attributes:
+      stamina:
+        lt: 95
+  effects: null
+  source: null
+  on_success:
+    attributes_delta:
+      stamina: 35
+      hydration: -5
+      fullness: -6
+      temperature: 1
+    san_delta: 6
+    time_cost: 1
+    message: 在稳固的树枝窝棚内休息片刻，林间湿气与疲惫一扫而空。
   on_failure: null
 - id: drink_fresh_water_coastal
   label: 饮用瓶中的天然甘泉解渴
@@ -294,6 +408,54 @@ actions:
     san_delta: 3
     time_cost: 1
     message: 你撕下几片宽大柔韧的嫩椰叶，用细藤交错编出一顶厚实宽檐的遮阳草帽扣在头上，炙烤头顶的暑气立刻消散！
+  on_failure: null
+- id: collect_jungle_rainwater
+  label: 趁雨势正浓，用阔叶导流接满一瓶纯净雨水（雨天专属）
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    weather_in:
+    - 雨天
+    has_item: glass_bottle
+    not_has_item: fresh_water_bottle
+  effects: null
+  source: null
+  on_success:
+    consume_item: glass_bottle
+    gain_item: fresh_water_bottle
+    variables:
+      water_purified: true
+    attributes_delta:
+      stamina: -3
+      hydration: 12
+    san_delta: 3
+    time_cost: 1
+    message: 雨滴顺着硕大的热带阔叶叶尖倾泻而下，你很快将厚壁玻璃瓶接得满满当当，还痛快仰头喝了几口天然雨水！
+  on_failure: null
+- id: gather_windfall_branches
+  label: 拾取被大风吹折落地的林间枯枝（刮风/雨天专属）
+  type: interact
+  target_npc: null
+  target_scene: null
+  skill: null
+  difficulty: null
+  condition:
+    weather_in:
+    - 刮风
+    - 雨天
+    not_has_item: branches
+  effects: null
+  source: null
+  on_success:
+    gain_item: branches
+    attributes_delta:
+      stamina: -4
+      hydration: -2
+    time_cost: 1
+    message: 狂风摇落了不少高处枯枝，你省去了费力砍伐的工夫，迅速拾满一捆趁手的硬木树枝。
   on_failure: null
 - id: venture_deep_jungle
   label: 拨开高耸蕨类植物，向丛林深处进发

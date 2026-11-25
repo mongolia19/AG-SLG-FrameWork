@@ -64,15 +64,30 @@ export default function AuthoringChat({
     }
   });
 
+  const loadStudioThreadId = (sid: string): string => {
+    try {
+      const existing = localStorage.getItem(`ag_slg_studio_thread_${sid}`);
+      if (existing) return existing;
+      const fresh = `studio-${sid}-${Date.now()}`;
+      localStorage.setItem(`ag_slg_studio_thread_${sid}`, fresh);
+      return fresh;
+    } catch {
+      return `studio-${sid}-${Date.now()}`;
+    }
+  };
+
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState('');
+  const [activeToolName, setActiveToolName] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const prevScenarioIdRef = useRef(scenarioId);
+  const threadIdRef = useRef<string>(loadStudioThreadId(scenarioId));
 
   // 当切换剧本时，切换对应剧本的会话与草稿
   useEffect(() => {
     if (prevScenarioIdRef.current !== scenarioId) {
       prevScenarioIdRef.current = scenarioId;
+      threadIdRef.current = loadStudioThreadId(scenarioId);
       setMessages(loadCachedMessages(scenarioId));
       try {
         const draft = localStorage.getItem(`ag_slg_studio_draft_${scenarioId}`) || '';
@@ -111,7 +126,7 @@ export default function AuthoringChat({
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, streamingText]);
+  }, [messages, streamingText, isStreaming, activeToolName]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,10 +155,12 @@ export default function AuthoringChat({
 
     setIsStreaming(true);
     setStreamingText('');
+    setActiveToolName(null);
 
+    let accumulated = '';
     try {
       const payload = {
-        thread_id: `studio-${Date.now()}`,
+        thread_id: threadIdRef.current,
         run_id: `run-${Date.now()}`,
         messages: [
           {
@@ -171,7 +188,6 @@ export default function AuthoringChat({
       const reader = res.body.getReader();
       const decoder = new TextDecoder('utf-8');
       let buffer = '';
-      let accumulated = '';
 
       while (true) {
         const { value, done } = await reader.read();
@@ -183,15 +199,27 @@ export default function AuthoringChat({
 
         for (const line of lines) {
           const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith(':')) continue;
           if (!trimmed.startsWith('data: ')) continue;
           try {
             const event = JSON.parse(trimmed.slice(6));
             if (event.type === 'TEXT_MESSAGE_CONTENT' && event.delta) {
+              setActiveToolName(null);
               accumulated += event.delta;
               setStreamingText(accumulated);
+            } else if (event.type === 'TOOL_CALL_START') {
+              setActiveToolName(event.toolCallName || event.toolName || event.tool_name || '工具调用');
+            } else if (event.type === 'TOOL_CALL_END') {
+              setActiveToolName(null);
+            } else if (event.type === 'RUN_ERROR') {
+              throw new Error(event.message || 'Agent 运行异常');
             }
-          } catch {
-            // ignore
+          } catch (parseErr: any) {
+            if (parseErr instanceof SyntaxError) {
+              // ignore malformed SSE chunk
+            } else {
+              throw parseErr;
+            }
           }
         }
       }
@@ -214,18 +242,34 @@ export default function AuthoringChat({
         onScenarioUpdated();
       }
     } catch (err: any) {
-      setMessages((prev) => [
-        ...prev,
-        {
+      const rawMsg = String(err?.message || '未知错误');
+      const friendlyMsg =
+        rawMsg.toLowerCase().includes('network error') || rawMsg.toLowerCase().includes('failed to fetch')
+          ? `${rawMsg}（连接被中断，可能由于后端服务刚刚重启、正在启动中或代理超时，请稍后重试）`
+          : rawMsg;
+
+      setMessages((prev) => {
+        const additions: AuthoringMessage[] = [];
+        if (accumulated.trim()) {
+          additions.push({
+            id: `agent-partial-${Date.now()}`,
+            sender: 'agent',
+            content: accumulated.trim(),
+            timestamp: Date.now(),
+          });
+        }
+        additions.push({
           id: `err-${Date.now()}`,
           sender: 'agent',
-          content: `协作请求失败: ${err.message || '未知错误'}`,
+          content: `协作请求失败: ${friendlyMsg}`,
           timestamp: Date.now(),
-        },
-      ]);
+        });
+        return [...prev, ...additions];
+      });
     } finally {
       setIsStreaming(false);
       setStreamingText('');
+      setActiveToolName(null);
     }
   };
 
@@ -291,17 +335,34 @@ export default function AuthoringChat({
           </div>
         ))}
 
-        {/* 流式打字 */}
-        {isStreaming && streamingText && (
+        {/* 流式打字与执行状态 */}
+        {isStreaming && (
           <div className="flex gap-2.5 text-xs justify-start">
             <div className="w-6 h-6 rounded-full bg-indigo-600/30 border border-indigo-500/50 flex items-center justify-center text-indigo-300 shrink-0 mt-0.5">
               <Bot className="w-3.5 h-3.5" />
             </div>
             <div className="p-3 rounded-xl max-w-[85%] bg-slate-900 border border-indigo-500/50 text-slate-200 rounded-tl-none font-mono text-[11px] leading-relaxed">
-              <div className="whitespace-pre-wrap select-text">
-                {streamingText}
-                <span className="inline-block w-1.5 h-3 ml-1 bg-indigo-400 animate-pulse align-middle" />
-              </div>
+              {streamingText ? (
+                <div className="whitespace-pre-wrap select-text">
+                  {streamingText}
+                  <span className="inline-block w-1.5 h-3 ml-1 bg-indigo-400 animate-pulse align-middle" />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-indigo-300/90 font-sans">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                  <span>
+                    {activeToolName
+                      ? `正在调用工具 (${activeToolName})...`
+                      : 'Co-pilot 正在读取剧本并构思方案...'}
+                  </span>
+                </div>
+              )}
+              {streamingText && activeToolName && (
+                <div className="mt-2 pt-2 border-t border-slate-800 flex items-center gap-1.5 text-[10px] text-indigo-300/80 font-sans">
+                  <Loader2 className="w-3 h-3 animate-spin shrink-0" />
+                  <span>正在调用工具 ({activeToolName})...</span>
+                </div>
+              )}
             </div>
           </div>
         )}

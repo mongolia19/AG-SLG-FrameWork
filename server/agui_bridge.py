@@ -834,6 +834,7 @@ class AGUIBridge:
         self.driver = driver
         self.encoder = EventEncoder()
         self.sessions: Dict[str, GameSession] = {}
+        self.studio_conversations: Dict[str, str] = {}
 
     @staticmethod
     def _sync_player_state(target: PlayerState, source: Dict[str, Any]) -> bool:
@@ -2092,11 +2093,14 @@ actions:
         yield self.encoder.encode(RunStartedEvent(run_id=run_id, thread_id=thread_id))
         yield self.encoder.encode(TextMessageStartEvent(message_id=message_id, role="assistant"))
 
+        studio_conv_id = self.studio_conversations.get(thread_id)
         async for event in self.driver.run_stream(
             prompt=prompt,
-            conversation_id=None,
+            conversation_id=studio_conv_id,
             cwd=self.scenario_mgr.base_dir.parent,
         ):
+            if event.data.get("conversation_id"):
+                self.studio_conversations[thread_id] = event.data["conversation_id"]
             if event.event_type == "text_delta":
                 delta = event.data.get("text", "")
                 full_studio_response += delta

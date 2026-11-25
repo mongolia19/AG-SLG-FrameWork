@@ -1,5 +1,6 @@
 """FastAPI AG-UI Bridge Server for AG-SLG-FrameWork."""
 
+from contextlib import asynccontextmanager
 import os
 from pathlib import Path
 import tempfile
@@ -19,7 +20,18 @@ from server.scenario_manager import (
     resolve_scene_decorations,
 )
 
-app = FastAPI(title="AG-SLG-FrameWork Bridge Server", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    try:
+        yield
+    finally:
+        aclose = getattr(bridge.driver, "aclose", None)
+        if callable(aclose):
+            await aclose()
+
+
+app = FastAPI(title="AG-SLG-FrameWork Bridge Server", version="0.1.0", lifespan=lifespan)
 
 # Enable CORS for local web dev
 app.add_middleware(

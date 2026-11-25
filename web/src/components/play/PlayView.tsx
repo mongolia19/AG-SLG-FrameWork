@@ -50,6 +50,7 @@ export default function PlayView({
     setPlayerState({
       ...initPlayer,
       outfit: initPlayer.outfit ? { ...initPlayer.outfit } : {},
+      skills: Array.isArray(initPlayer.skills) ? [...initPlayer.skills] : [],
       current_scene: initPlayer.current_scene || sc.world.initial_scene,
     });
 
@@ -72,6 +73,42 @@ export default function PlayView({
         timestamp: Date.now(),
       },
     ]);
+  };
+
+  // 根据已选职业回填技能卡片（兼容旧存档或同步剧本后立即展示技能栏卡片）
+  const hydrateMissingSkills = (
+    state: PlayerState,
+    spec: ScenarioSpec
+  ): PlayerState['skills'] => {
+    if (Array.isArray(state.skills) && state.skills.length > 0) {
+      return state.skills;
+    }
+    const vars = state.variables || {};
+    if (!vars.class_selected || !vars.class_id) {
+      return state.skills || [];
+    }
+    const classId = String(vars.class_id);
+    for (const scene of Object.values(spec.scenes || {})) {
+      for (const act of scene.actions || []) {
+        const onSuccess = act.on_success as Record<string, any> | undefined;
+        if (
+          onSuccess?.variables?.class_id === classId &&
+          Array.isArray(onSuccess.skills) &&
+          onSuccess.skills.length > 0
+        ) {
+          const rank = Number(vars.skill_rank || vars.level || 1);
+          return onSuccess.skills.map((sk: any) => ({
+            ...sk,
+            level: rank > 1 ? rank : sk.level ?? 1,
+            tag:
+              rank > 1 && typeof sk.tag === 'string'
+                ? sk.tag.replace(/Lv\.\d+/g, `Lv.${rank}`)
+                : sk.tag,
+          }));
+        }
+      }
+    }
+    return state.skills || [];
   };
 
   // 1. 加载剧本与本地持久化存档
@@ -98,10 +135,13 @@ export default function PlayView({
               saved.messages.length > 0;
 
             if (isValidScenarioMatch) {
-              setPlayerState({
+              const restoredState: PlayerState = {
                 ...saved.playerState,
                 outfit: saved.playerState.outfit ?? data.world.initial_player_state.outfit ?? {},
-              });
+                skills: saved.playerState.skills ?? data.world.initial_player_state.skills ?? [],
+              };
+              restoredState.skills = hydrateMissingSkills(restoredState, data);
+              setPlayerState(restoredState);
               setMessages(saved.messages);
               setActiveVisuals(saved.activeVisuals || null);
               setDynamicActions(saved.dynamicActions || null);
@@ -132,6 +172,15 @@ export default function PlayView({
       if (res.ok) {
         const data: ScenarioSpec = await res.json();
         setScenario(data);
+        setPlayerState((prev) => {
+          if (!prev) return prev;
+          if (Array.isArray(prev.skills) && prev.skills.length > 0) return prev;
+          const hydrated = hydrateMissingSkills(prev, data);
+          if (hydrated && hydrated.length > 0) {
+            return { ...prev, skills: hydrated };
+          }
+          return prev;
+        });
         if (showNotice) {
           setSyncFeedback('已同步 Studio 最新修改');
           setTimeout(() => setSyncFeedback(null), 2500);
@@ -228,6 +277,21 @@ export default function PlayView({
         ? condition.not_has_item
         : [condition.not_has_item];
       if (forbs.some((id: string) => invIds.has(id))) return false;
+    }
+    const skillKeys = new Set<string>();
+    for (const sk of state.skills || []) {
+      if (sk?.id) skillKeys.add(String(sk.id));
+      if (sk?.name) skillKeys.add(String(sk.name));
+    }
+    if ('has_skill' in condition) {
+      const reqs = Array.isArray(condition.has_skill) ? condition.has_skill : [condition.has_skill];
+      if (!reqs.every((id: string) => skillKeys.has(id))) return false;
+    }
+    if ('not_has_skill' in condition) {
+      const forbs = Array.isArray(condition.not_has_skill)
+        ? condition.not_has_skill
+        : [condition.not_has_skill];
+      if (forbs.some((id: string) => skillKeys.has(id))) return false;
     }
     if (condition.variables && typeof condition.variables === 'object') {
       for (const [k, expected] of Object.entries(condition.variables)) {
@@ -405,6 +469,7 @@ export default function PlayView({
         variables: { ...(prev.variables || {}) },
         inventory: [...(prev.inventory || [])],
         outfit: { ...(prev.outfit || {}) },
+        skills: [...(prev.skills || [])],
       };
       for (const patch of patches) {
         if (patch.path === '/current_scene') {
@@ -438,6 +503,10 @@ export default function PlayView({
             nextOutfit[slotKey] = patch.value;
           }
           next.outfit = nextOutfit;
+        } else if (patch.path === '/skills') {
+          next.skills = Array.isArray(patch.value) ? patch.value : [];
+        } else if (patch.path === '/skills/-') {
+          next.skills = [...(next.skills || []), patch.value];
         }
       }
       return next;

@@ -1,7 +1,7 @@
 id: "northshire_abbey"
 title: "新手村 · 北郡修道院"
 background: "【场景全景】艾尔文森林·北郡修道院晨光广场，石砌钟楼与圣光旗帜矗立在绿茵山谷之中"
-foreground: "【角色立绘】治安官麦格布莱德 · 身披蓝金相间暴风城狮头战袍的资深指挥官"
+foreground: "/assets/characters/marshal_mcbride.png"
 hero_image: "【焦点插画】北郡修道院圣光祭坛与暴风城新兵征召榜"
 music: "/assets/bgm/northshire_dawn.mp3"
 
@@ -13,7 +13,7 @@ description: |
 
 visuals:
   background: "【场景全景】艾尔文森林·北郡修道院晨光广场，石砌钟楼与圣光旗帜矗立在绿茵山谷之中"
-  foreground: "【角色立绘】治安官麦格布莱德 · 身披蓝金相间暴风城狮头战袍的资深指挥官"
+  foreground: "/assets/characters/marshal_mcbride.png"
   hero_image: "【焦点插画】北郡修道院圣光祭坛与暴风城新兵征召榜"
   atmosphere: "晨光熹微、庄严肃穆、号角蓄势"
   decorations: []
@@ -51,6 +51,31 @@ actions:
           name: "白银之手训练圣契与战锤"
           desc: "象征圣骑士誓言的入门圣契与战锤，释放圣光技能时隐隐发光。"
           tag: "圣光 · 职业武装"
+      skills:
+        - id: "crusader_strike"
+          name: "十字军打击"
+          level: 1
+          tag: "近战 · 圣光"
+          desc: "将圣光之力灌注战锤重击目标，造成物理与神圣混合伤害。"
+          effect: "对亡灵与魔物伤害提升 30%，并提高力量近战破防检定成功率。"
+          cost: "20 圣能"
+          cooldown: "1 回合"
+        - id: "flash_of_light"
+          name: "圣光闪现"
+          level: 1
+          tag: "治疗 · 圣光"
+          desc: "快速引导温和圣光愈合自身或同伴伤势，稳定战斗续航。"
+          effect: "立即恢复自身或队友 25~35 点生命值，并安抚心智（SAN +3）。"
+          cost: "25 圣能"
+          cooldown: "2 回合"
+        - id: "devotion_aura"
+          name: "虔诚光环"
+          level: 1
+          tag: "守护 · 光环"
+          desc: "展开白银之手神圣防御力场，持续守护自身与身旁同伴。"
+          effect: "常驻减免 20% 物理与毒素冲击伤害，提升正面抗压与体质检定表现。"
+          cost: "常驻光环"
+          cooldown: "持续生效"
       variables:
         class_selected: true
         race: "人类"
@@ -89,6 +114,31 @@ actions:
           name: "达纳苏斯紫杉长弓"
           desc: "弓臂柔韧而精准的精灵训练弓，自带月神祝福箭袋。"
           tag: "远程 · 职业武装"
+      skills:
+        - id: "arcane_shot"
+          name: "奥术射击"
+          level: 1
+          tag: "远程 · 奥术"
+          desc: "将奥术能量附着于箭矢之上瞬间射出，精准穿透敌方护甲。"
+          effect: "无视目标部分物理甲壳防御，提高敏捷远程打击与狙击弱点命中率。"
+          cost: "20 集中值"
+          cooldown: "1 回合"
+        - id: "serpent_sting"
+          name: "毒蛇钉刺"
+          level: 1
+          tag: "毒素 · 持续"
+          desc: "射出淬炼自然剧毒的倒钩箭矢，令目标持续失血并受创。"
+          effect: "附加持续毒素侵蚀，每回合削弱敌方体力并迟滞其扑击动作。"
+          cost: "15 集中值"
+          cooldown: "2 回合"
+        - id: "aspect_of_the_cheetah"
+          name: "猎豹守护"
+          level: 1
+          tag: "身法 · 守护"
+          desc: "唤醒荒野猎豹的敏捷直觉，保持高度戒备与轻盈步法。"
+          effect: "常驻提升闪避反应、先手侦察感知与脱险速度，降低被偷袭风险。"
+          cost: "常驻守护"
+          cooldown: "持续生效"
       variables:
         class_selected: true
         race: "暗夜精灵"
@@ -127,6 +177,31 @@ actions:
           name: "奥术微光短杖"
           desc: "镶嵌着微型蓝宝石的法师手杖，助你稳定引导火焰与冰霜法术。"
           tag: "奥术 · 职业武装"
+      skills:
+        - id: "fireball"
+          name: "火球术"
+          level: 1
+          tag: "火焰 · 爆发"
+          desc: "凝聚炽热火元素投射爆裂火球，正面轰击敌人或障碍。"
+          effect: "造成高额火焰爆发伤害，可瞬间引燃并清扫矿洞蛛网与易燃毒囊。"
+          cost: "30 法力值"
+          cooldown: "1 回合"
+        - id: "frostbolt"
+          name: "寒冰箭"
+          level: 1
+          tag: "冰霜 · 控制"
+          desc: "发射极寒冰晶箭刺穿敌人，将凛冽寒气注入目标关节。"
+          effect: "造成冰霜伤害并强效减速控制，限制强敌冲锋、打断敌方连招。"
+          cost: "20 法力值"
+          cooldown: "瞬发"
+        - id: "arcane_intellect"
+          name: "奥术智慧"
+          level: 1
+          tag: "奥术 · 增益"
+          desc: "激发达拉然奥术符文强化心智，保持清醒专注的魔力感知。"
+          effect: "常驻提升智力法术精准度与魔法抗性，减缓毒雾造成的理智（SAN）流失。"
+          cost: "常驻增益"
+          cooldown: "持续生效"
       variables:
         class_selected: true
         race: "侏儒"
@@ -165,6 +240,31 @@ actions:
           name: "铁炉堡橡木镶铁战盾与战斧"
           desc: "沉稳厚重的矮人防具，配有一柄顺手的单手战斧。"
           tag: "盾战 · 职业武装"
+      skills:
+        - id: "heroic_strike"
+          name: "英勇打击"
+          level: 1
+          tag: "近战 · 爆发"
+          desc: "蓄力挥出势大力沉的战斧重劈，倾泻全部力量直击敌躯。"
+          effect: "造成高倍率破甲近战伤害，有效劈碎野兽厚皮与巨蛛硬壳。"
+          cost: "20 怒气值"
+          cooldown: "1 回合"
+        - id: "thunder_clap"
+          name: "雷霆一击"
+          level: 1
+          tag: "震荡 · 群攻"
+          desc: "重踏地面激起雷霆冲击波，向四周扩散强劲震荡气浪。"
+          effect: "震慑周遭敌群并强行打断扑击节奏，压制群体敌人的攻击频次。"
+          cost: "25 怒气值"
+          cooldown: "2 回合"
+        - id: "shield_block"
+          name: "盾牌格挡"
+          level: 1
+          tag: "防御 · 格挡"
+          desc: "沉稳举起锻钢战盾架住正面猛袭，构筑钢铁防线。"
+          effect: "大幅吸收正面冲撞与利爪毒牙伤害，在险境中掩护队友并稳住战局。"
+          cost: "10 怒气值"
+          cooldown: "1 回合"
       variables:
         class_selected: true
         race: "矮人"
@@ -193,7 +293,7 @@ actions:
       variables:
         mcbride_quest_accepted: true
       visuals:
-        foreground: "【角色立绘】治安官麦格布莱德 · 展开艾尔文军事羊皮卷"
+        foreground: "/assets/characters/marshal_mcbride.png"
       message: "麦格布莱德将盖有暴风城火漆的【北郡军令状】与 20 枚金币交到你手中：‘先在修道院外围磨炼技能，再前往艾尔文野外与斥候艾莲娜汇合！只有两人配合，才能拿下矿洞深处的蜘蛛领主！’"
 
   - id: "northshire_wolf_trial"
@@ -246,7 +346,7 @@ actions:
         skill_rank: 2
         skills: "初始职业三技能全面晋升至 Lv.2（威力提升 35%，冷却缩短）"
       visuals:
-        foreground: "【角色立绘】治安官麦格布莱德 · 授予新兵晋升嘉奖"
+        foreground: "/assets/characters/marshal_mcbride.png"
         hero_image: "【等级跃升】金光涌动！角色晋升 Lv.2，全属性提升，技能迈入 Lv.2"
       message: "麦格布莱德满意地点了点头，亲自指点你发力与施法的窍门！你成功晋升至【Lv.2】！全基础属性 +2、生命恢复，所有初始职业技能正式突破至【Lv.2】！"
 
@@ -286,7 +386,7 @@ actions:
       variables:
         quest_completed: true
       visuals:
-        foreground: "【角色立绘】治安官麦格布莱德 · 肃立敬礼授予英雄披风"
+        foreground: "/assets/characters/marshal_mcbride.png"
         hero_image: "【史诗成就】艾尔文英雄归来！法戈第矿洞危机彻底解除"
       message: "麦格布莱德接过珍贵的【幽暗蛛王丝】，高声赞叹你的勇武！修道院工匠连夜为你织就【蛛丝织锦·暴风城守望者披风】并赏赐 150 金币。北郡的钟声为你而鸣，艾泽拉斯记住了你的名字！"
 

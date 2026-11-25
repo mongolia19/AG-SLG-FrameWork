@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PlayerState, InventoryItem, OutfitItem } from '../../types';
+import { PlayerState, InventoryItem, OutfitItem, SkillItem } from '../../types';
 import {
   Heart,
   Brain,
@@ -28,6 +28,9 @@ import {
   Footprints,
   Gem,
   Shield,
+  Swords,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 interface OutfitSlotMeta {
@@ -101,8 +104,16 @@ export default function GameHUD({
 }: GameHUDProps) {
   const [showInventory, setShowInventory] = useState(false);
   const [showOutfit, setShowOutfit] = useState(false);
+  const [showSkills, setShowSkills] = useState(false);
+  const [skillsBarExpanded, setSkillsBarExpanded] = useState(true);
   const [hoveredItem, setHoveredItem] = useState<InventoryItem | null>(null);
   const [hoveredOutfit, setHoveredOutfit] = useState<{ slotLabel: string; item: OutfitItem } | null>(null);
+  const [hoveredSkill, setHoveredSkill] = useState<SkillItem | null>(null);
+
+  const skillsList: SkillItem[] = Array.isArray(playerState.skills)
+    ? playerState.skills.filter((sk): sk is SkillItem => Boolean(sk && (sk.name || sk.id)))
+    : [];
+  const hasSkillFeature = skillsList.length > 0 || playerState.variables?.skills !== undefined;
 
   const outfitMap = playerState.outfit || {};
   const equippedEntries = Object.entries(outfitMap).filter(
@@ -288,6 +299,20 @@ export default function GameHUD({
           )}
 
           <button
+            onClick={() => setShowSkills(true)}
+            className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-200 rounded-md border border-emerald-500/40 transition relative shadow-sm"
+            title="查看当前技能与技能简介"
+          >
+            <Swords className="w-3.5 h-3.5 text-emerald-400" />
+            <span>技能栏</span>
+            {skillsList.length > 0 && (
+              <span className="bg-emerald-500 text-slate-950 font-bold rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
+                {skillsList.length}
+              </span>
+            )}
+          </button>
+
+          <button
             onClick={() => setShowOutfit(true)}
             className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-200 rounded-md border border-indigo-500/40 transition relative shadow-sm"
             title="查看当前穿着与随身配饰"
@@ -353,6 +378,146 @@ export default function GameHUD({
         </div>
       </header>
 
+      {/* 快捷技能卡片栏 */}
+      {hasSkillFeature && (
+        <div className="px-6 py-2 bg-slate-950/90 border-b border-slate-800/80 text-xs z-20">
+          <div className="flex items-center justify-between gap-2 mb-1.5">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowSkills(true)}
+                className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-300 hover:text-emerald-200 transition"
+                title="点击展开完整技能栏弹窗"
+              >
+                <Swords className="w-3.5 h-3.5 text-emerald-400" />
+                <span>技能卡片栏</span>
+              </button>
+              <span className="text-[10px] font-mono text-slate-500">
+                ({skillsList.length} 项技能)
+              </span>
+            </div>
+
+            {skillsList.length > 0 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSkillsBarExpanded((prev) => !prev)}
+                  className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-emerald-300 px-2 py-0.5 rounded bg-slate-900/80 border border-slate-800 transition"
+                  title={skillsBarExpanded ? '折叠技能卡片区' : '展开技能卡片区'}
+                >
+                  {skillsBarExpanded ? (
+                    <>
+                      <ChevronUp className="w-3 h-3" />
+                      <span>收起卡片</span>
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-3 h-3" />
+                      <span>展开卡片</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {skillsList.length === 0 ? (
+            <button
+              onClick={() => setShowSkills(true)}
+              className="w-full text-left px-3 py-1.5 rounded-lg bg-slate-900/50 hover:bg-slate-900 border border-dashed border-slate-800 text-[11px] text-slate-500 hover:text-slate-300 italic transition"
+            >
+              {typeof playerState.variables?.skills === 'string' && playerState.variables.skills
+                ? `${playerState.variables.skills} · 觉醒后每个技能将以独立卡片形式展示作用说明`
+                : '尚未习得技能 · 觉醒后每个技能将以独立卡片形式展示作用说明'}
+            </button>
+          ) : skillsBarExpanded ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-48 overflow-y-auto pr-0.5">
+              {skillsList.map((skill, idx) => (
+                <button
+                  key={`${skill.id || skill.name}-${idx}`}
+                  type="button"
+                  onClick={() => {
+                    setHoveredSkill(skill);
+                    setShowSkills(true);
+                  }}
+                  title={`${skill.name || skill.id}${skill.level !== undefined ? ` (Lv.${skill.level})` : ''} — ${skill.effect || skill.desc || ''}`}
+                  className="text-left p-2.5 rounded-lg bg-slate-900/95 hover:bg-slate-800/95 border border-emerald-800/40 hover:border-emerald-500/60 shadow-sm transition flex flex-col gap-1.5 group"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <div className="w-6 h-6 rounded-md bg-emerald-950/70 border border-emerald-700/50 flex items-center justify-center shrink-0">
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                      </div>
+                      <span className="text-xs font-semibold text-emerald-200 group-hover:text-emerald-100 truncate">
+                        {skill.name || skill.id}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {skill.level !== undefined && (
+                        <span className="text-[10px] font-mono text-amber-300 bg-amber-950/50 border border-amber-800/40 px-1.5 py-0.5 rounded">
+                          Lv.{skill.level}
+                        </span>
+                      )}
+                      {skill.tag && (
+                        <span className="text-[10px] text-emerald-300 bg-emerald-950/50 border border-emerald-800/40 px-1.5 py-0.5 rounded">
+                          {skill.tag}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {skill.desc && (
+                    <p className="text-[11px] text-slate-300 leading-snug">
+                      {skill.desc}
+                    </p>
+                  )}
+
+                  {skill.effect && (
+                    <div className="text-[10px] text-emerald-200/90 bg-emerald-950/35 border border-emerald-800/35 rounded px-2 py-1 leading-snug">
+                      <span className="font-semibold text-emerald-400">作用说明：</span>
+                      {skill.effect}
+                    </div>
+                  )}
+
+                  {(skill.cost || skill.cooldown) && (
+                    <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400 pt-0.5">
+                      {skill.cost && (
+                        <span className="bg-slate-950/80 border border-slate-800 px-1.5 py-0.5 rounded">
+                          消耗: {skill.cost}
+                        </span>
+                      )}
+                      {skill.cooldown && (
+                        <span className="bg-slate-950/80 border border-slate-800 px-1.5 py-0.5 rounded">
+                          冷却: {skill.cooldown}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+              {skillsList.map((skill, idx) => (
+                <button
+                  key={`${skill.id || skill.name}-${idx}`}
+                  type="button"
+                  onClick={() => {
+                    setHoveredSkill(skill);
+                    setShowSkills(true);
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-900/90 hover:bg-slate-800 border border-slate-700/70 hover:border-emerald-500/50 text-[11px] text-slate-200 shrink-0 transition"
+                >
+                  <Sparkles className="w-3 h-3 text-emerald-400 shrink-0" />
+                  <span className="font-semibold text-emerald-200">{skill.name || skill.id}</span>
+                  {skill.level !== undefined && (
+                    <span className="text-[10px] font-mono text-amber-300">Lv.{skill.level}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* 快捷服装与配饰展示条 */}
       <div className="flex items-center gap-2 px-6 py-1.5 bg-slate-950/85 border-b border-slate-800/80 text-xs overflow-x-auto no-scrollbar z-20">
         <button
@@ -393,6 +558,141 @@ export default function GameHUD({
           </div>
         )}
       </div>
+
+      {/* 技能栏详情弹窗 */}
+      {showSkills && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#181b24] border border-slate-700 rounded-xl max-w-2xl w-full p-5 shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <Swords className="w-5 h-5 text-emerald-400" />
+                <h3 className="font-semibold text-slate-100">角色技能栏</h3>
+                <span className="text-xs text-slate-500 font-mono">
+                  (已掌握 {skillsList.length} 项技能)
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  setShowSkills(false);
+                  setHoveredSkill(null);
+                }}
+                className="p-1 text-slate-400 hover:text-slate-100 rounded-lg hover:bg-slate-800 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="py-4 min-h-[180px] max-h-[65vh] overflow-y-auto space-y-2.5">
+              {skillsList.length === 0 ? (
+                <div className="h-36 flex flex-col items-center justify-center text-slate-500 text-sm text-center px-4">
+                  <Sparkles className="w-8 h-8 mb-2 opacity-40 text-emerald-400" />
+                  <span>
+                    {typeof playerState.variables?.skills === 'string' && playerState.variables.skills
+                      ? playerState.variables.skills
+                      : '尚未掌握任何技能'}
+                  </span>
+                  <span className="text-xs text-slate-600 mt-1">
+                    完成职业觉醒或剧情试炼后，习得的技能名称与技能简介将显示在此处
+                  </span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {skillsList.map((skill, idx) => (
+                    <div
+                      key={`${skill.id || skill.name}-${idx}`}
+                      onMouseEnter={() => setHoveredSkill(skill)}
+                      onClick={() => setHoveredSkill(skill)}
+                      className={`p-3.5 rounded-lg border transition cursor-pointer flex flex-col gap-1.5 ${
+                        hoveredSkill?.id === skill.id && hoveredSkill?.name === skill.name
+                          ? 'bg-slate-800/90 border-emerald-500/60 shadow-md'
+                          : 'bg-slate-900/90 hover:bg-slate-800 border-slate-700/80 hover:border-emerald-500/40'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-7 h-7 rounded-md bg-emerald-950/60 border border-emerald-700/50 flex items-center justify-center shrink-0">
+                            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                          </div>
+                          <span className="text-sm font-semibold text-emerald-200 truncate">
+                            {skill.name || skill.id}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {skill.level !== undefined && (
+                            <span className="text-[10px] font-mono text-amber-300 bg-amber-950/50 border border-amber-800/40 px-1.5 py-0.5 rounded">
+                              Lv.{skill.level}
+                            </span>
+                          )}
+                          {skill.tag && (
+                            <span className="text-[10px] text-emerald-300 bg-emerald-950/50 border border-emerald-800/40 px-1.5 py-0.5 rounded">
+                              {skill.tag}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="pl-9 space-y-1.5">
+                        <p className="text-xs text-slate-300 leading-relaxed">
+                          {skill.desc || '暂无技能简介。'}
+                        </p>
+                        {skill.effect && (
+                          <div className="text-[11px] text-emerald-200/90 bg-emerald-950/35 border border-emerald-800/40 rounded px-2 py-1 leading-relaxed">
+                            <span className="font-semibold text-emerald-400">作用说明：</span>
+                            {skill.effect}
+                          </div>
+                        )}
+                        {(skill.cost || skill.cooldown) && (
+                          <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono text-slate-400 pt-0.5">
+                            {skill.cost && (
+                              <span className="bg-slate-950/80 border border-slate-800 px-1.5 py-0.5 rounded">
+                                消耗: {skill.cost}
+                              </span>
+                            )}
+                            {skill.cooldown && (
+                              <span className="bg-slate-950/80 border border-slate-800 px-1.5 py-0.5 rounded">
+                                冷却: {skill.cooldown}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {hoveredSkill && (
+              <div className="p-2.5 bg-slate-900 border border-emerald-900/50 rounded-lg text-xs text-slate-300 mb-3 animate-in fade-in duration-100 space-y-1">
+                <div>
+                  <span className="text-emerald-300 font-semibold">
+                    {hoveredSkill.name || hoveredSkill.id}
+                    {hoveredSkill.level !== undefined ? ` (Lv.${hoveredSkill.level})` : ''}:{' '}
+                  </span>
+                  {hoveredSkill.desc || '暂无更多技能简介。'}
+                </div>
+                {hoveredSkill.effect && (
+                  <div className="text-emerald-200/90">
+                    <span className="text-emerald-400 font-semibold">作用说明：</span>
+                    {hoveredSkill.effect}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="pt-3 border-t border-slate-800 text-right">
+              <button
+                onClick={() => {
+                  setShowSkills(false);
+                  setHoveredSkill(null);
+                }}
+                className="px-4 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md transition"
+              >
+                关闭
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 服装与配饰详情弹窗 */}
       {showOutfit && (

@@ -17,6 +17,17 @@ export interface OutfitItem {
   tag?: string;
 }
 
+export interface SkillItem {
+  id: string;
+  name: string;
+  desc?: string;
+  effect?: string;
+  cost?: string;
+  cooldown?: string;
+  level?: number;
+  tag?: string;
+}
+
 export interface PlayerState {
   name: string;
   hp: number;
@@ -25,6 +36,7 @@ export interface PlayerState {
   attributes: PlayerAttributeMap;
   inventory: InventoryItem[];
   outfit?: Record<string, OutfitItem | null>;
+  skills?: SkillItem[];
   variables: Record<string, any>;
   current_scene: string;
 }

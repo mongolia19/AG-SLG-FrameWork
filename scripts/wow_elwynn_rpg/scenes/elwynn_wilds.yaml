@@ -1,7 +1,7 @@
 id: "elwynn_wilds"
 title: "野外 · 艾尔文密林与哨岗"
 background: "【场景全景】阳光斑驳的艾尔文古老森林，高大橡树阴影间潜伏着灰狼与迪菲亚游荡盗贼，前方哨岗旁立着精灵斥候"
-foreground: "【角色立绘】巡林者艾莲娜·迅箭 · 披着墨绿披风、手握银叶长弓的暴风城哨兵斥候"
+foreground: "/assets/characters/elena_swiftarrow.png"
 hero_image: "【焦点插画】艾尔文森林岔路口与法戈第矿洞警示木牌"
 music: "/assets/bgm/elwynn_forest.mp3"
 
@@ -12,7 +12,7 @@ description: |
 
 visuals:
   background: "【场景全景】阳光斑驳的艾尔文古老森林，高大橡树阴影间潜伏着灰狼与迪菲亚游荡盗贼，前方哨岗旁立着精灵斥候"
-  foreground: "【角色立绘】巡林者艾莲娜·迅箭 · 披着墨绿披风、手握银叶长弓的暴风城哨兵斥候"
+  foreground: "/assets/characters/elena_swiftarrow.png"
   hero_image: "【焦点插画】艾尔文森林岔路口与法戈第矿洞警示木牌"
   atmosphere: "林涛沙沙、危机暗伏、战意升腾"
   decorations:
@@ -46,7 +46,7 @@ actions:
       variables:
         ally_recruited: true
       visuals:
-        foreground: "【角色立绘】巡林者艾莲娜·迅箭 · 递来闪烁微光的照明信号箭"
+        foreground: "/assets/characters/elena_swiftarrow.png"
         hero_image: "【小队结盟】两位冒险者在森林哨岗击掌立约，共赴法戈第矿洞"
       message: "艾莲娜凝视着你手中的武器，露出一丝赞许的微笑：‘好，有你这位强力战友，胜算大增！拿着这支【照明信号箭】，进洞后你负责正面破防与主攻，我负责照亮暗角、狙击幼蛛并牵制蜘蛛领主侧翼！’"
 
@@ -136,7 +136,7 @@ actions:
         skill_rank: 3
         skills: "核心职业技能全员晋升至 Lv.3（解锁合作爆发连携）"
       visuals:
-        foreground: "【角色立绘】巡林者艾莲娜·迅箭 · 对你的成长赞叹不已"
+        foreground: "/assets/characters/elena_swiftarrow.png"
         hero_image: "【等级跃升】星辰与魔力交汇！角色晋升 Lv.3，属性大幅增长，技能迈入 Lv.3"
       message: "经历艾尔文荒野的连续恶战，你的战技与魔力回路完成蜕变！成功晋升【Lv.3】！全属性大幅增长，职业技能全部升级至【Lv.3】，已具备挑战法戈第蜘蛛领主的实力！"
 

@@ -348,6 +348,69 @@ ITEM_META = {
         "desc": "用坚硬五彩海贝与韧皮细绳串起的颈间护符，海风吹过时发出清脆声响，令人心神宁静。",
         "tag": "安神 · 颈饰",
     },
+    # 艾泽拉斯传说（wow_elwynn_rpg）常用物品与掉落
+    "炉石": {
+        "name": "炉石（北郡修道院）",
+        "icon": "/assets/items/hearthstone.png",
+        "desc": "刻有温暖蓝白符文的魔法石，将灵魂绑定在北郡修道院的旅店炉火旁。",
+    },
+    "初级治疗药水": {
+        "name": "初级治疗药水",
+        "icon": "/assets/items/minor_healing_potion.png",
+        "desc": "暴风城炼金师配制的红色恢复药瓶，紧急时刻饮下可快速愈合伤势。",
+    },
+    "北郡军令状": {
+        "name": "北郡军令状",
+        "icon": "/assets/items/northshire_order.png",
+        "desc": "盖有暴风城赤红雄狮火漆印的军务羊皮卷轴，委任你清剿法戈第矿洞蛛灾。",
+    },
+    "狗头人蜡烛碎块": {
+        "name": "狗头人蜡烛碎块",
+        "icon": "/assets/items/kobold_candle.png",
+        "desc": "从北郡外围狗头人斥候身上缴获的融蜡残烛，隐约散发着微弱暖光。",
+    },
+    "照明信号箭": {
+        "name": "照明信号箭",
+        "icon": "/assets/items/flare_arrow.png",
+        "desc": "巡林者艾莲娜特制的炼金信号箭，射出后能瞬间点燃并照亮幽暗矿洞。",
+    },
+    "优质狼皮": {
+        "name": "优质狼皮",
+        "icon": "/assets/items/wolf_pelt.png",
+        "desc": "厚实完整的艾尔文森林灰狼毛皮，可作护具内衬或交由工匠换取金币。",
+    },
+    "银叶解毒草": {
+        "name": "银叶解毒草",
+        "icon": "/assets/items/silverleaf_herb.png",
+        "desc": "在艾尔文林间采摘的银边解毒药草，是调配矿洞抗毒合剂的核心原料。",
+    },
+    "抗毒合剂": {
+        "name": "抗毒合剂",
+        "icon": "/assets/items/antidote_elixir.png",
+        "desc": "以银叶草熬制的碧绿澄澈合剂，饮用后可抵御法戈第矿洞中的腐败蛛毒。",
+    },
+    "幽暗蛛王丝": {
+        "name": "幽暗蛛王丝",
+        "icon": "/assets/items/spider_silk.png",
+        "desc": "闪烁着紫银微光的蜘蛛领主珍稀丝线，刀剑难断，乃编织英雄披风的上等材料。",
+    },
+    "纯净毒囊结晶": {
+        "name": "纯净毒囊结晶",
+        "icon": "/assets/items/venom_crystal.png",
+        "desc": "从蜘蛛领主·阿拉克诺斯毒腺中提取的高纯度结晶，蕴含冰蓝与紫曜魔力。",
+    },
+    "暗牙护符": {
+        "name": "阿拉克诺斯暗牙护符",
+        "icon": "/assets/items/fang_charm.png",
+        "desc": "用蜘蛛领主最坚硬的一对主螯牙雕琢而成的稀有颈饰，隐隐散发威压。",
+        "tag": "Boss 稀有掉落 · 颈饰",
+    },
+    "arachnos_fang_charm": {
+        "name": "阿拉克诺斯暗牙护符",
+        "icon": "/assets/items/fang_charm.png",
+        "desc": "用蜘蛛领主最坚硬的一对主螯牙雕琢而成的稀有颈饰，隐隐散发威压。",
+        "tag": "Boss 稀有掉落 · 颈饰",
+    },
 }
 
 
@@ -368,6 +431,102 @@ def _enrich_item_meta(raw_item: Any) -> Dict[str, Any]:
     return item
 
 
+def _enrich_skill_meta(raw_skill: Any) -> Dict[str, Any]:
+    """Normalize a skill entry so it always carries id, name, desc, and optional effect/cost/cooldown."""
+    if isinstance(raw_skill, dict):
+        skill = dict(raw_skill)
+    else:
+        val = str(raw_skill).strip()
+        skill = {"id": val, "name": val, "desc": ""}
+
+    if not skill.get("id") and skill.get("name"):
+        skill["id"] = str(skill["name"])
+    if not skill.get("name") and skill.get("id"):
+        skill["name"] = str(skill["id"])
+
+    desc = skill.get("desc") or skill.get("description") or skill.get("summary") or ""
+    skill["desc"] = str(desc)
+    skill.pop("description", None)
+    skill.pop("summary", None)
+
+    effect = skill.get("effect") or skill.get("usage") or skill.get("benefit")
+    if effect is not None and str(effect).strip():
+        skill["effect"] = str(effect).strip()
+    skill.pop("usage", None)
+    skill.pop("benefit", None)
+
+    for meta_key in ("cost", "cooldown"):
+        if meta_key in skill and skill[meta_key] is not None:
+            skill[meta_key] = str(skill[meta_key]).strip()
+
+    if "level" in skill and skill["level"] is not None:
+        try:
+            skill["level"] = int(skill["level"])
+        except (ValueError, TypeError):
+            pass
+    return skill
+
+
+def _bump_skill_rank(skill: Dict[str, Any], rank: int) -> Dict[str, Any]:
+    """Upgrade skill level and Lv.X tag label when skill_rank advances."""
+    updated = dict(skill)
+    updated["level"] = rank
+    if updated.get("tag"):
+        updated["tag"] = re.sub(r"Lv\.\d+", f"Lv.{rank}", str(updated["tag"]))
+    return updated
+
+
+def _hydrate_class_skills(
+    scenario_mgr: ScenarioManager,
+    scenario_id: str,
+    player_state: PlayerState,
+) -> bool:
+    """Backfill class skills from scenario actions if class_selected=true but skills list is empty."""
+    if player_state.skills:
+        return False
+    variables = player_state.variables or {}
+    if not variables.get("class_selected"):
+        return False
+    class_id = str(variables.get("class_id") or "").strip()
+    if not class_id:
+        return False
+
+    try:
+        spec = scenario_mgr.load_scenario(scenario_id)
+    except Exception:
+        return False
+
+    template_skills: Optional[List[Any]] = None
+    for scene in (spec.scenes or {}).values():
+        for act in (scene.actions or []):
+            on_succ = act.on_success or {}
+            succ_vars = on_succ.get("variables") if isinstance(on_succ, dict) else None
+            if (
+                isinstance(succ_vars, dict)
+                and str(succ_vars.get("class_id") or "") == class_id
+                and isinstance(on_succ.get("skills"), list)
+                and on_succ["skills"]
+            ):
+                template_skills = on_succ["skills"]
+                break
+        if template_skills:
+            break
+
+    if not template_skills:
+        return False
+
+    try:
+        rank = int(variables.get("skill_rank") or variables.get("level") or 1)
+    except (ValueError, TypeError):
+        rank = 1
+
+    hydrated = [_enrich_skill_meta(s) for s in template_skills]
+    if rank > 1:
+        hydrated = [_bump_skill_rank(s, rank) for s in hydrated]
+    player_state.skills = hydrated
+    return True
+
+
 class GameSession:
     """In-memory game session tracking player state and Agent conversation ID."""
 
@@ -379,6 +538,7 @@ class GameSession:
         self.history: List[Dict[str, str]] = []
         self.dynamic_actions: List[Dict[str, Any]] = []
         self.inventory_synced: bool = False
+        self.skills_synced: bool = False
 
     def apply_delta(self, delta: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Apply state delta and return standard JSON-patch like delta list."""
@@ -602,6 +762,56 @@ class GameSession:
         if outfit_changed:
             patches.append({"op": "replace", "path": "/outfit", "value": dict(self.player_state.outfit)})
 
+        # Process skills bar updates (full replace, upsert learn_skills/add_skills, remove, and rank bump)
+        skills_changed = False
+        skills_replaced = False
+        if "skills" in delta and isinstance(delta["skills"], list):
+            self.player_state.skills = [_enrich_skill_meta(s) for s in delta["skills"]]
+            skills_changed = True
+            skills_replaced = True
+
+        rem_skills = delta.get("remove_skills")
+        if isinstance(rem_skills, list) and rem_skills:
+            rem_targets = {str(r.get("id") if isinstance(r, dict) else r) for r in rem_skills}
+            filtered = [
+                s for s in self.player_state.skills
+                if s.get("id") not in rem_targets and s.get("name") not in rem_targets
+            ]
+            if len(filtered) != len(self.player_state.skills):
+                self.player_state.skills = filtered
+                skills_changed = True
+
+        add_skills = delta.get("learn_skills") or delta.get("add_skills")
+        if isinstance(add_skills, list) and add_skills:
+            for raw_sk in add_skills:
+                sk = _enrich_skill_meta(raw_sk)
+                sk_id = sk.get("id")
+                existing_idx = next(
+                    (idx for idx, cur in enumerate(self.player_state.skills) if cur.get("id") == sk_id),
+                    None,
+                )
+                if existing_idx is not None:
+                    self.player_state.skills[existing_idx] = {**self.player_state.skills[existing_idx], **sk}
+                else:
+                    self.player_state.skills.append(sk)
+                skills_changed = True
+
+        if (
+            not skills_replaced
+            and isinstance(delta.get("variables"), dict)
+            and "skill_rank" in delta["variables"]
+            and self.player_state.skills
+        ):
+            try:
+                new_rank = int(delta["variables"]["skill_rank"])
+                self.player_state.skills = [_bump_skill_rank(s, new_rank) for s in self.player_state.skills]
+                skills_changed = True
+            except (ValueError, TypeError):
+                pass
+
+        if skills_changed:
+            patches.append({"op": "replace", "path": "/skills", "value": list(self.player_state.skills)})
+
         if "available_actions" in delta and isinstance(delta["available_actions"], list):
             self.dynamic_actions = [a for a in delta["available_actions"] if isinstance(a, dict)]
 
@@ -654,6 +864,12 @@ class AGUIBridge:
                 for k, v in source["outfit"].items()
                 if isinstance(v, dict)
             }
+        if "skills" in source and isinstance(source["skills"], list):
+            target.skills = [
+                _enrich_skill_meta(s)
+                for s in source["skills"]
+                if isinstance(s, (dict, str))
+            ]
 
         inv_changed = False
         if "inventory" in source and isinstance(source["inventory"], list):
@@ -687,6 +903,8 @@ class AGUIBridge:
             if client_state:
                 if self._sync_player_state(session.player_state, client_state):
                     session.inventory_synced = True
+            if _hydrate_class_skills(self.scenario_mgr, session.scenario_id, session.player_state):
+                session.skills_synced = True
             return session
 
         spec = self.scenario_mgr.load_scenario(scenario_id)
@@ -695,9 +913,11 @@ class AGUIBridge:
         inv_synced = False
         if client_state:
             inv_synced = self._sync_player_state(init_state, client_state)
+        skills_synced = _hydrate_class_skills(self.scenario_mgr, scenario_id, init_state)
 
         session = GameSession(thread_id, scenario_id, init_state)
         session.inventory_synced = inv_synced
+        session.skills_synced = skills_synced
         self.sessions[thread_id] = session
         return session
 
@@ -740,6 +960,13 @@ class AGUIBridge:
             for slot, piece in (session.player_state.outfit or {}).items()
             if isinstance(piece, dict) and (piece.get("name") or piece.get("id"))
         ]
+        skills_desc = [
+            f"{sk.get('name', sk.get('id', ''))}"
+            f"{' Lv.' + str(sk['level']) if sk.get('level') else ''}"
+            f"{'（' + sk['desc'] + ('；作用：' + sk['effect'] if sk.get('effect') else '') + '）' if (sk.get('desc') or sk.get('effect')) else ''}"
+            for sk in (session.player_state.skills or [])
+            if isinstance(sk, dict) and (sk.get("name") or sk.get("id"))
+        ]
 
         history_block = ""
         if session.history:
@@ -770,6 +997,7 @@ class AGUIBridge:
 - 生存与角色属性：{session.player_state.attributes}
 - 背包物品：{inv_desc or '空'}
 - 当前穿着与配饰：{outfit_desc or '常规随身衣物'}
+- 技能栏：{skills_desc or '尚未习得特殊技能'}
 - 剧本变量（含时间/昼夜/气象/进度）：{session.player_state.variables}
 - 当前气象与环境基调：{cur_weather or '未设定'}（氛围：{scene_atmo}）
 - 当前所在场景：{curr_scene.title if curr_scene else curr_scene_id} ({curr_scene_id})
@@ -832,6 +1060,7 @@ class AGUIBridge:
   "add_inventory": [{{"id": "item_id", "name": "道具名", "desc": "描述"}}],
   "remove_inventory": ["consumed_item_id"],
   "outfit": {{"outer": {{"id": "jacket_id", "name": "穿戴服装名", "desc": "描述", "tag": "状态/加成"}}}},
+  "learn_skills": [{{"id": "skill_id", "name": "技能名称", "desc": "技能简介", "effect": "具体作用说明与效果", "cost": "消耗", "cooldown": "冷却", "level": 1, "tag": "类型"}}],
   "variables": {{"variable_key": "variable_value"}},
   "check_result": {{
     "skill": "survival",
@@ -913,6 +1142,15 @@ class AGUIBridge:
                 merged["outfit"] = outfit_dict
         if outcome.get("unequip_outfit") and "unequip_outfit" not in merged:
             merged["unequip_outfit"] = outcome["unequip_outfit"]
+
+        # Skills bar updates
+        if isinstance(outcome.get("skills"), list) and not merged.get("skills"):
+            merged["skills"] = outcome["skills"]
+        outcome_learn = outcome.get("learn_skills") or outcome.get("add_skills")
+        if isinstance(outcome_learn, list) and not merged.get("learn_skills") and not merged.get("add_skills"):
+            merged["learn_skills"] = outcome_learn
+        if isinstance(outcome.get("remove_skills"), list) and not merged.get("remove_skills"):
+            merged["remove_skills"] = outcome["remove_skills"]
 
         # Consume item(s)
         rem_list = list(merged.get("remove_inventory") or merged.get("consume_inventory") or [])
@@ -1725,8 +1963,11 @@ class AGUIBridge:
         patches: List[Dict[str, Any]] = []
         if delta_dict:
             patches = session.apply_delta(delta_dict)
-        elif getattr(session, "inventory_synced", False):
+        elif getattr(session, "inventory_synced", False) or getattr(session, "skills_synced", False):
             patches = session.apply_delta({})
+
+        if _hydrate_class_skills(self.scenario_mgr, session.scenario_id, session.player_state):
+            session.skills_synced = True
 
         if getattr(session, "inventory_synced", False):
             session.inventory_synced = False
@@ -1735,6 +1976,15 @@ class AGUIBridge:
                     "op": "replace",
                     "path": "/inventory",
                     "value": list(session.player_state.inventory),
+                })
+
+        if getattr(session, "skills_synced", False):
+            session.skills_synced = False
+            if not any(p.get("path") == "/skills" for p in patches):
+                patches.append({
+                    "op": "replace",
+                    "path": "/skills",
+                    "value": list(session.player_state.skills),
                 })
 
         if patches:

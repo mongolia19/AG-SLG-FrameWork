@@ -1,7 +1,7 @@
 id: "fargodeep_cave"
 title: "洞穴 · 法戈第蛛网矿洞"
 background: "【场景全景】阴暗潮湿的废弃矿洞深处，巨型蛛网悬垂于朽坏矿柱之间，幽绿毒雾在洞窟底部翻涌"
-foreground: "【角色立绘】巡林者艾莲娜·迅箭 · 搭箭上弦紧盯岩顶阴影的战友"
+foreground: "/assets/characters/elena_swiftarrow.png"
 hero_image: "【Boss 特写】法戈第蜘蛛领主·阿拉克诺斯 · 覆满紫黑甲壳与毒腺的巨型蛛王"
 music: "/assets/bgm/fargodeep_boss.mp3"
 
@@ -12,7 +12,7 @@ description: |
 
 visuals:
   background: "【场景全景】阴暗潮湿的废弃矿洞深处，巨型蛛网悬垂于朽坏矿柱之间，幽绿毒雾在洞窟底部翻涌"
-  foreground: "【角色立绘】巡林者艾莲娜·迅箭 · 搭箭上弦紧盯岩顶阴影的战友"
+  foreground: "/assets/characters/elena_swiftarrow.png"
   hero_image: "【Boss 特写】法戈第蜘蛛领主·阿拉克诺斯 · 覆满紫黑甲壳与毒腺的巨型蛛王"
   atmosphere: "幽暗阴寒、蛛丝密布、杀机四伏"
   decorations:
@@ -52,7 +52,7 @@ actions:
       variables:
         coop_synergy: true
       visuals:
-        foreground: "【角色立绘】巡林者艾莲娜·迅箭 · 精准射出穿云破网连珠箭"
+        foreground: "/assets/characters/elena_swiftarrow.png"
         hero_image: "【合作战术】照明火光驱散矿洞黑暗！蜘蛛领主腹部软甲暴露无遗"
       message: "你高举信号箭吸引岩顶幼蛛注意，艾莲娜借着灼热火光连发三箭，瞬间烧穿了笼罩战场的巨型毒网！【合作连携已激活】——蜘蛛领主的腹部软甲彻底暴露，Boss 决战难度大幅下降！"
     on_failure:
@@ -276,6 +276,7 @@ actions:
         neck:
           id: "arachnos_fang_charm"
           name: "阿拉克诺斯暗牙护符"
+          icon: "/assets/items/fang_charm.png"
           desc: "用蜘蛛领主最坚硬的一对主螯牙雕琢而成的稀有颈饰，隐隐散发威压。"
           tag: "Boss 稀有掉落 · 颈饰"
       attributes_delta:

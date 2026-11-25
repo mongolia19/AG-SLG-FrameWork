@@ -18,9 +18,11 @@ initial_player_state:
   inventory:
     - id: "炉石"
       name: "炉石（北郡修道院）"
+      icon: "/assets/items/hearthstone.png"
       desc: "刻有温暖蓝白符文的魔法石，将灵魂绑定在北郡修道院的旅店炉火旁。"
     - id: "初级治疗药水"
       name: "初级治疗药水"
+      icon: "/assets/items/minor_healing_potion.png"
       desc: "暴风城炼金师配制的红色恢复药瓶，紧急时刻饮下可快速愈合伤势。"
   outfit:
     top:
@@ -38,6 +40,7 @@ initial_player_state:
       name: "暴风城制式皮靴"
       desc: "鞋底钉有防滑铜钉的军旅皮靴，适合在碎石路与潮湿矿洞中行进。"
       tag: "防滑 · 鞋履"
+  skills: []
   variables:
     class_selected: false
     race: "未选择"

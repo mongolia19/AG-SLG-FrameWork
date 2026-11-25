@@ -2093,20 +2093,73 @@ actions:
         yield self.encoder.encode(RunStartedEvent(run_id=run_id, thread_id=thread_id))
         yield self.encoder.encode(TextMessageStartEvent(message_id=message_id, role="assistant"))
 
+        event_queue: asyncio.Queue[Optional[AgentEvent]] = asyncio.Queue()
+
         studio_conv_id = self.studio_conversations.get(thread_id)
-        async for event in self.driver.run_stream(
-            prompt=prompt,
-            conversation_id=studio_conv_id,
-            cwd=self.scenario_mgr.base_dir.parent,
-        ):
-            if event.data.get("conversation_id"):
-                self.studio_conversations[thread_id] = event.data["conversation_id"]
-            if event.event_type == "text_delta":
-                delta = event.data.get("text", "")
-                full_studio_response += delta
-                yield self.encoder.encode(
-                    TextMessageContentEvent(message_id=message_id, delta=delta)
-                )
+
+        async def _pump_driver() -> None:
+            try:
+                async for ev in self.driver.run_stream(
+                    prompt=prompt,
+                    conversation_id=studio_conv_id,
+                    cwd=self.scenario_mgr.base_dir.parent,
+                ):
+                    await event_queue.put(ev)
+            except Exception as exc:
+                await event_queue.put(AgentEvent(event_type="error", data={"error": str(exc)}))
+            finally:
+                await event_queue.put(None)
+
+        pump_task = asyncio.create_task(_pump_driver())
+        driver_error: Optional[str] = None
+
+        try:
+            while True:
+                try:
+                    event = await asyncio.wait_for(event_queue.get(), timeout=10.0)
+                except asyncio.TimeoutError:
+                    yield ": keepalive\n\n"
+                    continue
+
+                if event is None:
+                    break
+
+                if event.data.get("conversation_id"):
+                    self.studio_conversations[thread_id] = event.data["conversation_id"]
+
+                if event.event_type == "text_delta":
+                    delta = event.data.get("text", "")
+                    full_studio_response += delta
+                    yield self.encoder.encode(
+                        TextMessageContentEvent(message_id=message_id, delta=delta)
+                    )
+                elif event.event_type == "tool_call_start":
+                    call_id = event.data.get("call_id", str(uuid.uuid4()))
+                    tool_name = event.data.get("tool_name", "tool")
+                    yield self.encoder.encode(
+                        ToolCallStartEvent(tool_call_id=call_id, tool_call_name=tool_name)
+                    )
+                elif event.event_type == "tool_call_end":
+                    call_id = event.data.get("call_id", str(uuid.uuid4()))
+                    yield self.encoder.encode(
+                        ToolCallEndEvent(tool_call_id=call_id)
+                    )
+                elif event.event_type == "error":
+                    driver_error = str(event.data.get("error") or "Studio Agent 执行异常")
+        finally:
+            if not pump_task.done():
+                pump_task.cancel()
+                try:
+                    await pump_task
+                except asyncio.CancelledError:
+                    pass
+
+        if not full_studio_response.strip() and driver_error:
+            err_msg = f"⚠️ 编剧 Agent 执行异常：{driver_error}\n\n请检查本地 Agent 服务状态后重试。"
+            full_studio_response = err_msg
+            yield self.encoder.encode(
+                TextMessageContentEvent(message_id=message_id, delta=err_msg)
+            )
 
         if not full_studio_response.strip():
             fallback_response = (

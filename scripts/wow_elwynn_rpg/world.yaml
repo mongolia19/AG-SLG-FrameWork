@@ -1,14 +1,151 @@
 id: "wow_elwynn_rpg"
 title: "艾泽拉斯传说：法戈第矿洞之影"
-version: "1.0.0"
+version: "1.1.0"
 author: "AG-SLG Studio Co-pilot"
+icon: "⚔️"
+sort_order: 20
 initial_scene: "northshire_abbey"
+opening_narration: |
+  晨祷钟声在艾尔文森林的薄雾中回荡，北郡修道院的石砌广场上战旗猎猎。
+  作为艾泽拉斯的新兵，法戈第矿洞的危机正等待着你去平息！请先选择你的种族与职业之道，觉醒血量与能量槽位。
+dm_rules: |
+  - 【战斗伤害与职业公式】：玩家基础技能伤害 = (技能基础威力 + 主属性×2.5 + 技能等级×10)；若 Boss 处于甲壳硬化状态（`boss_armor_broken == false`），伤害须乘以 0.55（向上取整）。
+  - 【蜘蛛领主三阶段机制（必须严格遵守 Boss 魔法规则与状态流转）】：
+    1. 阶段一（Boss HP 360–241）：施放【甲壳硬化】（减伤45%）与【蛛网茧缚】（需 Boss MP >= 30，消耗 30 MP，造成 16 伤并置 `boss_web_trapped: true`）。
+    2. 阶段二（Boss HP <= 240 且 > 130）：进入阶段二时置 `boss_phase: 2`、若 `boss_mp >= 35` 消耗 35 MP 召唤 2 只毒囊幼蛛（`boss_minions: 2`）并蓄力【剧毒新星】（需 Boss MP >= 40，40 MP / 34 伤）。
+    3. 阶段三（Boss HP <= 130）：进入阶段三时置 `boss_phase: 3`、消耗 45 MP 触发【深渊狂暴】并重铸甲壳（`boss_armor_broken: false`），施放【暗影毒液狂潮】（40 伤 + 吸取玩家 15 MP）。
+    4. 魔力枯竭（Boss MP < 30）：Boss 无法施放高耗能技能（如蛛网茧缚/召唤幼蛛/剧毒新星），进入【魔力枯竭】状态仅能普攻，并每回合自动蓄力恢复 +35 MP。
+    5. 战斗修正：每只存活幼蛛增加 4 点毒伤并带来 -1 检定修正；`boss_web_trapped: true` 增加 5 点毒伤并带来 -2 检定修正；`antidote_active: true` 固定减免 6 点毒伤并带来 +1 检定修正。
+    6. 击败 Boss 后（`boss_hp <= 0`）：置 `boss_hp: 0, boss_mp: 0, boss_active: false, boss_defeated: true`，晋升 Lv.4（`level: 4, xp: 800, xp_next: 1400, skill_rank: 4, max_hp_delta: 30, max_mp_delta: 30`），掉落【幽暗蛛王丝】并通过 `remove_hud_widgets: ["arachnos_boss_panel"]` 撤除 Boss 战面板。
+  - 【AG-UI 专属界面调度】：进入前哨/Boss 战时请通过 `hud_widgets` 展示与更新追踪器或 Boss 面板，战斗结束时通过 `remove_hud_widgets` 及时撤除。
+
+attribute_labels:
+  strength: "力量"
+  agility: "敏捷"
+  intelligence: "智力"
+  constitution: "体质"
+  perception: "感知"
+
+variable_bounds:
+  boss_hp:
+    min: 0
+    max_var: "boss_max_hp"
+  boss_mp:
+    min: 0
+    max_var: "boss_max_mp"
+  boss_minions:
+    min: 0
+    max: 6
+  combat_round:
+    min: 0
+
+item_catalog:
+  炉石:
+    name: "炉石（北郡修道院）"
+    icon: "/assets/items/hearthstone.png"
+    desc: "刻有温暖蓝白符文的魔法石，将灵魂绑定在北郡修道院的旅店炉火旁。"
+  初级治疗药水:
+    name: "初级治疗药水"
+    icon: "/assets/items/minor_healing_potion.png"
+    desc: "暴风城炼金师配制的红色恢复药瓶，紧急时刻饮下可快速愈合伤势（HP +45）。"
+  初级法力药水:
+    name: "初级法力药水"
+    icon: "/assets/items/antidote_elixir.png"
+    desc: "闪耀着奥术湛蓝光泽的炼金药瓶，饮用后可迅速充盈魔法与职业能量（MP +55）。"
+  北郡军令状:
+    name: "北郡军令状"
+    icon: "/assets/items/northshire_order.png"
+    desc: "治安官麦格布莱德亲笔签发的暴风城军令，授权清剿法戈第矿洞蛛灾。"
+  狗头人蜡烛碎块:
+    name: "狗头人蜡烛碎块"
+    icon: "/assets/items/kobold_candle.png"
+    desc: "从法戈第外围狗头人身上缴获的融蜡碎块，引火性能极佳。"
+  照明信号箭:
+    name: "照明信号箭"
+    icon: "/assets/items/flare_arrow.png"
+    desc: "巡林者艾莲娜特制的镁粉燃烧箭矢，强光可焚毁厚重蛛网并暴露 Boss 弱点。"
+  优质狼皮:
+    name: "优质狼皮"
+    icon: "/assets/items/wolf_pelt.png"
+    desc: "艾尔文森林灰狼的厚实皮毛，质地坚韧。"
+  银叶解毒草:
+    name: "银叶解毒草"
+    icon: "/assets/items/silverleaf_herb.png"
+    desc: "生长在艾尔文古树阴影下的珍稀解毒草药，可用于熬制抗毒药剂。"
+  抗毒合剂:
+    name: "抗毒合剂"
+    icon: "/assets/items/antidote_elixir.png"
+    desc: "银叶草精炼而成的碧绿炼金药水，饮用后可减免蜘蛛毒素伤害并强化抗性。"
+  狗头人火油炸药:
+    name: "狗头人火油炸药"
+    icon: "/assets/items/kobold_candle.png"
+    desc: "从法戈第坑道缴获的高燃矿洞炸药桶，投掷可炸碎硬化甲壳并清理幼蛛。"
+  幽暗蛛王丝:
+    name: "幽暗蛛王丝"
+    icon: "/assets/items/spider_silk.png"
+    desc: "蜘蛛领主阿拉克诺斯覆灭后遗留的稀有暗紫韧丝，可交予修道院工匠打造英雄披风。"
+  纯净毒囊结晶:
+    name: "纯净毒囊结晶"
+    icon: "/assets/items/venom_crystal.png"
+    desc: "凝结了法戈第深处魔力的幽蓝毒腺结晶，炼金师梦寐以求的珍材。"
+  暗牙护符:
+    name: "阿拉克诺斯暗牙护符"
+    icon: "/assets/items/fang_charm.png"
+    desc: "用蜘蛛领主主螯牙雕琢而成的稀有护符，可佩戴在颈部提升敏锐感知。"
+  arachnos_fang_charm:
+    name: "阿拉克诺斯暗牙护符"
+    icon: "/assets/items/fang_charm.png"
+    desc: "用蜘蛛领主最坚硬的一对主螯牙雕琢而成的稀有颈饰，隐隐散发威压。"
+
+adjudication_rules:
+  - when:
+      variables:
+        antidote_active: true
+    mod: 1
+    label: "抗毒合剂护佑(+1)"
+  - when:
+      variables:
+        coop_synergy: true
+        boss_active: true
+    mod: 1
+    label: "艾莲娜协同(+1)"
+  - when:
+      variables:
+        boss_active: true
+        boss_web_trapped: true
+    mod: -2
+    label: "蛛网茧缚干扰(-2)"
+  - when:
+      variables:
+        boss_active: true
+        boss_minions:
+          gt: 0
+    mod: -1
+    label: "幼蛛群干扰(-1)"
+
+default_fallback:
+  branches:
+    - when:
+        variables:
+          boss_active: true
+          boss_defeated: false
+      narration: |
+        洞穴中回荡着蜘蛛领主的尖锐嘶鸣！你谨慎地尝试【{clean_action}】，同时紧盯阿拉克诺斯紫黑甲壳与毒腺的每一次波动。
+      delta:
+        variables_delta:
+          combat_round: 1
+  narration: |
+    你在艾尔文森林的晨光与战鼓余韵中尝试【{clean_action}】。前方风声与战意仍在等待你的下一步抉择。
+  delta: {}
 
 initial_player_state:
   name: "艾泽拉斯新兵"
   hp: 100
+  max_hp: 100
+  mp: 100
+  max_mp: 100
   san: 95
-  gold: 10
+  gold: 15
   attributes:
     strength: 10
     agility: 10
@@ -23,7 +160,11 @@ initial_player_state:
     - id: "初级治疗药水"
       name: "初级治疗药水"
       icon: "/assets/items/minor_healing_potion.png"
-      desc: "暴风城炼金师配制的红色恢复药瓶，紧急时刻饮下可快速愈合伤势。"
+      desc: "暴风城炼金师配制的红色恢复药瓶，紧急时刻饮下可快速愈合伤势（HP +45）。"
+    - id: "初级法力药水"
+      name: "初级法力药水"
+      icon: "/assets/items/antidote_elixir.png"
+      desc: "闪耀着奥术湛蓝光泽的炼金药瓶，饮用后可迅速充盈魔法与职业能量（MP +55）。"
   outfit:
     top:
       id: "recruit_tunic"
@@ -42,6 +183,7 @@ initial_player_state:
       tag: "防滑 · 鞋履"
   skills: []
   variables:
+    mp_label: "魔法值"
     class_selected: false
     race: "未选择"
     class_name: "待定"
@@ -57,6 +199,24 @@ initial_player_state:
     wilds_defias_cleared: false
     ally_recruited: false
     antidote_prepared: false
+    antidote_active: false
+    cave_kobolds_cleared: false
+    cave_spiders_cleared: false
+    cave_vanguard_cleared: false
+    pre_boss_rest_done: false
     coop_synergy: false
+    boss_active: false
+    boss_name: "蜘蛛领主·阿拉克诺斯"
+    boss_hp: 360
+    boss_max_hp: 360
+    boss_mp: 180
+    boss_max_mp: 180
+    boss_phase: 1
+    boss_armor_broken: false
+    boss_web_trapped: false
+    boss_minions: 0
+    boss_casting: "伺机潜伏"
+    boss_skills_summary: "甲壳硬化(30MP) / 蛛网茧缚(30MP) / 召唤幼蛛(35MP) / 剧毒新星(40MP) / 深渊狂暴(45MP)"
+    combat_round: 0
     boss_defeated: false
     quest_completed: false

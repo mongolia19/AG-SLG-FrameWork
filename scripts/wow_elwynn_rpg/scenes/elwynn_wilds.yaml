@@ -8,7 +8,7 @@ music: "/assets/bgm/elwynn_forest.mp3"
 description: |
   踏出北郡山谷，参天古树交织成一片幽深而壮丽的艾尔文密林。阳光穿过茂密的橡树枝叶，在铺满苔藓的石径上投下斑驳光影。
   林间并不平静——饥饿的艾尔文森林灰狼在灌木后游曳，佩戴红色面罩的迪菲亚劫掠者也在附近扎营窥伺。
-  路旁一处隐蔽的木制哨岗下，巡林者艾莲娜·迅箭正蹲身检查地面残留的黑色蛛丝与腐蚀毒液。通往法戈第蛛网矿洞的入口就在前方山坡下。
+  路旁一处隐蔽的木制哨岗下，巡林者艾莲娜·迅箭正蹲身检查地面残留的黑色蛛丝与腐蚀毒液。前方山坡下便是被狗头人与护卫蛛占领的【法戈第矿洞外围坑道】，必须清剿林间威胁、突破 Lv.3 并调配抗毒合剂，才能从容迎战洞窟深处的强敌！
 
 visuals:
   background: "【场景全景】阳光斑驳的艾尔文古老森林，高大橡树阴影间潜伏着灰狼与迪菲亚游荡盗贼，前方哨岗旁立着精灵斥候"
@@ -31,7 +31,7 @@ npcs:
   - id: "elena_swiftarrow"
     name: "巡林者艾莲娜·迅箭"
     avatar: "/assets/characters/elena_swiftarrow.png"
-    greeting: "嘘……看地上的黑色粘液，法戈第矿洞里的蜘蛛领主阿拉克诺斯正在孵化新巢。单靠一个人冲进去必死无疑，我们必须分工合作！"
+    greeting: "嘘……矿洞外围的坑道已被狗头人矿工与护卫蛛群封锁，而最深处的蜘蛛领主拥有甲壳硬化、蛛网茧缚和三阶段毒潮暴走！我们先在这里提升到 Lv.3、备好抗毒合剂，再一起推进坑道！"
 
 actions:
   - id: "talk_elena_coop"
@@ -48,52 +48,70 @@ actions:
       visuals:
         foreground: "/assets/characters/elena_swiftarrow.png"
         hero_image: "【小队结盟】两位冒险者在森林哨岗击掌立约，共赴法戈第矿洞"
-      message: "艾莲娜凝视着你手中的武器，露出一丝赞许的微笑：‘好，有你这位强力战友，胜算大增！拿着这支【照明信号箭】，进洞后你负责正面破防与主攻，我负责照亮暗角、狙击幼蛛并牵制蜘蛛领主侧翼！’"
+      message: "艾莲娜凝视着你手中的武器，露出一丝赞许的微笑：‘好，有你这位强力战友，胜算大增！拿着这支【照明信号箭】，进入Boss巢穴后先用它击碎蜘蛛领主的硬化甲壳，我们再分头清理幼蛛与集火本体！’"
 
   - id: "hunt_elwynn_prowler"
-    label: "【野外狩猎】施展职业技能伏击艾尔文森林灰狼群"
+    label: "【野外战斗】施展职业技能伏击艾尔文森林灰狼群（消耗 20 MP）"
     type: "check"
     skill: "agility"
     difficulty: 11
     condition:
+      min_hp: 1
+      min_mp: 20
       variables:
         wilds_wolf_cleared: false
     on_success:
       gain_item: "优质狼皮"
-      hp_delta: -8
+      hp_delta: -12
+      mp_delta: -20
       variables:
         wilds_wolf_cleared: true
         xp: 220
       visuals:
         foreground: ""
         hero_image: "【荒野狩猎】狼群在职业技能的凌厉攻势下溃散"
-      message: "你精准预判了头狼的扑击轨迹，连招瞬发将灰狼群击溃！收获【优质狼皮】并获得实战经验（当前 XP 提升至 220）。"
+      message: "你消耗 20 点魔法能量预判头狼的扑击轨迹，连招瞬发将灰狼群击溃（HP -12，MP -20）！收获【优质狼皮】并获得实战经验（当前 XP 提升至 220）。"
     on_failure:
-      hp_delta: -15
-      message: "一头狡猾的成年灰狼从侧后灌木扑出咬伤了你的护腿（HP -15），你稳住阵型才逼退了狼群。"
+      hp_delta: -20
+      mp_delta: -15
+      message: "一头狡猾的成年灰狼从侧后灌木扑出咬伤了你的护腿（HP -20，MP -15），你稳住阵型才逼退了狼群。"
 
   - id: "clear_defias_camp"
-    label: "【野外讨伐】清剿迪菲亚强盗营地，夺取解毒草药与补给"
+    label: "【野外战斗】清剿迪菲亚强盗营地，夺取解毒草药与补给（消耗 25 MP）"
     type: "check"
     skill: "strength"
     difficulty: 11
     condition:
+      min_hp: 1
+      min_mp: 25
       variables:
         wilds_defias_cleared: false
     on_success:
       gain_item: "银叶解毒草"
-      gold_delta: 30
-      hp_delta: -10
+      gold_delta: 35
+      hp_delta: -15
+      mp_delta: -25
       variables:
         wilds_defias_cleared: true
         xp: 320
       visuals:
         foreground: ""
         hero_image: "【战利品特写】迪菲亚营地缴获的银叶解毒草与钱袋"
-      message: "你与艾莲娜的哨箭形成夹击，顺利击溃了这支迪菲亚盗贼小队！在营地木箱中搜出【银叶解毒草】与 30 金币（当前 XP 达 320，已满足 Lv.3 突破条件！）。"
+      message: "你消耗 25 点魔法能量与艾莲娜的哨箭形成夹击，顺利击溃了迪菲亚盗贼小队（HP -15，MP -25）！搜出【银叶解毒草】与 35 金币（当前 XP 达 320，已满足 Lv.3 突破条件！）。"
     on_failure:
-      hp_delta: -16
-      message: "迪菲亚盗贼掷出致盲飞沙，打乱了你的进攻节奏（HP -16）。整理架势后可再次进攻。"
+      hp_delta: -22
+      mp_delta: -15
+      message: "迪菲亚盗贼掷出致盲飞沙并挥匕反扑（HP -22，MP -15）。整理架势后可再次进攻。"
+
+  - id: "wilds_rest_recover"
+    label: "【哨岗调息】在巡林者木哨岗短暂休整恢复体能与魔力（HP +25 / MP +35）"
+    type: "interact"
+    condition:
+      min_hp: 1
+    on_success:
+      hp_delta: 25
+      mp_delta: 35
+      message: "你在林间哨岗旁背靠古橡树短暂喘息，整理药袋并平复魔力流动（HP +25，MP +35）。"
 
   - id: "brew_cave_antidote"
     label: "【战前整备】用【银叶解毒草】调配矿洞专用抗毒合剂"
@@ -109,10 +127,10 @@ actions:
       gain_item: "抗毒合剂"
       variables:
         antidote_prepared: true
-      message: "在艾莲娜的草药学指导下，你将银叶草碾碎熬制，封装成一瓶碧绿澄澈的【抗毒合剂】，可在蜘蛛领主战前饮用。"
+      message: "在艾莲娜的草药学指导下，你将银叶草碾碎熬制，封装成一瓶碧绿澄澈的【抗毒合剂】，在Boss战饮用可固定减免每次 6 点毒伤并获得 +1 检定修正。"
 
   - id: "upgrade_to_lv3"
-    label: "【等级突破 Lv.2 → Lv.3】总结荒野实战经验，提升全属性与核心技能至 Lv.3"
+    label: "【等级突破 Lv.2 → Lv.3】总结荒野实战经验（MaxHP/MaxMP +25，解锁 Lv.3 技能）"
     type: "interact"
     target_npc: "elena_swiftarrow"
     condition:
@@ -121,7 +139,10 @@ actions:
         wilds_wolf_cleared: true
         wilds_defias_cleared: true
     on_success:
-      hp_delta: 30
+      max_hp_delta: 25
+      max_mp_delta: 25
+      hp_delta: 50
+      mp_delta: 50
       san_delta: 8
       attributes_delta:
         strength: 3
@@ -134,16 +155,69 @@ actions:
         xp: 320
         xp_next: 700
         skill_rank: 3
-        skills: "核心职业技能全员晋升至 Lv.3（解锁合作爆发连携）"
+        skills: "核心职业技能全员晋升至 Lv.3（伤害与法力上限大幅成长）"
       visuals:
         foreground: "/assets/characters/elena_swiftarrow.png"
-        hero_image: "【等级跃升】星辰与魔力交汇！角色晋升 Lv.3，属性大幅增长，技能迈入 Lv.3"
-      message: "经历艾尔文荒野的连续恶战，你的战技与魔力回路完成蜕变！成功晋升【Lv.3】！全属性大幅增长，职业技能全部升级至【Lv.3】，已具备挑战法戈第蜘蛛领主的实力！"
+        hero_image: "【等级跃升】星辰与魔力交汇！角色晋升 Lv.3，血量与魔法上限提升，技能迈入 Lv.3"
+      message: "经历艾尔文荒野的连续恶战，你的战技与魔力回路完成蜕变！成功晋升【Lv.3】！MaxHP/MaxMP 各 +25、全属性大幅增长，职业技能全部升级至【Lv.3】，准备进军法戈第矿洞前哨！"
 
-  - id: "enter_fargodeep_cave"
-    label: "穿过阴冷矿洞木架，深入【洞穴 · 法戈第蛛网矿洞】"
+  - id: "drink_healing_potion_wilds"
+    label: "饮用【初级治疗药水】恢复生命值（HP +45）"
+    type: "interact"
+    condition:
+      has_item: "初级治疗药水"
+    on_success:
+      consume_item: "初级治疗药水"
+      remove_inventory:
+        - "初级治疗药水"
+      hp_delta: 45
+      message: "你拔开红药水瓶塞一饮而尽，森林间的疲惫与爪伤迅速愈合（HP +45）。"
+
+  - id: "drink_mana_potion_wilds"
+    label: "饮用【初级法力药水】恢复魔法值（MP +55）"
+    type: "interact"
+    condition:
+      has_item: "初级法力药水"
+    on_success:
+      consume_item: "初级法力药水"
+      remove_inventory:
+        - "初级法力药水"
+      mp_delta: 55
+      message: "甘冽的法力药剂瞬间充盈魔力经络，你的施法与战意重回巅峰（MP +55）。"
+
+  - id: "enter_fargodeep_entrance"
+    label: "沿山坡木轨深入，前往【矿洞前哨 · 法戈第外围坑道】（Boss 前小怪守卫战）"
     type: "transition"
-    target_scene: "fargodeep_cave"
+    target_scene: "fargodeep_entrance"
+    on_success:
+      hud_widgets:
+        - id: "fargodeep_vanguard"
+          type: "tracker"
+          title: "Boss 前哨小怪守卫战"
+          icon: "⚔️"
+          when:
+            variables:
+              cave_vanguard_cleared: false
+          steps:
+            - label: "① 狗头人矿工与工头 (140 HP)"
+              done_when:
+                variables:
+                  cave_kobolds_cleared: true
+              active_when:
+                variables:
+                  cave_kobolds_cleared: false
+            - label: "② 精英护卫蛛群 (90×2 HP)"
+              done_when:
+                variables:
+                  cave_spiders_cleared: true
+              active_when:
+                variables:
+                  cave_kobolds_cleared: true
+                  cave_spiders_cleared: false
+            - label: "🔓 蜘蛛领主主巢穴"
+              done_when:
+                variables:
+                  cave_vanguard_cleared: true
 
   - id: "return_to_northshire"
     label: "沿林间石径返回【新手村 · 北郡修道院】"

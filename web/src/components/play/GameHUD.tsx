@@ -1,5 +1,17 @@
 import { useState } from 'react';
-import { PlayerState, InventoryItem, OutfitItem, SkillItem } from '../../types';
+import {
+  PlayerState,
+  InventoryItem,
+  OutfitItem,
+  SkillItem,
+  WorldSpec,
+  HUDWidget,
+} from '../../types';
+import {
+  evaluateActionCondition,
+  resolveStateRef,
+  interpolateStateText,
+} from '../../utils/conditions';
 import {
   Heart,
   Brain,
@@ -8,10 +20,6 @@ import {
   MapPin,
   X,
   ShieldAlert,
-  Droplets,
-  Utensils,
-  Zap,
-  Thermometer,
   Sun,
   Moon,
   Clock,
@@ -31,6 +39,8 @@ import {
   Swords,
   ChevronDown,
   ChevronUp,
+  Skull,
+  Flame,
 } from 'lucide-react';
 
 interface OutfitSlotMeta {
@@ -85,8 +95,353 @@ function renderSlotIcon(slot: string, className = 'w-4 h-4') {
   }
 }
 
+const METRIC_COLOR_MAP: Record<string, { text: string; bar: string }> = {
+  amber: { text: 'text-amber-300', bar: 'bg-amber-400' },
+  sky: { text: 'text-sky-300', bar: 'bg-sky-400' },
+  emerald: { text: 'text-emerald-300', bar: 'bg-emerald-400' },
+  teal: { text: 'text-teal-300', bar: 'bg-teal-400' },
+  rose: { text: 'text-rose-300', bar: 'bg-rose-400' },
+  violet: { text: 'text-violet-300', bar: 'bg-violet-400' },
+  indigo: { text: 'text-indigo-300', bar: 'bg-indigo-400' },
+};
+
+const TONE_BADGE_MAP: Record<string, string> = {
+  danger: 'bg-rose-950/70 border-rose-700/60 text-rose-200',
+  red: 'bg-red-950/80 border-red-600/60 text-red-200',
+  amber: 'bg-amber-950/70 border-amber-700/50 text-amber-200',
+  emerald: 'bg-emerald-950/60 border-emerald-600/50 text-emerald-300',
+  sky: 'bg-sky-950/60 border-sky-700/50 text-sky-200',
+  purple: 'bg-purple-950/70 border-purple-500/60 text-purple-200',
+  fuchsia: 'bg-fuchsia-950/70 border-fuchsia-700/50 text-fuchsia-200',
+  slate: 'bg-slate-900/80 border-slate-700 text-slate-300',
+};
+
+const BAR_COLOR_MAP: Record<string, { text: string; border: string; fill: string }> = {
+  rose: {
+    text: 'text-rose-300',
+    border: 'border-rose-800/70',
+    fill: 'from-red-700 via-rose-500 to-orange-400',
+  },
+  violet: {
+    text: 'text-violet-300',
+    border: 'border-violet-800/70',
+    fill: 'from-violet-700 via-purple-500 to-fuchsia-400',
+  },
+  sky: {
+    text: 'text-sky-300',
+    border: 'border-sky-800/70',
+    fill: 'from-blue-600 via-indigo-500 to-cyan-400',
+  },
+  amber: {
+    text: 'text-amber-300',
+    border: 'border-amber-800/70',
+    fill: 'from-amber-600 to-yellow-400',
+  },
+  emerald: {
+    text: 'text-emerald-300',
+    border: 'border-emerald-800/70',
+    fill: 'from-emerald-600 to-teal-400',
+  },
+};
+
+function DynamicHudWidgets({
+  widgets,
+  playerState,
+  expandedPanels,
+  onTogglePanel,
+}: {
+  widgets: HUDWidget[];
+  playerState: PlayerState;
+  expandedPanels: Record<string, boolean>;
+  onTogglePanel: (id: string) => void;
+}) {
+  const visibleWidgets = widgets.filter((w) =>
+    evaluateActionCondition(w.when, playerState)
+  );
+  if (visibleWidgets.length === 0) return null;
+
+  return (
+    <>
+      {visibleWidgets.map((widget) => {
+        if (widget.type === 'metrics') {
+          const items = widget.items || [];
+          if (items.length === 0) return null;
+          return (
+            <div
+              key={widget.id}
+              className="px-6 py-1.5 bg-slate-950/90 border-b border-slate-800/80 text-xs z-20 flex flex-wrap items-center gap-4"
+            >
+              {(widget.title || widget.icon) && (
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-300 pr-2 border-r border-slate-800">
+                  {widget.icon && <span>{widget.icon}</span>}
+                  {widget.title && <span>{widget.title}</span>}
+                </div>
+              )}
+              {items.map((item) => {
+                const rawVal = item.value_ref
+                  ? resolveStateRef(item.value_ref, playerState)
+                  : item.value;
+                if (rawVal === undefined || rawVal === null) return null;
+                const numVal = Number(rawVal);
+                const maxVal = item.max_ref
+                  ? Number(resolveStateRef(item.max_ref, playerState) ?? 0)
+                  : item.max;
+                const isLow =
+                  item.low_threshold !== undefined &&
+                  !Number.isNaN(numVal) &&
+                  numVal <= item.low_threshold;
+                const isOutside =
+                  Array.isArray(item.warn_outside) &&
+                  item.warn_outside.length === 2 &&
+                  !Number.isNaN(numVal) &&
+                  (numVal < item.warn_outside[0] || numVal > item.warn_outside[1]);
+                const isWarn = isLow || isOutside;
+                const style = METRIC_COLOR_MAP[item.color || 'amber'] || METRIC_COLOR_MAP.amber;
+                const pct =
+                  maxVal && maxVal > 0 && !Number.isNaN(numVal)
+                    ? Math.max(0, Math.min(100, (numVal / maxVal) * 100))
+                    : null;
+
+                return (
+                  <div
+                    key={item.id}
+                    className={`flex items-center gap-1.5 text-[11px] font-mono ${
+                      isWarn ? 'text-rose-300 animate-pulse' : style.text
+                    }`}
+                    title={`${item.label}: ${rawVal}${item.unit || ''}`}
+                  >
+                    {item.icon && <span>{item.icon}</span>}
+                    <span className="text-slate-400 font-sans">{item.label}</span>
+                    {pct !== null && (
+                      <div className="w-12 bg-slate-800 rounded-full h-1.5 overflow-hidden border border-slate-700/70 hidden sm:block">
+                        <div
+                          className={`h-full rounded-full transition-all duration-300 ${
+                            isWarn ? 'bg-rose-500' : style.bar
+                          }`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    )}
+                    <span className="font-semibold">
+                      {rawVal}
+                      {item.unit || ''}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        }
+
+        if (widget.type === 'tracker') {
+          const steps = widget.steps || [];
+          const resolvedSteps = steps.map((step) => {
+            const done = step.done_when
+              ? evaluateActionCondition(step.done_when, playerState)
+              : step.status === 'done';
+            const active =
+              !done &&
+              (step.active_when
+                ? evaluateActionCondition(step.active_when, playerState)
+                : step.status === 'active');
+            return { ...step, resolvedStatus: done ? 'done' : active ? 'active' : 'locked' };
+          });
+          const doneCount = resolvedSteps.filter((s) => s.resolvedStatus === 'done').length;
+
+          return (
+            <div
+              key={widget.id}
+              className="px-6 py-2 bg-gradient-to-r from-amber-950/65 via-slate-950/95 to-slate-900/90 border-b border-amber-800/50 text-xs z-20"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2 font-semibold text-amber-300">
+                  {widget.icon ? (
+                    <span>{widget.icon}</span>
+                  ) : (
+                    <Swords className="w-3.5 h-3.5 text-amber-400" />
+                  )}
+                  <span>{widget.title || widget.id}</span>
+                  {resolvedSteps.length > 0 && (
+                    <span className="text-[10px] font-mono text-amber-200/80 bg-amber-950/60 border border-amber-700/50 px-2 py-0.5 rounded">
+                      {doneCount}/{resolvedSteps.length}
+                    </span>
+                  )}
+                  {widget.subtitle && (
+                    <span className="text-[11px] font-normal text-slate-300">
+                      {interpolateStateText(widget.subtitle, playerState)}
+                    </span>
+                  )}
+                </div>
+
+                {resolvedSteps.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                    {resolvedSteps.map((step, idx) => (
+                      <div key={`${step.label}-${idx}`} className="flex items-center gap-2">
+                        {idx > 0 && <span className="text-slate-600">→</span>}
+                        <span
+                          className={`px-2 py-0.5 rounded border ${
+                            step.resolvedStatus === 'done'
+                              ? 'bg-emerald-950/60 border-emerald-700/50 text-emerald-300 line-through'
+                              : step.resolvedStatus === 'active'
+                                ? 'bg-amber-950/60 border-amber-600/60 text-amber-200'
+                                : 'bg-slate-900/80 border-slate-700 text-slate-400'
+                          }`}
+                        >
+                          {step.label}{' '}
+                          {step.resolvedStatus === 'done'
+                            ? '✓'
+                            : step.resolvedStatus === 'active'
+                              ? '· 进行中'
+                              : '· 未解锁'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        }
+
+        if (widget.type === 'panel') {
+          const isDanger = widget.tone === 'danger';
+          const isExpanded = Boolean(expandedPanels[widget.id]);
+          const visibleBadges = (widget.badges || []).filter((b) =>
+            evaluateActionCondition(b.when, playerState)
+          );
+          const bars = widget.bars || [];
+          const cards = widget.cards || [];
+
+          return (
+            <div
+              key={widget.id}
+              className={`px-6 py-2 border-b text-xs z-20 shadow-inner ${
+                isDanger
+                  ? 'bg-gradient-to-r from-rose-950/85 via-slate-950/95 to-purple-950/85 border-rose-800/50'
+                  : 'bg-gradient-to-r from-slate-900/95 via-slate-950/95 to-indigo-950/75 border-slate-700/60'
+              }`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div
+                    className={`flex items-center gap-1.5 font-bold ${
+                      isDanger ? 'text-rose-300' : 'text-amber-300'
+                    }`}
+                  >
+                    {widget.icon ? (
+                      <span>{widget.icon}</span>
+                    ) : isDanger ? (
+                      <Skull className="w-4 h-4 text-rose-400 animate-pulse" />
+                    ) : (
+                      <Sparkles className="w-4 h-4 text-amber-400" />
+                    )}
+                    <span>{widget.title || widget.id}</span>
+                  </div>
+                  {visibleBadges.map((badge, idx) => {
+                    const text = badge.text_ref
+                      ? interpolateStateText(badge.text_ref, playerState)
+                      : badge.text || '';
+                    if (!text) return null;
+                    const badgeClass =
+                      TONE_BADGE_MAP[badge.tone || 'slate'] || TONE_BADGE_MAP.slate;
+                    return (
+                      <span
+                        key={`${text}-${idx}`}
+                        className={`text-[10px] px-2 py-0.5 rounded border ${badgeClass}`}
+                      >
+                        {text}
+                      </span>
+                    );
+                  })}
+                </div>
+
+                {bars.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-4">
+                    {bars.map((bar, idx) => {
+                      const val = Number(
+                        (bar.value_ref
+                          ? resolveStateRef(bar.value_ref, playerState)
+                          : bar.value) ?? 0
+                      );
+                      const max = Math.max(
+                        1,
+                        Number(
+                          (bar.max_ref
+                            ? resolveStateRef(bar.max_ref, playerState)
+                            : bar.max) ?? 100
+                        )
+                      );
+                      const pct = Math.max(0, Math.min(100, (val / max) * 100));
+                      const barStyle =
+                        BAR_COLOR_MAP[bar.color || 'rose'] || BAR_COLOR_MAP.rose;
+                      return (
+                        <div
+                          key={`${bar.label}-${idx}`}
+                          className="flex items-center gap-2"
+                          title={`${bar.label}: ${val}/${max}`}
+                        >
+                          <span className={`text-[10px] font-semibold ${barStyle.text}`}>
+                            {bar.label}
+                          </span>
+                          <div
+                            className={`w-24 sm:w-32 bg-slate-900 rounded-full h-2.5 overflow-hidden border ${barStyle.border}`}
+                          >
+                            <div
+                              className={`bg-gradient-to-r ${barStyle.fill} h-full rounded-full transition-all duration-500`}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <span className="text-[11px] font-mono text-slate-200 font-semibold">
+                            {val}/{max}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {(cards.length > 0 || widget.footer) && (
+                  <button
+                    type="button"
+                    onClick={() => onTogglePanel(widget.id)}
+                    className="text-[10px] text-rose-200 hover:text-white bg-rose-900/40 hover:bg-rose-800/60 border border-rose-700/50 px-2 py-0.5 rounded transition"
+                  >
+                    {isExpanded ? '收起详情' : widget.cards_title || '查看详情'}
+                  </button>
+                )}
+              </div>
+
+              {isExpanded && (cards.length > 0 || widget.footer) && (
+                <div className="mt-2 pt-2 border-t border-rose-900/50 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 text-[10px]">
+                  {cards.map((card, idx) => (
+                    <div
+                      key={`${card.title}-${idx}`}
+                      className="p-2 rounded bg-slate-900/80 border border-slate-700/60"
+                    >
+                      <div className="font-semibold text-rose-200">{card.title}</div>
+                      <div className="text-slate-400 mt-0.5">{card.desc}</div>
+                    </div>
+                  ))}
+                  {widget.footer && (
+                    <div className="sm:col-span-2 lg:col-span-5 p-2 rounded bg-slate-950/85 border border-slate-800/80 text-slate-300">
+                      {interpolateStateText(widget.footer, playerState)}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        return null;
+      })}
+    </>
+  );
+}
+
 interface GameHUDProps {
   playerState: PlayerState;
+  world?: WorldSpec;
   currentSceneTitle: string;
   onResetGame?: () => void;
   onSyncScenario?: () => void;
@@ -96,6 +451,7 @@ interface GameHUDProps {
 
 export default function GameHUD({
   playerState,
+  world,
   currentSceneTitle,
   onResetGame,
   onSyncScenario,
@@ -105,10 +461,15 @@ export default function GameHUD({
   const [showInventory, setShowInventory] = useState(false);
   const [showOutfit, setShowOutfit] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
+  const [expandedPanels, setExpandedPanels] = useState<Record<string, boolean>>({});
   const [skillsBarExpanded, setSkillsBarExpanded] = useState(true);
   const [hoveredItem, setHoveredItem] = useState<InventoryItem | null>(null);
   const [hoveredOutfit, setHoveredOutfit] = useState<{ slotLabel: string; item: OutfitItem } | null>(null);
   const [hoveredSkill, setHoveredSkill] = useState<SkillItem | null>(null);
+
+  const togglePanel = (id: string) => {
+    setExpandedPanels((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   const skillsList: SkillItem[] = Array.isArray(playerState.skills)
     ? playerState.skills.filter((sk): sk is SkillItem => Boolean(sk && (sk.name || sk.id)))
@@ -131,19 +492,36 @@ export default function GameHUD({
     }));
   const accessorySlots = [...DEFAULT_ACCESSORY_SLOTS, ...extraAccessorySlots];
 
-  const hpPercent = Math.max(0, Math.min(100, playerState.hp));
+  const maxHp = playerState.max_hp && playerState.max_hp > 0 ? playerState.max_hp : 100;
+  const hpPercent = Math.max(0, Math.min(100, (playerState.hp / maxHp) * 100));
   const sanPercent = Math.max(0, Math.min(100, playerState.san));
 
-  // 检查是否具备人体生存属性 (荒岛生存模式)
-  const isSurvivalMode =
-    playerState.attributes?.stamina !== undefined ||
-    playerState.attributes?.hydration !== undefined ||
-    playerState.attributes?.fullness !== undefined;
+  const hasMpSlot =
+    (playerState.mp !== undefined && playerState.mp !== null) ||
+    playerState.variables?.mp !== undefined;
+  const mpValue = Number(playerState.mp ?? playerState.variables?.mp ?? 0);
+  const maxMp =
+    (playerState.max_mp && playerState.max_mp > 0
+      ? playerState.max_mp
+      : Number(playerState.variables?.max_mp)) || 100;
+  const mpPercent = Math.max(0, Math.min(100, (mpValue / maxMp) * 100));
+  const mpLabel = (playerState.variables?.mp_label as string) || '魔法值';
 
-  const stamina = playerState.attributes?.stamina ?? 100;
-  const hydration = playerState.attributes?.hydration ?? 100;
-  const fullness = playerState.attributes?.fullness ?? 100;
-  const temperature = playerState.attributes?.temperature ?? 37;
+  const hudWidgets = Array.isArray(playerState.hud_widgets) ? playerState.hud_widgets : [];
+  const metricAttrKeys = new Set<string>();
+  for (const w of hudWidgets) {
+    if (w.type === 'metrics') {
+      for (const it of w.items || []) {
+        if (it.value_ref?.startsWith('attributes.')) {
+          metricAttrKeys.add(it.value_ref.replace('attributes.', ''));
+        }
+      }
+    }
+  }
+  const attrLabels = world?.attribute_labels || {};
+  const headerAttrEntries = Object.entries(playerState.attributes || {})
+    .filter(([k]) => !metricAttrKeys.has(k))
+    .slice(0, 4);
 
   const day = playerState.variables?.day;
   const timeSlot = playerState.variables?.time_slot as string | undefined;
@@ -196,13 +574,11 @@ export default function GameHUD({
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <span className="font-semibold text-amber-400 text-sm">{playerState.name}</span>
-            {!isSurvivalMode ? (
-              <span className="text-xs text-slate-500 font-mono">
-                [STR:{playerState.attributes?.strength || 10} AGI:{playerState.attributes?.agility || 10} INT:{playerState.attributes?.intelligence || 10}]
-              </span>
-            ) : (
-              <span className="text-[11px] text-amber-300/80 font-mono bg-amber-950/40 px-2 py-0.5 rounded border border-amber-800/40">
-                生存状态 · SUR:{playerState.attributes?.survival || 10}
+            {headerAttrEntries.length > 0 && (
+              <span className="text-xs text-slate-400 font-mono">
+                [{headerAttrEntries
+                  .map(([k, v]) => `${attrLabels[k] || k.toUpperCase()}:${v}`)
+                  .join(' ')}]
               </span>
             )}
           </div>
@@ -229,11 +605,12 @@ export default function GameHUD({
           )}
         </div>
 
-        {/* 中间：HP, SAN 与 人体生存属性 */}
-        <div className="flex flex-wrap items-center gap-4 sm:gap-6 my-0.5">
-          {/* HP */}
-          <div className="flex items-center gap-1.5" title="生命值">
+        {/* 中间：HP, MP, SAN */}
+        <div className="flex flex-wrap items-center gap-4 sm:gap-5 my-0.5">
+          {/* HP 血量槽位 */}
+          <div className="flex items-center gap-1.5" title={`生命值: ${playerState.hp}/${maxHp}`}>
             <Heart className="w-3.5 h-3.5 text-red-500 animate-pulse" />
+            <span className="text-[10px] font-semibold text-red-400/90 hidden md:inline">血量</span>
             <div className="w-20 sm:w-24 bg-slate-800 rounded-full h-2 overflow-hidden border border-red-950">
               <div
                 className="bg-gradient-to-r from-red-600 to-rose-400 h-full rounded-full transition-all duration-500"
@@ -241,9 +618,28 @@ export default function GameHUD({
               />
             </div>
             <span className="text-[11px] font-mono text-red-300">
-              {playerState.hp}
+              {playerState.hp}/{maxHp}
             </span>
           </div>
+
+          {/* MP 魔法/能量槽位 */}
+          {hasMpSlot && (
+            <div className="flex items-center gap-1.5" title={`${mpLabel}: ${mpValue}/${maxMp}`}>
+              <Flame className="w-3.5 h-3.5 text-sky-400" />
+              <span className="text-[10px] font-semibold text-sky-400/90 hidden md:inline">
+                {mpLabel}
+              </span>
+              <div className="w-20 sm:w-24 bg-slate-800 rounded-full h-2 overflow-hidden border border-blue-950">
+                <div
+                  className="bg-gradient-to-r from-blue-600 via-indigo-500 to-cyan-400 h-full rounded-full transition-all duration-500"
+                  style={{ width: `${mpPercent}%` }}
+                />
+              </div>
+              <span className="text-[11px] font-mono text-sky-300">
+                {mpValue}/{maxMp}
+              </span>
+            </div>
+          )}
 
           {/* SAN */}
           <div className="flex items-center gap-1.5" title="理智/心理状态">
@@ -258,35 +654,6 @@ export default function GameHUD({
               {playerState.san}
             </span>
           </div>
-
-          {/* 人体生存属性 (荒岛专属) */}
-          {isSurvivalMode && (
-            <div className="flex items-center gap-3 border-l border-slate-800 pl-4">
-              {/* 体力 */}
-              <div className="flex items-center gap-1 text-[11px] text-amber-300 font-mono" title="体能 / 体力">
-                <Zap className="w-3.5 h-3.5 text-amber-400" />
-                <span>{stamina}%</span>
-              </div>
-
-              {/* 水分 */}
-              <div className="flex items-center gap-1 text-[11px] text-blue-300 font-mono" title="水分 / 口渴度">
-                <Droplets className="w-3.5 h-3.5 text-blue-400" />
-                <span>{hydration}%</span>
-              </div>
-
-              {/* 饱食度 */}
-              <div className="flex items-center gap-1 text-[11px] text-emerald-300 font-mono" title="饱食度 / 饥饿度">
-                <Utensils className="w-3.5 h-3.5 text-emerald-400" />
-                <span>{fullness}%</span>
-              </div>
-
-              {/* 体温 */}
-              <div className="flex items-center gap-1 text-[11px] text-rose-300 font-mono" title="体温状态">
-                <Thermometer className="w-3.5 h-3.5 text-rose-400" />
-                <span>{temperature}°C</span>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* 右侧：金币、服装配饰与道具背包按钮 */}
@@ -332,7 +699,7 @@ export default function GameHUD({
             title="查看背包道具"
           >
             <Backpack className="w-3.5 h-3.5 text-amber-400" />
-            <span>生存背包</span>
+            <span>背包</span>
             {playerState.inventory?.length > 0 && (
               <span className="bg-amber-500 text-slate-950 font-bold rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
                 {playerState.inventory.length}
@@ -377,6 +744,14 @@ export default function GameHUD({
           )}
         </div>
       </header>
+
+      {/* AG-UI 声明式扩展状态栏（由剧本/Agent 通过 hud_widgets 驱动） */}
+      <DynamicHudWidgets
+        widgets={hudWidgets}
+        playerState={playerState}
+        expandedPanels={expandedPanels}
+        onTogglePanel={togglePanel}
+      />
 
       {/* 快捷技能卡片栏 */}
       {hasSkillFeature && (
@@ -862,7 +1237,7 @@ export default function GameHUD({
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <Backpack className="w-5 h-5 text-amber-400" />
-                <h3 className="font-semibold text-slate-100">生存物品背包</h3>
+                <h3 className="font-semibold text-slate-100">随身背包</h3>
                 <span className="text-xs text-slate-500 font-mono">({playerState.inventory?.length || 0} 件)</span>
               </div>
               <button
@@ -877,16 +1252,16 @@ export default function GameHUD({
               {!playerState.inventory || playerState.inventory.length === 0 ? (
                 <div className="h-36 flex flex-col items-center justify-center text-slate-500 text-sm">
                   <ShieldAlert className="w-8 h-8 mb-2 opacity-40" />
-                  <span>背包空空如也，尚未探索获得求生道具</span>
-                  <span className="text-xs text-slate-600 mt-1">可在沙滩或丛林中搜寻打火机、绳子、玻璃瓶与树枝</span>
+                  <span>背包空空如也，尚未获得任何物品</span>
+                  <span className="text-xs text-slate-600 mt-1">在探索与互动中收集的物品将保存在这里</span>
                 </div>
               ) : (
                 playerState.inventory.map((item, idx) => {
-                  const iconUrl = item.icon || (
-                    ['lighter', 'rope', 'glass_bottle', 'branches', 'fresh_water_bottle', 'wild_food'].includes(item.id)
-                      ? `/assets/items/${item.id === 'fresh_water_bottle' ? 'glass_bottle' : item.id === 'wild_food' ? 'branches' : item.id}.png`
-                      : undefined
-                  );
+                  const rawIcon = (item.icon || '').trim();
+                  const isImageIcon =
+                    rawIcon.startsWith('/') ||
+                    rawIcon.startsWith('http://') ||
+                    rawIcon.startsWith('https://');
 
                   return (
                     <div
@@ -896,15 +1271,15 @@ export default function GameHUD({
                       className="p-3 bg-slate-850/80 hover:bg-slate-800 border border-slate-700/70 hover:border-amber-500/40 rounded-lg flex items-center justify-between cursor-pointer transition group"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        {iconUrl ? (
+                        {isImageIcon ? (
                           <img
-                            src={iconUrl}
+                            src={rawIcon}
                             alt={item.name}
                             className="w-10 h-10 object-contain rounded-lg bg-slate-900/90 p-1 border border-amber-500/40 shrink-0 group-hover:scale-105 transition-transform"
                           />
                         ) : (
                           <div className="w-10 h-10 rounded-lg bg-slate-900/90 border border-slate-700 flex items-center justify-center text-lg shrink-0">
-                            {item.id === 'raw_crab' ? '🦀' : item.id === 'coconut' ? '🥥' : item.id === 'cooked_food' ? '🍖' : '📦'}
+                            {rawIcon || '📦'}
                           </div>
                         )}
                         <div className="min-w-0">
@@ -912,12 +1287,12 @@ export default function GameHUD({
                             {item.name || item.id}
                           </div>
                           <div className="text-xs text-slate-400 mt-0.5 line-clamp-1">
-                            {item.desc || '荒岛探索收集的关键物品'}
+                            {item.desc || '随身携带的物品'}
                           </div>
                         </div>
                       </div>
                       <span className="text-[10px] text-amber-400/80 font-mono uppercase bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0 ml-2">
-                        装备/物资
+                        物品
                       </span>
                     </div>
                   );

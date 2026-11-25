@@ -2,7 +2,470 @@ id: "island_survival"
 title: "荒岛余生"
 version: "1.1.0"
 author: "AG-SLG Studio"
+icon: "🏝️"
+sort_order: 10
 initial_scene: "beach"
+opening_narration: |
+  狂暴的海浪拍打着陌生的白色沙滩，你在碎裂的残骸与烈日炙烤中恢复意识。
+  请点击下方预设行动，或输入自由指令（例如“搜寻残骸”、“采集椰子”、“用打火机生火”）开始你的孤岛求生之旅。
+dm_rules: |
+  - 当玩家明确拾取或洗净带走防水金属盒（如“捡起防水金属盒，洗干净带走”）但未声明撬开搜查时，应将其收入 `add_inventory`（id: "metal_box"）并置 `found_metal_box: true`，切勿直接跳转搜索打火机。
+  - 当玩家背包中已持有打火机（id: "lighter"）并主动生火（如“用打火机点燃甘草生火”）时，应判定生火成功（置 `fire_started: true` 并更新 `visuals.hero_image`），若同时要求煮烤食物且背包有食材则消耗食材大幅恢复 `fullness` 与 `stamina`。
+  - 生存核心指标 `stamina`（体力）、`hydration`（水分）、`fullness`（饱食度）范围为 0–100，`temperature`（体温）范围为 30–42℃。
+
+attribute_labels:
+  stamina: "体力"
+  hydration: "水分"
+  fullness: "饱食"
+  temperature: "体温"
+  survival: "求生"
+  constitution: "体质"
+  perception: "感知"
+
+attribute_bounds:
+  stamina: [0, 100]
+  hydration: [0, 100]
+  fullness: [0, 100]
+  temperature: [30, 42]
+
+scene_scoped_defaults:
+  fire_started: false
+  shelter_level: 0
+  water_collector_built: false
+
+unique_items:
+  - "lighter"
+  - "metal_box"
+  - "stone_blade"
+  - "rope"
+
+item_catalog:
+  metal_box:
+    name: "防水金属盒"
+    icon: ""
+    desc: "从沙滩拾获并洗净的航空铝合金防水盒，密封严密，既可收纳物资也可充当容器盛水烧水。"
+  lighter:
+    name: "防风打火机"
+    icon: "/assets/items/lighter.png"
+    desc: "军用级防水防风打火机，火花稳定，求生核心火源。"
+  rope:
+    name: "坚韧纤维绳"
+    icon: "/assets/items/rope.png"
+    desc: "坚韧老藤与树皮编织的耐磨绳索，可用于捆绑、攀爬与搭建。"
+  glass_bottle:
+    name: "厚壁玻璃瓶"
+    icon: "/assets/items/glass_bottle.png"
+    desc: "透明厚壁玻璃瓶，配有密封塞，可用于储水与煮水。"
+  branches:
+    name: "干燥树枝浮木"
+    icon: "/assets/items/branches.png"
+    desc: "经日晒干燥的坚硬树枝，是生火引火与制作工具的素材。"
+  fresh_water_bottle:
+    name: "装满甘泉的玻璃瓶"
+    icon: "/assets/items/glass_bottle.png"
+    desc: "装满了来自丛林深处的纯净泉水，饮用可补充大量水分。"
+  wild_food:
+    name: "野生热带坚果"
+    icon: "/assets/items/branches.png"
+    desc: "富含油脂与热量的饱满坚果与棕榈芯，可直接食用或烤熟充饥。"
+  raw_crab:
+    name: "鲜活礁石海蟹"
+    icon: "/assets/props/crab.png"
+    desc: "刚抓获的肥硕海蟹，生吃有腹泻风险，在篝火上烤熟味道极佳。"
+  seashell:
+    name: "坚硬海螺与贝壳"
+    icon: "/assets/props/seashell.png"
+    desc: "在沙滩拾取的厚壳海螺，边缘锋利，螺肉可食用，外壳可用于挖掘与盛水。"
+  vines:
+    name: "野生韧皮藤蔓"
+    icon: "/assets/props/vines.png"
+    desc: "从丛林灌木中割取的柔韧藤蔓，是编织绳索与固定遮蔽所的基础耗材。"
+  driftwood:
+    name: "干燥海滩浮木"
+    icon: "/assets/items/branches.png"
+    desc: "被海浪冲上岸经太阳炙烤干燥的浮木枝干，是极好的引火木料与营地建材。"
+  coconut:
+    name: "新鲜青椰"
+    icon: "/assets/props/palmtree.png"
+    desc: "沉甸甸的热带青椰，同时富含清甜椰汁与饱腹椰肉。"
+  cooked_food:
+    name: "炭烤海鲜与坚果拼盘"
+    icon: "/assets/items/branches.png"
+    desc: "散发出诱人焦香的熟食，能大幅恢复饱食度与体力。"
+  torn_linen_shirt:
+    name: "撕裂的白色亚麻衬衫"
+    desc: "迫降时被海水浸湿又在烈日下微干的机舱休闲衬衫，袖口略有撕裂。"
+    tag: "微湿 · 轻便"
+  khaki_cargo_pants:
+    name: "卡其色速干长裤"
+    desc: "耐磨的多口袋工装长裤，裤脚沾满细沙，能阻挡灌木枝刺刮伤。"
+    tag: "耐磨 · 下装"
+  sandy_sneakers:
+    name: "沾沙的运动跑鞋"
+    desc: "鞋底厚实防滑，能保护双脚不在尖锐礁石与碎珊瑚上割伤。"
+    tag: "防滑 · 鞋履"
+  broken_watch:
+    name: "停摆的机械腕表"
+    desc: "表盘玻璃在撞击时裂开了一道细纹，指针停在凌晨 3:14，金属表壳可反射阳光求救。"
+    tag: "腕饰 · 可反光"
+  pilot_windbreaker:
+    name: "失事机长防风夹克"
+    desc: "在残骸附近搜获的橙灰拼色高可视度防风外套，防风防泼水，夜间保暖极佳。"
+    tag: "防风保暖 · 外套"
+  palm_sunhat:
+    name: "椰叶编织遮阳帽"
+    desc: "宽大椰叶与韧藤编织而成的轻便草帽，有效遮挡毒辣烈日，减缓水分流失。"
+    tag: "遮阳防晒 · 头饰"
+  shell_necklace:
+    name: "潮汐贝壳挂坠"
+    desc: "用坚硬五彩海贝与韧皮细绳串起的颈间护符，海风吹过时发出清脆声响，令人心神宁静。"
+    tag: "安神 · 颈饰"
+
+adjudication_rules:
+  - outfit_slot: "outer"
+    mod: 2
+    label: "{outfit.outer.name}(+2)"
+  - outfit_slot: "shoes"
+    skill_in: ["agility", "survival"]
+    mod: 1
+    label: "{outfit.shoes.name}(+1)"
+  - outfit_slot: "wrist"
+    skill_in: ["perception", "survival"]
+    mod: 1
+    label: "{outfit.wrist.name}(+1)"
+  - outfit_slot: "neck"
+    mod: 1
+    label: "{outfit.neck.name}(+1)"
+  - when:
+      has_item: "stone_blade"
+    action_keywords: ["割", "切", "削", "剥", "撬", "磨", "修"]
+    mod: 2
+    label: "石刀精制(+2)"
+  - when:
+      has_item: "lighter"
+    action_keywords: ["火", "点", "燃", "烧"]
+    mod: 3
+    label: "防风打火机(+3)"
+  - when:
+      has_item: "rope"
+    action_keywords: ["捆", "扎", "绑", "绳", "编", "爬", "攀"]
+    mod: 2
+    label: "坚韧绳索(+2)"
+  - when:
+      has_item: "metal_box"
+    action_keywords: ["水", "煮", "装", "存", "盒"]
+    mod: 1
+    label: "防水金属盒(+1)"
+  - when:
+      variables:
+        shelter_level:
+          gte: 1
+    action_keywords: ["休息", "睡", "过夜", "庇护", "窝棚", "躲", "避雨"]
+    mod: 2
+    label: "稳固防风窝棚(+2)"
+  - when:
+      variables:
+        fire_started: true
+    action_keywords: ["夜", "寒", "烤", "煮", "火", "守夜"]
+    mod: 1
+    label: "温暖营地篝火(+1)"
+  - exclusive_group: "stamina_tier"
+    when:
+      attributes:
+        stamina:
+          gte: 75
+        hydration:
+          gte: 60
+        fullness:
+          gte: 50
+    mod: 1
+    label: "体能充沛(+1)"
+  - exclusive_group: "stamina_tier"
+    when:
+      attributes:
+        stamina:
+          lt: 30
+    mod: -2
+    label: "体力透支(-2)"
+  - when:
+      attributes:
+        hydration:
+          lt: 25
+    mod: -2
+    label: "严重口渴(-2)"
+  - when:
+      attributes:
+        fullness:
+          lt: 25
+    mod: -2
+    label: "饥肠辘辘(-2)"
+  - when:
+      weather_in: ["刮风", "暴雨"]
+      not_has_item: "lighter"
+      variables:
+        shelter_level: 0
+    action_keywords: ["火", "点", "燃", "烧"]
+    mod: -2
+    label: "狂风干扰生火(-2)"
+  - when:
+      weather_in: ["暴雨"]
+      not_has_outfit_slot: "outer"
+      variables:
+        shelter_level: 0
+    mod: -1
+    label: "暴雨湿滑受阻(-1)"
+  - when:
+      weather_in: ["刮风", "雨天", "暴雨"]
+      has_outfit_slot: "outer"
+    mod: 1
+    label: "防风防水护佑(+1)"
+  - when:
+      weather_in: ["晴天"]
+      has_outfit_slot: "head"
+    action_keywords: ["采", "摘", "捡", "抓", "搜", "寻", "攀", "挖"]
+    mod: 1
+    label: "遮阳防晒护佑(+1)"
+  - when:
+      weather_in: ["海雾"]
+    skill_in: ["perception"]
+    mod: -1
+    label: "海雾遮蔽视线(-1)"
+
+freeform_rules:
+  - all_keyword_groups:
+      - ["金属盒", "铁盒", "铝盒", "防水盒", "盒子"]
+      - ["搜", "翻", "找", "撬", "打开", "拆开", "里面", "内里", "夹层", "打火机"]
+    target_actions: ["search_luggage", "open_metal_box_coastal", "open_metal_box_in_jungle"]
+    exclusive: true
+  - all_keyword_groups:
+      - ["金属盒", "铁盒", "铝盒", "防水盒", "盒子"]
+      - ["捡", "拾", "拿", "洗", "冲", "擦", "带走", "收", "装"]
+    target_actions: ["pickup_metal_box"]
+    exclusive: true
+  - all_keyword_groups:
+      - ["金属盒", "铁盒", "铝盒", "防水盒", "盒子"]
+      - ["烧水", "煮水"]
+    target_actions: ["boil_water_in_metal_box"]
+    exclusive: true
+  - any_keywords: ["金属盒", "铁盒", "铝盒", "防水盒", "盒子"]
+    passthrough: true
+  - all_keyword_groups:
+      - ["点火", "生火", "升火", "引燃", "点燃", "篝火", "火堆", "烧火", "甘草", "枯草"]
+      - ["煮", "烤", "热食", "烹饪", "做饭", "煮食", "烤食", "熟食", "吃", "食", "蟹", "肉"]
+    passthrough: true
+  - any_keywords: ["点火", "生火", "升火", "引燃", "点燃", "篝火", "火堆", "烧火", "甘草", "枯草"]
+    when:
+      has_item: "lighter"
+    target_actions: ["beach_campfire", "coastal_campfire", "light_campfire", "craft_campfire"]
+  - any_keywords: ["煮", "烤", "热食", "烹饪", "做饭", "煮食", "烤食", "熟食"]
+    target_actions: ["beach_cook_food", "coastal_cook_food", "cook_food_on_fire", "cook_meal"]
+
+fallback_recipes:
+  - id: "fire_and_cook"
+    all_keyword_groups:
+      - ["打火机", "火机", "点火", "生火", "引燃", "点燃", "火堆", "篝火", "甘草", "枯草", "升火", "烧火"]
+      - ["煮", "烤", "吃", "食", "饭", "烹", "蟹", "肉"]
+    branches:
+      - when:
+          has_item: ["lighter", "raw_crab"]
+        narration: |
+          你从背包中稳稳取出防风打火机。咔哒一声脆响，强劲的橙蓝色防风火苗猛烈喷吐，迅速引燃了收集堆叠的干燥甘草与枯枝！
+
+          【行动成功】火舌飞快舔舐木柴，一堆明亮温暖的篝火在身前熊熊燃烧起来，彻底驱散了周遭的湿冷海风与野兽威胁！
+
+          紧接着，你将背包中的新鲜海蟹架在篝火上炙烤。火焰将食物烤得滋滋作响、通红滚烫，诱人的焦香海鲜肉气在四周弥漫！
+
+          你大快朵颐吃下温热熟透的食物，空虚的胃部被彻底充实，体温与体力大幅回升，精神为之一振！
+        delta:
+          variables:
+            fire_started: true
+          visuals:
+            hero_image: "/assets/illustrations/campfire.png"
+          remove_inventory: ["raw_crab"]
+          attributes_delta:
+            fullness: 35
+            stamina: 16
+            temperature: 1
+          san_delta: 6
+          time_cost: 1
+      - when:
+          has_item: ["lighter", "wild_food"]
+        narration: |
+          你从背包中稳稳取出防风打火机，迅速引燃了干燥甘草与枯枝！温暖明亮的篝火升起后，你将采摘的野生坚果架在炭火旁炙烤熟透并大快朵颐，体温与体力大幅回升！
+        delta:
+          variables:
+            fire_started: true
+          visuals:
+            hero_image: "/assets/illustrations/campfire.png"
+          remove_inventory: ["wild_food"]
+          attributes_delta:
+            fullness: 35
+            stamina: 16
+            temperature: 1
+          san_delta: 6
+          time_cost: 1
+      - when:
+          has_item: ["lighter", "coconut"]
+        narration: |
+          你从背包中稳稳取出防风打火机，迅速引燃了干燥甘草与枯枝！温暖明亮的篝火升起后，你将青椰果肉烘烤至微焦香甜并享用一空，体温与体力大幅回升！
+        delta:
+          variables:
+            fire_started: true
+          visuals:
+            hero_image: "/assets/illustrations/campfire.png"
+          remove_inventory: ["coconut"]
+          attributes_delta:
+            fullness: 35
+            stamina: 16
+            temperature: 1
+          san_delta: 6
+          time_cost: 1
+      - when:
+          has_item: "lighter"
+        narration: |
+          你从背包中取出可靠的防风打火机，拇指一擦打火轮，稳定的火苗立刻喷吐而出！
+
+          【行动成功】防风打火机精准引燃了干燥的甘草与引火碎木，火焰腾空而起，生起了一堆明亮温暖的篝火！周围的湿冷瞬间消散。
+
+          稳定的火源已经就绪，接下来可以随时在篝火上烧水、煮熟食材或安然过夜。
+        delta:
+          variables:
+            fire_started: true
+          visuals:
+            hero_image: "/assets/illustrations/campfire.png"
+          attributes_delta:
+            stamina: -4
+            temperature: 1
+          san_delta: 5
+          time_cost: 1
+    narration: |
+      你试图在四周寻找火源生火，但你在随身背包中仔细翻找后发现并没有携带打火机。
+
+      海风呼啸而过，未处理的干柴无法凭空引燃。或许可以在沙滩散落的客机残骸或防水金属盒中搜寻生火工具。
+    delta:
+      time_cost: 1
+
+  - id: "fire_only"
+    any_keywords: ["打火机", "火机", "点火", "生火", "引燃", "点燃", "火堆", "篝火", "甘草", "枯草", "升火", "烧火"]
+    branches:
+      - when:
+          has_item: "lighter"
+        narration: |
+          你从背包中取出可靠的防风打火机，拇指一擦打火轮，稳定的火苗立刻喷吐而出！
+
+          【行动成功】防风打火机精准引燃了干燥的甘草与引火碎木，火焰腾空而起，生起了一堆明亮温暖的篝火！周围的湿冷瞬间消散。
+
+          稳定的火源已经就绪，接下来可以随时在篝火上烧水、煮熟食材或安然过夜。
+        delta:
+          variables:
+            fire_started: true
+          visuals:
+            hero_image: "/assets/illustrations/campfire.png"
+          attributes_delta:
+            stamina: -4
+            temperature: 1
+          san_delta: 5
+          time_cost: 1
+    narration: |
+      你试图在四周寻找火源生火，但你在随身背包中仔细翻找后发现并没有携带打火机。
+
+      海风呼啸而过，未处理的干柴无法凭空引燃。或许可以在沙滩散落的客机残骸或防水金属盒中搜寻生火工具。
+    delta:
+      time_cost: 1
+
+  - id: "build_shelter"
+    any_keywords: ["窝棚", "庇护所", "遮蔽所", "木棚", "搭棚", "搭建营地"]
+    branches:
+      - when:
+          has_item: ["branches", "rope"]
+        narration: |
+          你将干燥硬木枝干斜靠在背风处，用坚韧的纤维绳反复绞紧主梁，再铺上宽大椰叶封顶。
+
+          【建造成功】一座结实耐用的防风窝棚拔地而起，已稳稳立在营地边缘的视觉区！从此你拥有了遮风挡雨、安心休整的稳固据点。
+        delta:
+          remove_inventory: ["branches", "rope"]
+          variables:
+            shelter_level: 1
+          visuals:
+            hero_image: "/assets/props/shelter.png"
+          attributes_delta:
+            stamina: -14
+            hydration: -8
+            fullness: -6
+            temperature: 1
+          san_delta: 8
+          time_cost: 1
+      - when:
+          not_has_item: "branches"
+          has_item: "rope"
+        narration: |
+          你选好了搭建防风窝棚的背风平地，但翻找背包后发现还缺少关键建材：干燥树枝浮木。
+
+          收集齐树枝与纤维绳后，即可随时搭起这座耐用的荒岛庇护所。
+        delta:
+          time_cost: 1
+      - when:
+          has_item: "branches"
+          not_has_item: "rope"
+        narration: |
+          你选好了搭建防风窝棚的背风平地，但翻找背包后发现还缺少关键建材：坚韧纤维绳。
+
+          收集齐树枝与纤维绳后，即可随时搭起这座耐用的荒岛庇护所。
+        delta:
+          time_cost: 1
+    narration: |
+      你选好了搭建防风窝棚的背风平地，但翻找背包后发现还缺少关键建材：干燥树枝浮木、坚韧纤维绳。
+
+      收集齐树枝与纤维绳后，即可随时搭起这座耐用的荒岛庇护所。
+    delta:
+      time_cost: 1
+
+  - id: "build_water_collector"
+    any_keywords: ["集水器", "雨水收集", "接水", "集水装置"]
+    branches:
+      - when:
+          has_item: ["glass_bottle", "rope"]
+        narration: |
+          你用木架支起漏斗状的大片热带阔叶，以纤维绳扎实固定，再将厚壁玻璃瓶安放在导流叶尖下方。
+
+          【建造成功】简易雨水收集器已搭建完毕并展示在营地侧栏！露水与雨水正沿着叶脉一滴滴汇入瓶中。
+        delta:
+          remove_inventory: ["glass_bottle", "rope"]
+          variables:
+            water_collector_built: true
+          visuals:
+            hero_image: "/assets/props/water_collector.png"
+          attributes_delta:
+            stamina: -10
+            hydration: -4
+          san_delta: 5
+          time_cost: 1
+      - when:
+          not_has_item: "glass_bottle"
+          has_item: "rope"
+        narration: "你想架设一套持续蓄水的雨水收集器，但目前缺少关键构件：厚壁玻璃瓶。"
+        delta:
+          time_cost: 1
+      - when:
+          has_item: "glass_bottle"
+          not_has_item: "rope"
+        narration: "你想架设一套持续蓄水的雨水收集器，但目前缺少关键构件：坚韧纤维绳。"
+        delta:
+          time_cost: 1
+    narration: "你想架设一套持续蓄水的雨水收集器，但目前缺少关键构件：厚壁玻璃瓶、坚韧纤维绳。"
+    delta:
+      time_cost: 1
+
+default_fallback:
+  narration: |
+    你在险恶的孤岛环境中尝试【{clean_action}】。{weather_cue}
+
+    沙滩与灌木间回荡着你的脚步声，潮水在不远处涨落起伏。虽然并未立即触发某种机关或质变，但这番探寻让你对周遭的地形与动静有了更深入的把握。体力略有消耗，但你的求生意志愈加坚定。
+  delta:
+    time_cost: 1
+    attributes_delta:
+      stamina: -3
+      hydration: -2
 
 initial_player_state:
   name: "幸存者"
@@ -39,6 +502,39 @@ initial_player_state:
       name: "停摆的机械腕表"
       desc: "表盘玻璃在撞击时裂开了一道细纹，指针停在凌晨 3:14，金属表壳可反射阳光求救。"
       tag: "腕饰 · 可反光"
+  hud_widgets:
+    - id: "island_survival_vitals"
+      type: "metrics"
+      title: "生存体征"
+      icon: "🏝️"
+      items:
+        - id: "stamina"
+          label: "体力"
+          value_ref: "attributes.stamina"
+          max: 100
+          unit: "%"
+          color: "amber"
+          low_threshold: 30
+        - id: "hydration"
+          label: "水分"
+          value_ref: "attributes.hydration"
+          max: 100
+          unit: "%"
+          color: "sky"
+          low_threshold: 25
+        - id: "fullness"
+          label: "饱食度"
+          value_ref: "attributes.fullness"
+          max: 100
+          unit: "%"
+          color: "emerald"
+          low_threshold: 25
+        - id: "temperature"
+          label: "体温"
+          value_ref: "attributes.temperature"
+          unit: "℃"
+          color: "teal"
+          warn_outside: [35, 39]
   variables:
     day: 1
     time_slot: "上午"

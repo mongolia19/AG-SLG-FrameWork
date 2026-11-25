@@ -1,14 +1,17 @@
 id: "fargodeep_cave"
-title: "洞穴 · 法戈第蛛网矿洞"
+title: "洞穴 · 法戈第蛛网矿洞（Boss巢穴）"
 background: "【场景全景】阴暗潮湿的废弃矿洞深处，巨型蛛网悬垂于朽坏矿柱之间，幽绿毒雾在洞窟底部翻涌"
 foreground: "/assets/characters/elena_swiftarrow.png"
 hero_image: "【Boss 特写】法戈第蜘蛛领主·阿拉克诺斯 · 覆满紫黑甲壳与毒腺的巨型蛛王"
 music: "/assets/bgm/fargodeep_boss.mp3"
 
 description: |
-  踏入法戈第矿洞，刺骨的阴寒与腐败甜腻的毒雾扑面而来。原本属于暴风城矿工的木轨早已生锈倾覆，四周岩壁被厚如棉絮的惨白蛛网层层包裹。
-  矿洞穹顶倒悬着数以百计的鼓胀蛛卵，最深处的巨型岩台上，盘踞着令人窒息的巨兽——【蜘蛛领主·阿拉克诺斯】。
-  它八只复眼闪烁着残忍的幽绿寒光，粗壮螯肢滴落着腐蚀岩石的剧毒。若没有同伴协助破除陷阱并牵制其侧翼，任何单独闯入者都会瞬间沦为蛛网中的猎物！
+  穿过前哨碎石拱门，刺骨的阴寒与腐败甜腻的毒雾扑面而来。最深处的巨型岩台上盘踞着令人窒息的巨兽——【蜘蛛领主·阿拉克诺斯（360 HP / 180 MP）】！
+  它覆满紫黑色硬化甲壳（未破甲前减免 45% 一切伤害），八只复眼闪烁着残忍的幽绿寒光。战斗将跨越三大阶段：
+  · 阶段一（360~241 HP）：施放【甲壳硬化】与【蛛网茧缚（30MP，16伤+缠绕减2）】；
+  · 阶段二（240~131 HP）：消耗 35MP【召唤毒囊幼蛛 ×2】并蓄力【剧毒新星（40MP，34伤）】；
+  · 阶段三（130~1 HP）：【深渊狂暴】重铸硬壳并引爆【暗影毒液狂潮（45MP，40伤+吸取15MP）】！
+  合理分配血量、魔法与打断/破甲时机，方能斩杀蛛王！
 
 visuals:
   background: "【场景全景】阴暗潮湿的废弃矿洞深处，巨型蛛网悬垂于朽坏矿柱之间，幽绿毒雾在洞窟底部翻涌"
@@ -24,6 +27,14 @@ visuals:
       tag: "矿洞地形"
       caption: "潮湿矿石壁"
       tooltip: "残留着铜矿脉与腐蚀蛛液痕迹的深邃洞壁"
+    - id: "fargodeep_boss_venom"
+      name: "幽暗毒囊结晶"
+      image: "/assets/items/venom_crystal.png"
+      side: "right"
+      category: "env"
+      tag: "Boss 毒腺"
+      caption: "幽绿毒腺矿簇"
+      tooltip: "蜘蛛领主在洞窟深处凝结的剧毒矿簇，散发着危险魔力"
 
 decorations: []
 
@@ -31,224 +42,679 @@ npcs:
   - id: "elena_swiftarrow"
     name: "巡林者艾莲娜·迅箭"
     avatar: "/assets/characters/elena_swiftarrow.png"
-    greeting: "别急着冲上去！先和我配合放出照明信号、清掉洞顶的潜伏蛛网，暴露出蜘蛛领主的腹部弱点后再一起集火！"
+    greeting: "Boss 甲壳没破前只能打出 55% 伤害！先破甲、及时清掉幼蛛和挣脱蛛网，再用打断技消耗它的魔法值，千万别硬吃剧毒新星！"
 
 actions:
-  - id: "coop_clear_webs"
-    label: "【洞穴合作 · 第一阶段】与艾莲娜协同释放照明信号箭，焚毁主蛛网并锁定Boss弱点"
-    type: "check"
-    skill: "perception"
-    difficulty: 10
+  - id: "engage_boss_arachnos"
+    label: "【唤醒 Boss 战】锁定蜘蛛领主·阿拉克诺斯，展开多阶段决战！"
+    type: "interact"
     condition:
+      min_hp: 1
       variables:
-        ally_recruited: true
-        coop_synergy: false
+        boss_active: false
         boss_defeated: false
     on_success:
-      consume_item: "照明信号箭"
-      remove_inventory:
-        - "照明信号箭"
-      san_delta: 6
       variables:
-        coop_synergy: true
+        boss_active: true
+        boss_name: "蜘蛛领主·阿拉克诺斯"
+        boss_hp: 360
+        boss_max_hp: 360
+        boss_mp: 180
+        boss_max_mp: 180
+        boss_phase: 1
+        boss_armor_broken: false
+        boss_web_trapped: false
+        boss_minions: 0
+        combat_round: 1
+        boss_casting: "【阶段一】甲壳硬化（减伤45%）· 伺机蛛网茧缚（30MP）"
       visuals:
         foreground: "/assets/characters/elena_swiftarrow.png"
-        hero_image: "【合作战术】照明火光驱散矿洞黑暗！蜘蛛领主腹部软甲暴露无遗"
-      message: "你高举信号箭吸引岩顶幼蛛注意，艾莲娜借着灼热火光连发三箭，瞬间烧穿了笼罩战场的巨型毒网！【合作连携已激活】——蜘蛛领主的腹部软甲彻底暴露，Boss 决战难度大幅下降！"
-    on_failure:
-      hp_delta: -12
-      message: "潮湿的空气延缓了火光扩散，一团粘稠蛛丝差点封住你的左臂（HP -12）。艾莲娜急忙一箭斩断蛛丝，你们重新站稳阵脚，随时可以再次尝试配合破网。"
+        hero_image: "【Boss 战开启】蜘蛛领主·阿拉克诺斯发出嘶鸣，360HP/180MP 压迫降临！"
+      remove_hud_widgets:
+        - "fargodeep_vanguard"
+      hud_widgets:
+        - id: "arachnos_boss_panel"
+          type: "panel"
+          title: "蜘蛛领主·阿拉克诺斯"
+          tone: "danger"
+          when:
+            variables:
+              boss_active: true
+              boss_defeated: false
+          badges:
+            - text_ref: "阶段 {variables.boss_phase}/3"
+              tone: "amber"
+            - text: "✓ 软甲已暴露"
+              tone: "emerald"
+              when:
+                variables:
+                  boss_armor_broken: true
+            - text: "🛡 甲壳硬化"
+              tone: "danger"
+              when:
+                variables:
+                  boss_armor_broken: false
+            - text_ref: "毒囊幼蛛 ×{variables.boss_minions}"
+              tone: "amber"
+              when:
+                variables:
+                  boss_minions:
+                    gt: 0
+            - text: "⚠ 蛛网茧缚中"
+              tone: "purple"
+              when:
+                variables:
+                  boss_web_trapped: true
+            - text_ref: "意图: {variables.boss_casting}"
+              tone: "sky"
+          bars:
+            - label: "Boss 血量"
+              value_ref: "variables.boss_hp"
+              max_ref: "variables.boss_max_hp"
+              color: "rose"
+            - label: "Boss 魔法"
+              value_ref: "variables.boss_mp"
+              max_ref: "variables.boss_max_mp"
+              color: "violet"
+          cards_title: "查看Boss技能"
+          cards:
+            - title: "甲壳硬化 (被动/30MP)"
+              desc: "未破甲前减免伤害，需合作照明箭或强攻破甲。"
+              tone: "danger"
+            - title: "蛛网茧缚 (30MP)"
+              desc: "缠住冒险者（检定-2），需及时挣脱或火攻烧断。"
+              tone: "purple"
+            - title: "召唤毒囊幼蛛 (35MP)"
+              desc: "二阶段孵化2只幼蛛协同撕咬，干扰命中与施法。"
+              tone: "amber"
+            - title: "剧毒新星 (40MP)"
+              desc: "高伤毒爆蓄力，可趁蓄力间隙打断并反削Boss魔法。"
+              tone: "fuchsia"
+            - title: "深渊狂暴 (45MP)"
+              desc: "低血量三阶段触发，同时腐蚀玩家血量与魔法。"
+              tone: "red"
+          footer: "战斗公式：玩家技能伤 = (基础威力 + 主属性×2.5 + 技能等级×10) × 破甲(0.55/1.0) × 检定倍率 | Boss MP < 30 进入【魔力枯竭】并蓄力 +35MP | 幼蛛每只 +4 伤(-1检定) · 茧缚 +5 毒伤(-2检定) · 抗毒合剂 -6 毒伤(+1检定)"
+      message: "蜘蛛领主·阿拉克诺斯猛地从岩台跃起，紫黑甲壳泛起冷硬幽光！多阶段 Boss 战正式打响（Boss 360 HP / 180 MP），请先破除其硬化甲壳！"
 
   - id: "use_antidote_before_boss"
-    label: "【战前准备】饮用【抗毒合剂】增强毒抗并恢复体力"
+    label: "【战前/战中准备】饮用【抗毒合剂】（HP +30 / MP +20，常驻减免6点毒伤）"
     type: "interact"
     condition:
       has_item: "抗毒合剂"
+      min_hp: 1
       variables:
         boss_defeated: false
     on_success:
       consume_item: "抗毒合剂"
       remove_inventory:
         - "抗毒合剂"
-      hp_delta: 25
+      hp_delta: 30
+      mp_delta: 20
       attributes_delta:
         constitution: 2
-      message: "清凉的草药灵流流遍全身（HP +25，体质 +2），法戈第矿洞中的幽绿毒雾瞬间对你失去了侵蚀力！"
+      variables:
+        antidote_active: true
+      message: "清凉的草药灵流流遍全身（HP +30，MP +20，体质 +2），你获得【抗毒护佑】：Boss 每次毒系攻击伤害减免 6 点，检定额外 +1！"
 
-  - id: "coop_boss_paladin"
-    label: "【合作决战 · 圣骑士】与艾莲娜左右夹击，释放 Lv.3 十字军打击圣光裁决蜘蛛领主！"
+  - id: "coop_clear_webs"
+    label: "【合作破甲】消耗【照明信号箭】协同艾莲娜击碎 Boss 硬化甲壳（-15 MP）"
+    type: "check"
+    skill: "perception"
+    difficulty: 10
+    condition:
+      has_item: "照明信号箭"
+      min_hp: 1
+      min_mp: 15
+      variables:
+        ally_recruited: true
+        boss_armor_broken: false
+        boss_defeated: false
+    on_success:
+      consume_item: "照明信号箭"
+      remove_inventory:
+        - "照明信号箭"
+      hp_delta: -10
+      mp_delta: -15
+      san_delta: 6
+      variables:
+        coop_synergy: true
+        boss_armor_broken: true
+        boss_casting: "甲壳碎裂 · 伺机蛛网反击（30MP）"
+      variables_delta:
+        boss_hp: -45
+        boss_mp: -20
+        combat_round: 1
+      visuals:
+        foreground: "/assets/characters/elena_swiftarrow.png"
+        hero_image: "【合作破甲】照明信号箭焚毁巨网！蜘蛛领主腹部软甲暴露（全额100%伤害）"
+      message: "耀眼火光炸裂洞窟！艾莲娜借光连珠三箭精准轰碎蜘蛛领主背甲弱点（Boss HP -45，Boss MP -20；你承受余波 HP -10，MP -15）。【甲壳已破】，后续攻击将造成 100% 全额伤害！"
+    on_failure:
+      hp_delta: -16
+      mp_delta: -10
+      variables_delta:
+        combat_round: 1
+      message: "浓重毒雾遮挡了弹道（HP -16，MP -10），信号箭未能烧穿主甲壳，你们重新锁定角度准备再次破甲。"
+
+  - id: "throw_kobold_bomb_armor"
+    label: "【道具破甲】投掷【狗头人火油炸药】炸碎 Boss 硬化甲壳并清场（0 MP）"
+    type: "interact"
+    condition:
+      has_item: "狗头人火油炸药"
+      min_hp: 1
+      variables:
+        boss_armor_broken: false
+        boss_defeated: false
+    on_success:
+      consume_item: "狗头人火油炸药"
+      remove_inventory:
+        - "狗头人火油炸药"
+      hp_delta: -6
+      variables:
+        boss_armor_broken: true
+        boss_web_trapped: false
+        boss_minions: 0
+      variables_delta:
+        boss_hp: -55
+        boss_mp: -25
+        combat_round: 1
+      visuals:
+        hero_image: "【火油爆破】烈焰轰开紫黑硬壳，同时烧净场内幼蛛与蛛网！"
+      message: "轰隆巨响震彻矿洞！火油炸药在蜘蛛领主腹下炸开（Boss HP -55，Boss MP -25），硬化甲壳瞬间龟裂暴露，场上的幼蛛与缠身蛛网一并化为灰烬！"
+
+  - id: "shatter_boss_armor"
+    label: "【强攻破甲】聚焦腹甲裂隙强行重击破甲（消耗 20 MP）"
+    type: "check"
+    skill: "perception"
+    difficulty: 12
+    condition:
+      min_hp: 1
+      min_mp: 20
+      variables:
+        boss_armor_broken: false
+        boss_defeated: false
+    on_success:
+      hp_delta: -16
+      mp_delta: -20
+      variables:
+        boss_armor_broken: true
+        boss_casting: "软甲暴露 · 毒牙反扑（0MP/30MP）"
+      variables_delta:
+        boss_hp: -40
+        boss_mp: -15
+        combat_round: 1
+      message: "你敏锐捕捉到蜘蛛领主换气抬腹的瞬间，倾泻职业技能轰裂其重塑的甲壳（Boss HP -40，HP -16，MP -20）！【软甲再次暴露】！"
+    on_failure:
+      hp_delta: -24
+      mp_delta: -15
+      variables_delta:
+        combat_round: 1
+      message: "硬壳滑开了你的重击，Boss 趁机反扫螯肢命中了你（HP -24，MP -15）。"
+
+  - id: "clear_boss_minions"
+    label: "【战术清场】优先清剿场上【毒囊幼蛛】（消耗 20 MP，解除幼蛛撕咬与-1干扰）"
+    type: "check"
+    skill: "agility"
+    difficulty: 11
+    condition:
+      min_hp: 1
+      min_mp: 20
+      variables:
+        boss_minions:
+          gt: 0
+        boss_defeated: false
+    on_success:
+      hp_delta: -10
+      mp_delta: -20
+      variables:
+        boss_minions: 0
+      variables_delta:
+        boss_hp: -25
+        boss_mp: -10
+        combat_round: 1
+      message: "你与艾莲娜火力全开横扫洞底，将烦人的毒囊幼蛛悉数清剿（HP -10，MP -20），余波顺势擦伤 Boss（-25 HP），战局视野瞬间清晰！"
+    on_failure:
+      hp_delta: -20
+      mp_delta: -15
+      variables_delta:
+        boss_minions: -1
+        combat_round: 1
+      message: "你勉强斩杀 1 只幼蛛，但其余幼蛛的毒牙咬伤了你的小腿（HP -20，MP -15）。"
+
+  - id: "break_web_trap"
+    label: "【紧急脱困】斩断缠身的剧毒蛛网茧缚（解除 -2 检定惩罚，消耗 10 MP）"
+    type: "check"
+    skill: "strength"
+    difficulty: 10
+    condition:
+      min_hp: 1
+      min_mp: 10
+      variables:
+        boss_web_trapped: true
+        boss_defeated: false
+    on_success:
+      hp_delta: -8
+      mp_delta: -10
+      variables:
+        boss_web_trapped: false
+      variables_delta:
+        combat_round: 1
+      message: "你猛然发力扯断粘稠毒丝，翻滚脱离了蜘蛛领主的扑击范围（HP -8，MP -10）！"
+    on_failure:
+      hp_delta: -18
+      mp_delta: -5
+      variables_delta:
+        combat_round: 1
+      message: "蛛丝韧性惊人，挣扎反令毒液渗入护甲（HP -18，MP -5），仍未彻底脱困！"
+
+  - id: "paladin_crusader_strike"
+    label: "【圣骑士 · 十字军打击】Lv.3 圣锤爆发重击 Boss（消耗 20 圣能）"
     type: "check"
     skill: "strength"
     difficulty: 12
     condition:
+      min_hp: 1
+      min_mp: 20
       variables:
         class_id: "paladin"
-        coop_synergy: true
+        boss_active: true
         boss_defeated: false
     on_success:
-      gain_item: "幽暗蛛王丝"
-      gold_delta: 120
-      hp_delta: 15
-      san_delta: 15
-      attributes_delta:
-        strength: 3
-        agility: 2
-        intelligence: 3
-        constitution: 3
-        perception: 2
+      hp_delta: -18
+      mp_delta: -20
       variables:
-        boss_defeated: true
-        level: 4
-        xp: 800
-        xp_next: 1400
-        skill_rank: 4
-        skills: "十字军打击 Lv.4 · 圣光闪现 Lv.4 · 虔诚光环 Lv.4（大师级觉醒）"
-      visuals:
-        hero_image: "【Boss 战胜利】金色圣光轰碎阿拉克诺斯甲壳，珍稀材料散落岩台！"
-      message: "艾莲娜的冰霜箭雨稳稳锁住了蜘蛛领主的螯肢！你抓住瞬息破绽，金色战锤挟着 Lv.3 十字军打击怒劈其腹部软甲，轰然终结了蜘蛛领主·阿拉克诺斯！你晋升【Lv.4】（全属性与技能升级至 Lv.4），战利品【幽暗蛛王丝】与 120 金币已收入囊中！"
+        boss_casting: "承受圣光重创 · 准备毒液反扑"
+      variables_delta:
+        boss_hp: -88
+        boss_mp: -20
+        combat_round: 1
+      message: "金色战锤挟着 Lv.3 十字军打击的圣光烈焰怒砸而下，依据伤害公式重创蜘蛛领主（Boss -88 HP / -20 MP；受反击 HP -18，圣能 -20）！"
     on_failure:
-      hp_delta: -22
-      message: "蜘蛛领主在临死挣扎中甩出毒液尾钩击飞了你的格挡（HP -22）！艾莲娜立刻发射震荡箭逼退巨蛛，你们重整圣光阵型准备下一轮合击！"
+      hp_delta: -28
+      mp_delta: -20
+      variables:
+        boss_web_trapped: true
+        boss_casting: "【蛛网茧缚】喷吐粘丝缠住冒险者（-30MP）"
+      variables_delta:
+        boss_hp: -25
+        boss_mp: -30
+        combat_round: 1
+      message: "蜘蛛领主侧身避开战锤核心，甩出【蛛网茧缚】缠住你的双膝并猛撞而来（HP -28，圣能 -20，陷入茧缚）！"
 
-  - id: "coop_boss_hunter"
-    label: "【合作决战 · 猎人】与艾莲娜双箭共鸣，释放 Lv.3 奥术射击贯通蜘蛛领主复眼！"
+  - id: "paladin_flash_of_light"
+    label: "【圣骑士 · 圣光闪现】圣光急救回复生命并净化蛛网（消耗 25 圣能）"
+    type: "interact"
+    condition:
+      min_hp: 1
+      min_mp: 25
+      variables:
+        class_id: "paladin"
+        boss_active: true
+        boss_defeated: false
+    on_success:
+      hp_delta: 42
+      mp_delta: -25
+      san_delta: 4
+      variables:
+        boss_web_trapped: false
+        boss_casting: "圣光壁垒护体 · Boss 伺机咬击"
+      variables_delta:
+        boss_hp: -15
+        boss_mp: -10
+        combat_round: 1
+      message: "圣光闪现在掌心绽放，瞬间愈合伤势并烧断缠身蛛丝（HP +42，圣能 -25，SAN +4），艾莲娜趁机补箭牵制（Boss -15 HP）！"
+
+  - id: "hunter_arcane_shot"
+    label: "【猎人 · 奥术射击】Lv.3 协同艾莲娜双箭狙击 Boss（消耗 20 集中值）"
     type: "check"
     skill: "agility"
     difficulty: 12
     condition:
+      min_hp: 1
+      min_mp: 20
       variables:
         class_id: "hunter"
-        coop_synergy: true
+        boss_active: true
         boss_defeated: false
     on_success:
-      gain_item: "幽暗蛛王丝"
-      gold_delta: 120
-      hp_delta: 15
-      san_delta: 15
-      attributes_delta:
-        strength: 2
-        agility: 4
-        intelligence: 2
-        constitution: 3
-        perception: 3
+      hp_delta: -16
+      mp_delta: -20
       variables:
-        boss_defeated: true
-        level: 4
-        xp: 800
-        xp_next: 1400
-        skill_rank: 4
-        skills: "奥术射击 Lv.4 · 毒蛇钉刺 Lv.4 · 猎豹守护 Lv.4（大师级觉醒）"
-      visuals:
-        hero_image: "【Boss 战胜利】双弓流光贯穿蛛王头颅，珍稀材料散落岩台！"
-      message: "艾莲娜率先射断蜘蛛领主左侧步足使其失衡！你借势腾空，Lv.3 奥术射击与毒蛇钉刺化作致命银芒精准贯穿蛛王中枢复眼！蜘蛛领主·阿拉克诺斯轰然倒地！你晋升【Lv.4】（全属性与技能升级至 Lv.4），掉落【幽暗蛛王丝】与 120 金币！"
+        boss_casting: "复眼受创 · 蓄力毒潮反击"
+      variables_delta:
+        boss_hp: -88
+        boss_mp: -25
+        combat_round: 1
+      message: "你与艾莲娜双弓共鸣，Lv.3 奥术射击精准贯穿蛛王关节与复眼（Boss -88 HP / -25 MP；受毒雾反噬 HP -16，集中值 -20）！"
     on_failure:
-      hp_delta: -20
-      message: "蜘蛛领主喷吐大片浓雾遮蔽了弹道，螯肢擦伤了你的肩甲（HP -20）。艾莲娜掩护你翻滚脱身，蓄力准备再次齐射！"
+      hp_delta: -26
+      mp_delta: -20
+      variables:
+        boss_web_trapped: true
+        boss_casting: "【蛛网茧缚】喷射粘丝封锁走位（-30MP）"
+      variables_delta:
+        boss_hp: -25
+        boss_mp: -30
+        combat_round: 1
+      message: "蜘蛛领主喷吐浓雾遮蔽弹道，反手喷出【蛛网茧缚】封住你的步伐（HP -26，集中值 -20，陷入茧缚）！"
+
+  - id: "hunter_serpent_sting"
+    label: "【猎人 · 毒蛇钉刺】精准打断 Boss 施法并高机动规避（消耗 15 集中值）"
+    type: "check"
+    skill: "perception"
+    difficulty: 11
+    condition:
+      min_hp: 1
+      min_mp: 15
+      variables:
+        class_id: "hunter"
+        boss_active: true
+        boss_defeated: false
+    on_success:
+      hp_delta: -8
+      mp_delta: -15
+      variables:
+        boss_casting: "施法被打断 · 毒腺紊乱"
+      variables_delta:
+        boss_hp: -65
+        boss_mp: -35
+        combat_round: 1
+      message: "淬毒倒钩箭直刺蛛王毒腺！成功打断 Boss 高危蓄力并大幅抽空其魔力（Boss -65 HP / -35 MP），凭借猎豹守护闪避大部分反击（HP -8，集中值 -15）！"
+    on_failure:
+      hp_delta: -22
+      mp_delta: -15
+      variables_delta:
+        boss_hp: -20
+        boss_mp: -15
+        combat_round: 1
+      message: "毒蛇钉刺滑过硬壳边缘，Boss 甩尾横扫命中了你的侧腰（HP -22，集中值 -15）。"
 
   - id: "coop_boss_mage"
-    label: "【合作决战 · 法师】借艾莲娜掩护破甲，引导 Lv.3 火球术暴燃引爆蜘蛛领主！"
+    label: "【法师 · 火球术爆燃】Lv.3 烈焰轰击 Boss 并焚毁缠身蛛网（消耗 25 法力）"
     type: "check"
     skill: "intelligence"
     difficulty: 12
     condition:
+      min_hp: 1
+      min_mp: 25
       variables:
         class_id: "mage"
-        coop_synergy: true
+        boss_active: true
         boss_defeated: false
     on_success:
-      gain_item: "幽暗蛛王丝"
-      gold_delta: 120
-      hp_delta: 15
-      san_delta: 15
-      attributes_delta:
-        strength: 1
-        agility: 2
-        intelligence: 4
-        constitution: 3
-        perception: 3
+      hp_delta: -18
+      mp_delta: -25
       variables:
+        boss_web_trapped: false
+        boss_casting: "毒囊遭火引爆 · 狂怒反扑"
+      variables_delta:
+        boss_hp: -85
+        boss_mp: -20
+        combat_round: 1
+      message: "炽烈火球在蜘蛛领主腹腔正中炸裂，顺带烧净缠身蛛丝（Boss -85 HP / -20 MP；承受热浪与毒溅 HP -18，法力 -25）！"
+    on_failure:
+      hp_delta: -30
+      mp_delta: -25
+      variables:
+        boss_web_trapped: true
+        boss_casting: "【蛛网茧缚】打断施法并缚住法师（-30MP）"
+      variables_delta:
+        boss_hp: -30
+        boss_mp: -30
+        combat_round: 1
+      message: "洞顶落石干扰了咒文吟唱，Boss 瞬间甩出【蛛网茧缚】并重击而来（HP -30，法力 -25，陷入茧缚）！"
+
+  - id: "interrupt_boss_cast"
+    label: "【法术/战技打断】强效打断 Boss 高危蓄力并削减其魔法（消耗 20 MP，Boss -35 MP）"
+    type: "check"
+    skill: "perception"
+    difficulty: 11
+    condition:
+      min_hp: 1
+      min_mp: 20
+      variables:
+        boss_active: true
+        boss_defeated: false
+    on_success:
+      hp_delta: -10
+      mp_delta: -20
+      variables:
+        boss_casting: "施法被打断 · 魔力回路受创"
+      variables_delta:
+        boss_hp: -55
+        boss_mp: -35
+        combat_round: 1
+      message: "你与艾莲娜精准衔接控制链，强行打断了蜘蛛领主的高危魔法蓄力并吸损其魔力（Boss -55 HP / -35 MP；HP -10，MP -20）！"
+    on_failure:
+      hp_delta: -22
+      mp_delta: -20
+      variables_delta:
+        boss_hp: -20
+        boss_mp: -15
+        combat_round: 1
+      message: "打断慢了半拍，蛛王余威震伤了你的肩甲（HP -22，MP -20）。"
+
+  - id: "coop_boss_finisher"
+    label: "【三阶段绝杀 · 终结合击】乘 Boss 残血破绽全力贯穿核心（消耗 20 MP）"
+    type: "check"
+    skill: "perception"
+    difficulty: 11
+    condition:
+      min_hp: 1
+      min_mp: 20
+      variables:
+        boss_active: true
+        boss_defeated: false
+        boss_hp:
+          lte: 130
+    on_success:
+      max_hp_delta: 30
+      max_mp_delta: 30
+      hp_delta: 40
+      mp_delta: 40
+      san_delta: 12
+      gain_item: "幽暗蛛王丝"
+      variables:
+        boss_active: false
         boss_defeated: true
+        boss_hp: 0
+        boss_mp: 0
+        boss_minions: 0
+        boss_web_trapped: false
+        boss_casting: "已伏诛"
         level: 4
         xp: 800
         xp_next: 1400
         skill_rank: 4
-        skills: "火球术 Lv.4 · 寒冰箭 Lv.4 · 奥术智慧 Lv.4（大师级觉醒）"
+        skills: "全系职业技能突破至 Lv.4（法戈第蛛王讨伐者）"
+      variables_delta:
+        combat_round: 1
+      remove_hud_widgets:
+        - "arachnos_boss_panel"
       visuals:
-        hero_image: "【Boss 战胜利】炽烈奥术炎爆吞噬蜘蛛领主，珍稀材料散落岩台！"
-      message: "艾莲娜用精准箭矢打断了蜘蛛领主的扑击蓄力！你从容念完咒文，Lv.3 寒冰箭冻结其关节后紧接一发炽烈火球术引爆它体内的可燃毒囊，轰碎了蜘蛛领主·阿拉克诺斯！你晋升【Lv.4】（全属性与技能升级至 Lv.4），掉落【幽暗蛛王丝】与 120 金币！"
+        hero_image: "【Boss 战胜利】绝杀连携轰碎阿拉克诺斯核心，幽暗蛛王丝散落岩台！"
+      message: "艾莲娜以精准箭矢钉死蛛王最后一处关节！你抓住绝杀破绽倾尽全力贯穿其核心，轰然终结蜘蛛领主·阿拉克诺斯！你晋升至【Lv.4】（MaxHP/MaxMP +30，全技能 Lv.4），拾获【幽暗蛛王丝】！"
+    on_failure:
+      hp_delta: -28
+      mp_delta: -20
+      variables_delta:
+        boss_hp: -35
+        combat_round: 1
+      message: "垂死狂暴的蛛王奋力反扑震退了你的绝杀（HP -28，MP -20），但它已摇摇欲坠！"
+
+  - id: "mage_frostbolt"
+    label: "【法师 · 寒冰箭打断】极寒冰晶冻结 Boss 关节并打断施法（消耗 20 法力）"
+    type: "check"
+    skill: "intelligence"
+    difficulty: 11
+    condition:
+      min_hp: 1
+      min_mp: 20
+      variables:
+        class_id: "mage"
+        boss_active: true
+        boss_defeated: false
+    on_success:
+      hp_delta: -10
+      mp_delta: -20
+      variables:
+        boss_casting: "寒冰迟滞 · 蓄力被打断"
+      variables_delta:
+        boss_hp: -70
+        boss_mp: -35
+        combat_round: 1
+      message: "极寒冰晶箭贯入蛛王螯肢关节，彻底打断其毒爆吟唱并大幅削减魔力（Boss -70 HP / -35 MP；HP -10，法力 -20）！"
     on_failure:
       hp_delta: -22
-      message: "矿洞顶部的碎石落下打断了你的施法吟唱，毒液溅射造成伤害（HP -22）。艾莲娜迅速拉你退至石柱后方重整魔力！"
+      mp_delta: -20
+      variables_delta:
+        boss_hp: -20
+        boss_mp: -15
+        combat_round: 1
+      message: "寒冰箭仅擦伤外壳，蜘蛛领主扑击震荡带来不小伤势（HP -22，法力 -20）。"
 
-  - id: "coop_boss_warrior"
-    label: "【合作决战 · 战士】架盾顶住Boss冲锋，与艾莲娜合击释放 Lv.3 英勇打击斩杀蛛王！"
+  - id: "warrior_heroic_strike"
+    label: "【战士 · 英勇打击】Lv.3 战斧裂甲猛劈 Boss（消耗 20 战意）"
     type: "check"
     skill: "strength"
     difficulty: 12
     condition:
+      min_hp: 1
+      min_mp: 20
       variables:
         class_id: "warrior"
-        coop_synergy: true
+        boss_active: true
         boss_defeated: false
     on_success:
-      gain_item: "幽暗蛛王丝"
-      gold_delta: 120
-      hp_delta: 15
-      san_delta: 15
-      attributes_delta:
-        strength: 4
-        agility: 2
-        intelligence: 1
-        constitution: 4
-        perception: 2
+      hp_delta: -16
+      mp_delta: -20
       variables:
-        boss_defeated: true
-        level: 4
-        xp: 800
-        xp_next: 1400
-        skill_rank: 4
-        skills: "英勇打击 Lv.4 · 雷霆一击 Lv.4 · 盾牌格挡 Lv.4（大师级觉醒）"
-      visuals:
-        hero_image: "【Boss 战胜利】矮人战斧劈碎蜘蛛领主核心，珍稀材料散落岩台！"
-      message: "你用盾牌格挡硬生生扛住蛛王雷霆万钧的扑击，一记雷霆一击震裂地面！艾莲娜箭矢贯穿其腹甲瞬间，你怒吼着劈出 Lv.3 英勇打击，一斧枭首蜘蛛领主·阿拉克诺斯！你晋升【Lv.4】（全属性与技能升级至 Lv.4），掉落【幽暗蛛王丝】与 120 金币！"
+        boss_casting: "甲壳受创震颤 · 螯肢反击"
+      variables_delta:
+        boss_hp: -92
+        boss_mp: -20
+        combat_round: 1
+      message: "铁炉堡战斧携雷霆万钧之势重劈而下（Boss -92 HP / -20 MP；重甲硬抗反击 HP -16，战意 -20）！"
     on_failure:
-      hp_delta: -20
-      message: "巨蛛的冲撞力道震麻了你的持盾手臂（HP -20），所幸艾莲娜一箭射中其复眼替你解围！"
+      hp_delta: -24
+      mp_delta: -20
+      variables:
+        boss_web_trapped: true
+        boss_casting: "【蛛网茧缚】强行缠住矮人战士（-30MP）"
+      variables_delta:
+        boss_hp: -25
+        boss_mp: -30
+        combat_round: 1
+      message: "蜘蛛领主贴地闪开重劈，吐出厚重【蛛网茧缚】缠住战靴并撞击盾牌（HP -24，战意 -20，陷入茧缚）！"
 
-  - id: "solo_boss_assault"
-    label: "【孤军强攻（高危）】不依赖合作战术，强行正面单挑蜘蛛领主（DC 18）"
+  - id: "warrior_thunder_shield"
+    label: "【战士 · 盾牌格挡 & 雷霆一击】稳守反震、削弱幼蛛并打断施法（消耗 15 战意）"
     type: "check"
     skill: "constitution"
-    difficulty: 18
+    difficulty: 11
     condition:
+      min_hp: 1
+      min_mp: 15
       variables:
-        coop_synergy: false
+        class_id: "warrior"
+        boss_active: true
         boss_defeated: false
     on_success:
-      gain_item: "幽暗蛛王丝"
-      gold_delta: 120
-      hp_delta: -15
-      san_delta: 12
-      attributes_delta:
-        strength: 3
-        agility: 3
-        intelligence: 3
-        constitution: 3
-        perception: 2
+      hp_delta: -6
+      mp_delta: -15
       variables:
-        boss_defeated: true
-        level: 4
-        xp: 800
-        xp_next: 1400
-        skill_rank: 4
-        skills: "全职业核心技能晋升至 Lv.4（孤胆英雄奇迹）"
-      visuals:
-        hero_image: "【险胜 Boss】浴血硬撼蜘蛛领主，艰难斩落蛛王头颅"
-      message: "纵然四周蛛网密布、危机四伏，你仍凭过人的顽强体魄与超凡反应硬扛毒伤，历经苦战终于击杀蜘蛛领主·阿拉克诺斯！晋升【Lv.4】（全属性与技能升至 Lv.4），掉落【幽暗蛛王丝】与 120 金币！"
+        boss_casting: "雷霆震慑 · 施法中断"
+      variables_delta:
+        boss_hp: -55
+        boss_mp: -35
+        boss_minions: -1
+        combat_round: 1
+      message: "你高举锻钢战盾硬吃正面冲击（仅 HP -6），随即一脚雷霆一击震碎地面，清掉 1 只幼蛛并打断 Boss 蓄力（Boss -55 HP / -35 MP，战意 -15）！"
     on_failure:
-      hp_delta: -35
-      san_delta: -8
-      message: "黑暗中的幼蛛与毒网瞬间从四面八方缠住了你的双脚！蜘蛛领主居高临下发动猛扑，你身负重创（HP -35）狼狈撤退。务必先在艾尔文野外招募艾莲娜并配合破除蛛网！"
+      hp_delta: -16
+      mp_delta: -15
+      variables_delta:
+        boss_hp: -20
+        boss_mp: -15
+        combat_round: 1
+      message: "巨力冲击震麻了你的持盾手臂（HP -16，战意 -15），勉强稳住防线。"
+
+  - id: "desperate_basic_attack"
+    label: "【基础普攻 / 战术调息】稳扎稳打挥击并回复魔法能量（0 MP 消耗，回复 +25 MP）"
+    type: "interact"
+    condition:
+      min_hp: 1
+      variables:
+        boss_active: true
+        boss_defeated: false
+    on_success:
+      hp_delta: -14
+      mp_delta: 25
+      variables_delta:
+        boss_hp: -35
+        boss_mp: -10
+        combat_round: 1
+      message: "你暂缓高耗能爆发，借艾莲娜掩护稳步换血并引导呼吸回蓝（MP +25，承受 Boss 普攻 HP -14；磨掉 Boss 35 HP）！"
+
+  - id: "drink_healing_potion_cave"
+    label: "【战中急救】饮用【初级治疗药水】恢复生命值（HP +45）"
+    type: "interact"
+    condition:
+      has_item: "初级治疗药水"
+      min_hp: 1
+      variables:
+        boss_defeated: false
+    on_success:
+      consume_item: "初级治疗药水"
+      remove_inventory:
+        - "初级治疗药水"
+      hp_delta: 45
+      message: "你在石柱掩护下迅速灌下一瓶【初级治疗药水】，重伤迅速愈合（HP +45）！"
+
+  - id: "drink_mana_potion_cave"
+    label: "【战中回蓝】饮用【初级法力药水】恢复魔法值（MP +55）"
+    type: "interact"
+    condition:
+      has_item: "初级法力药水"
+      min_hp: 1
+      variables:
+        boss_defeated: false
+    on_success:
+      consume_item: "初级法力药水"
+      remove_inventory:
+        - "初级法力药水"
+      mp_delta: 55
+      message: "湛蓝奥术药液在体内化开，魔法与职业能量瞬间大涨（MP +55）！"
+
+  - id: "emergency_hearthstone_revive"
+    label: "【战败脱险 · 炉石归位】生命值归零！紧急传送回北郡修道院复活重整（Boss 重置）"
+    type: "transition"
+    target_scene: "northshire_abbey"
+    condition:
+      hp_lte: 0
+      variables:
+        boss_defeated: false
+    on_success:
+      hp: 85
+      mp: 85
+      san_delta: -10
+      variables:
+        boss_active: false
+        boss_hp: 360
+        boss_mp: 180
+        boss_phase: 1
+        boss_armor_broken: false
+        boss_web_trapped: false
+        boss_minions: 0
+        combat_round: 0
+        boss_casting: "伺机潜伏"
+      remove_hud_widgets:
+        - "arachnos_boss_panel"
+      visuals:
+        background: "【场景全景】艾尔文森林·北郡修道院晨光广场，石砌钟楼与圣光旗帜矗立在绿茵山谷之中"
+        foreground: "/assets/characters/marshal_mcbride.png"
+        hero_image: "【炉石脱险】蓝白传送符文将重伤的你拉回北郡圣光祭坛"
+        atmosphere: "晨光熹微、重整旗鼓"
+      message: "在意识陷入黑暗的最后一瞬，胸前的【炉石】骤然亮起温暖蓝白光辉将你拉回北郡修道院！修道院牧师为你紧急疗伤（HP/MP 恢复至 85），准备好药水后再战法戈第！"
 
   - id: "loot_venom_gland"
     label: "【搜刮 Boss 掉落材料】采集蜘蛛领主的【纯净毒囊结晶】"
@@ -286,7 +752,15 @@ actions:
         hero_image: "【掉落装备特写】泛着紫黑寒光的阿拉克诺斯暗牙护符"
       message: "你拔下蜘蛛领主最锋利的主螯牙制成【阿拉克诺斯暗牙护符】佩戴于颈间（敏捷 +2、感知 +2）！"
 
-  - id: "return_to_wilds"
-    label: "离开法戈第矿洞，返回【野外 · 艾尔文密林与哨岗】"
+  - id: "return_to_entrance"
+    label: "撤出蜘蛛领主巢穴，返回【矿洞前哨 · 法戈第外围坑道】"
     type: "transition"
-    target_scene: "elwynn_wilds"
+    target_scene: "fargodeep_entrance"
+    condition:
+      variables:
+        boss_web_trapped: false
+    on_success:
+      variables:
+        boss_active: false
+      remove_hud_widgets:
+        - "arachnos_boss_panel"

@@ -11,43 +11,32 @@ interface ScenarioItem {
 export default function App() {
   const [mode, setMode] = useState<'play' | 'studio'>('play');
   const [selectedScenario, setSelectedScenario] = useState('island_survival');
-  const [scenarioItems, setScenarioItems] = useState<ScenarioItem[]>([
-    { id: 'island_survival', title: '🏝️ 荒岛余生' },
-    { id: 'wow_elwynn_rpg', title: '⚔️ 艾泽拉斯传说：法戈第矿洞之影' },
-    { id: 'black_crow_manor', title: '🏰 黑鸦公馆之夜' },
-  ]);
+  const [scenarioItems, setScenarioItems] = useState<ScenarioItem[]>([]);
 
   const fetchScenarios = () => {
     fetch('/api/scenarios')
       .then((res) => res.json())
       .then((data) => {
         if (data.items && Array.isArray(data.items) && data.items.length > 0) {
-          const formatted: ScenarioItem[] = data.items.map((it: any) => {
-            let prefix = '📜 ';
-            if (it.id === 'island_survival') prefix = '🏝️ ';
-            else if (it.id === 'wow_elwynn_rpg') prefix = '⚔️ ';
-            else if (it.id === 'black_crow_manor') prefix = '🏰 ';
-            return {
-              id: it.id,
-              title: it.title.startsWith('🏝️') || it.title.startsWith('⚔️') || it.title.startsWith('🏰') || it.title.startsWith('📜')
-                ? it.title
-                : `${prefix}${it.title}`,
-            };
-          });
+          const formatted: ScenarioItem[] = data.items.map((it: any) => ({
+            id: it.id,
+            title: it.icon && !String(it.title || '').startsWith(it.icon)
+              ? `${it.icon} ${it.title}`
+              : String(it.title || it.id),
+          }));
           setScenarioItems(formatted);
-          if (formatted.some((s) => s.id === selectedScenario)) {
-            // keep current
-          } else if (formatted.some((s) => s.id === 'island_survival')) {
-            setSelectedScenario('island_survival');
-          } else {
+          if (!formatted.some((s) => s.id === selectedScenario)) {
             setSelectedScenario(formatted[0].id);
           }
-        } else if (data.scenarios && Array.isArray(data.scenarios)) {
+        } else if (data.scenarios && Array.isArray(data.scenarios) && data.scenarios.length > 0) {
           const list: ScenarioItem[] = data.scenarios.map((id: string) => ({
             id,
-            title: id === 'island_survival' ? '🏝️ 荒岛余生' : id === 'wow_elwynn_rpg' ? '⚔️ 艾泽拉斯传说：法戈第矿洞之影' : id === 'black_crow_manor' ? '🏰 黑鸦公馆之夜' : `📜 ${id}`,
+            title: `📜 ${id}`,
           }));
           setScenarioItems(list);
+          if (!list.some((s) => s.id === selectedScenario)) {
+            setSelectedScenario(list[0].id);
+          }
         }
       })
       .catch((e) => console.error(e));

@@ -94,6 +94,9 @@ actions:
       hydration: -2
     time_cost: 1
     message: 金属盒卡扣咬合得非常严密，徒手一时没能完全撬开。
+  keywords:
+  - 撬开金属盒
+  - 翻找金属盒
 - id: boil_water_in_metal_box
   label: 用防水金属盒盛满溪水，架在篝火上煮沸杀菌
   type: interact
@@ -119,6 +122,9 @@ actions:
     time_cost: 1
     message: 你将洗净的铝合金防水盒充当简易煮水壶，盛满溪水架在篝火余烬上烧开。温热的沸水消除了寄生虫隐患，你痛快喝下并感到浑身舒畅！
   on_failure: null
+  keywords:
+  - 烧水
+  - 煮水
 - id: craft_stone_blade
   label: 在溪流边挑选坚韧玄武石砸磨简易石刀
   type: check
@@ -144,6 +150,9 @@ actions:
       hydration: -3
     time_cost: 1
     message: 挑选的石块内部有裂纹，猛力一砸便粉碎成了碎渣。
+  keywords:
+  - 石刀
+  - 砸磨
 - id: collect_fresh_water
   label: 循着水声探寻溪流，用玻璃瓶打满甘泉
   type: check
@@ -172,6 +181,11 @@ actions:
       fullness: -3
     time_cost: 1
     message: 水流急促混杂着山洪泥沙，未能找到澄清的直接饮用源头。
+  keywords:
+  - 打水
+  - 打满
+  - 甘泉
+  - 玻璃瓶装水
 - id: drink_stream_directly
   label: 俯身在清澈山溪边直接掬水痛饮
   type: interact
@@ -193,6 +207,10 @@ actions:
     time_cost: 1
     message: 你捧起冰凉甘甜的山泉大口喝下，干涸的身体立刻焕发生机。
   on_failure: null
+  keywords:
+  - 溪水
+  - 喝水
+  - 饮水
 - id: light_campfire
   label: 清理空地，用树枝与打火机生起庇护所篝火
   type: check
@@ -223,6 +241,10 @@ actions:
       hydration: -3
     time_cost: 1
     message: 地面青苔潮气太重，干柴被熏黑冒烟却未能引燃，需要重新调整通风结构。
+  keywords:
+  - 生火
+  - 篝火
+  - 点火
 - id: drill_wood_fire
   label: 没有打火机：尝试用干树枝钻木取火（极高难度）
   type: check
@@ -286,6 +308,10 @@ actions:
       fullness: -4
     time_cost: 1
     message: 只找到一些带有毒刺的不知名浆果，谨慎起见你没有采摘。
+  keywords:
+  - 坚果
+  - 棕榈
+  - 摘果
 - id: eat_wild_food_raw
   label: 直接食用背包里的野生坚果与棕榈芯充饥
   type: interact
@@ -309,6 +335,9 @@ actions:
     san_delta: 2
     message: 你剥开坚果壳与鲜嫩棕榈芯大口嚼下，浓郁的油脂与清甜果肉迅速填饱了肚子，饱食度与体力明显回升！
   on_failure: null
+  keywords:
+  - 直接食用
+  - 吃坚果
 - id: cook_food_on_fire
   label: 在篝火旁烤熟食物，美美吃上一顿热食
   type: interact
@@ -340,6 +369,10 @@ actions:
     time_cost: 1
     message: 跳动的火舌将食材烤得焦香四溢！一顿滚烫美味的热食下肚，饥饿感一扫而空，浑身充满暖意与力量。
   on_failure: null
+  keywords:
+  - 烤
+  - 煮
+  - 热食
 - id: build_deep_shelter
   label: 用硬木树枝与纤维绳在古树旁搭建防风窝棚
   type: interact
@@ -373,6 +406,10 @@ actions:
     time_cost: 1
     message: 你借着古树根部搭建起一座厚实防潮的林间防风窝棚，已展示在左侧图像区，从此风餐露宿变成可靠营地！
   on_failure: null
+  keywords:
+  - 窝棚
+  - 庇护所
+  - 搭棚
 - id: build_water_collector_deep
   label: 用玻璃瓶、阔叶与纤维绳搭建密林雨水收集器
   type: interact
@@ -403,6 +440,9 @@ actions:
     time_cost: 1
     message: 你在树冠滴水处支起阔叶漏斗与玻璃瓶，雨水收集器已就位并展示在左侧图像区！
   on_failure: null
+  keywords:
+  - 集水器
+  - 雨水收集
 - id: collect_water_deep
   label: 饮用雨水收集器中汇聚的纯净甘水
   type: interact
@@ -426,6 +466,9 @@ actions:
     time_cost: 1
     message: 收集器滤出的清凉山雾水与雨水甘甜解渴，体能迅速恢复。
   on_failure: null
+  keywords:
+  - 饮用雨水收集器
+  - 收集器水
 - id: rest_in_shelter_deep
   label: 在已建成的防风窝棚内安稳休整（大幅恢复体力）
   type: interact
@@ -453,6 +496,9 @@ actions:
     time_cost: 1
     message: 你在防风窝棚中垫着干草安稳休整，躲避了林间潮气与蚊虫，精力充沛地醒来。
   on_failure: null
+  keywords:
+  - 窝棚内安稳休整
+  - 进窝棚休息
 - id: rest_by_campfire
   label: 围着篝火安心休息过夜（恢复体力并推进时间）
   type: interact
@@ -480,6 +526,10 @@ actions:
     time_cost: 2
     message: 在噼啪作响的篝火守护下，你安心睡了一觉，体力和精神得到了充分恢复，新的时段悄然到来。
   on_failure: null
+  keywords:
+  - 过夜
+  - 睡觉
+  - 篝火休息
 - id: short_rest_in_woods
   label: 靠着古树稍作喘息（恢复少量体力）
   type: interact
@@ -501,6 +551,9 @@ actions:
     time_cost: 1
     message: 你靠在盘根错节的树干旁闭目养神片刻，呼吸渐渐平稳下来。
   on_failure: null
+  keywords:
+  - 休息
+  - 喘息
 - id: drink_rain_from_leaves
   label: 捧起大型芋叶汇集的清凉雨水直饮解渴（雨天专属）
   type: interact
@@ -566,3 +619,6 @@ actions:
   source: null
   on_success: null
   on_failure: null
+  keywords:
+  - 退回海边丛林
+  - 返回丛林

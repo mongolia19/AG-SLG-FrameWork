@@ -101,6 +101,9 @@ actions:
     not_has_item: seashell
   effects: null
   source: null
+  keywords:
+  - 贝壳
+  - 海螺
   on_success:
     gain_item: seashell
     attributes_delta:
@@ -121,6 +124,9 @@ actions:
       found_metal_box: false
   effects: null
   source: null
+  keywords:
+  - 金属盒
+  - 防水盒
   on_success:
     gain_item: metal_box
     variables:
@@ -130,6 +136,8 @@ actions:
       hydration: -2
     time_cost: 1
     message: 你将半掩在沙里的防水金属盒挖了出来，用海水仔细冲刷掉外壳粘连的泥沙与盐垢后擦干收进背包。厚实的航空铝合金盒体卡扣依然严密，既能当容器储物，也能架在火上烧水。
+    visuals:
+      hero_image: 【物品特写】洗净泥沙的防水金属盒
   on_failure: null
 - id: search_luggage
   label: 撬开卡扣，搜查防水金属盒内部
@@ -143,6 +151,11 @@ actions:
       found_lighter: false
   effects: null
   source: null
+  keywords:
+  - 打火机
+  - 残骸
+  - 金属盒
+  - 翻找
   on_success:
     gain_item: lighter
     variables:
@@ -172,6 +185,10 @@ actions:
       found_bottle: false
   effects: null
   source: null
+  keywords:
+  - 瓶
+  - 玻璃瓶
+  - 漂流物
   on_success:
     gain_item: glass_bottle
     variables:
@@ -205,6 +222,10 @@ actions:
     not_has_item: raw_crab
   effects: null
   source: null
+  keywords:
+  - 螃蟹
+  - 海蟹
+  - 抓蟹
   on_success:
     gain_item: raw_crab
     attributes_delta:
@@ -234,6 +255,7 @@ actions:
     not_has_item: raw_crab
   effects: null
   source: null
+  keywords: []
   on_success:
     gain_item: raw_crab
     attributes_delta:
@@ -262,6 +284,12 @@ actions:
     not_has_item: branches
   effects: null
   source: null
+  keywords:
+  - 树枝
+  - 木头
+  - 枯枝
+  - 干柴
+  - 浮木
   on_success:
     gain_item: branches
     attributes_delta:
@@ -284,6 +312,11 @@ actions:
       beach_fire_started: false
   effects: null
   source: null
+  keywords:
+  - 生火
+  - 篝火
+  - 点火
+  - 火堆
   on_success:
     variables:
       beach_fire_started: true
@@ -309,6 +342,11 @@ actions:
     has_item: raw_crab
   effects: null
   source: null
+  keywords:
+  - 烤
+  - 煮
+  - 烹饪
+  - 做饭
   on_success:
     consume_item: raw_crab
     attributes_delta:
@@ -333,6 +371,7 @@ actions:
         lt: 95
   effects: null
   source: null
+  keywords: []
   on_success:
     consume_item: raw_crab
     attributes_delta:
@@ -365,6 +404,10 @@ actions:
         lt: 95
   effects: null
   source: null
+  keywords:
+  - 喝水
+  - 饮水
+  - 甘泉
   on_success:
     consume_item: fresh_water_bottle
     gain_item: glass_bottle
@@ -385,6 +428,7 @@ actions:
     not_has_outfit: pilot_windbreaker
   effects: null
   source: null
+  keywords: []
   on_success:
     equip_outfit:
       outer:
@@ -418,6 +462,7 @@ actions:
     not_has_outfit: shell_necklace
   effects: null
   source: null
+  keywords: []
   on_success:
     consume_item: seashell
     equip_outfit:
@@ -447,6 +492,12 @@ actions:
         lt: 1
   effects: null
   source: null
+  keywords:
+  - 窝棚
+  - 庇护所
+  - 遮蔽所
+  - 木棚
+  - 搭棚
   on_success:
     consume_items:
     - branches
@@ -479,6 +530,10 @@ actions:
       beach_water_collector_built: false
   effects: null
   source: null
+  keywords:
+  - 集水器
+  - 雨水收集
+  - 集水装置
   on_success:
     consume_items:
     - glass_bottle
@@ -509,6 +564,9 @@ actions:
         lt: 95
   effects: null
   source: null
+  keywords:
+  - 接水
+  - 收集器取水
   on_success:
     attributes_delta:
       hydration: 28
@@ -533,6 +591,11 @@ actions:
         lt: 95
   effects: null
   source: null
+  keywords:
+  - 休息
+  - 休整
+  - 小憩
+  - 睡
   on_success:
     attributes_delta:
       stamina: 35
@@ -557,6 +620,7 @@ actions:
     not_has_item: branches
   effects: null
   source: null
+  keywords: []
   on_success:
     gain_item: branches
     attributes_delta:
@@ -588,6 +652,7 @@ actions:
         gte: 1
   effects: null
   source: null
+  keywords: []
   on_success:
     attributes_delta:
       stamina: 14
@@ -611,6 +676,7 @@ actions:
     - 海雾
   effects: null
   source: null
+  keywords: []
   on_success:
     attributes_delta:
       stamina: -2
@@ -639,6 +705,9 @@ actions:
       fullness: -3
     time_cost: 1
   source: null
+  keywords:
+  - 岩洞
+  - 海蚀
   on_success: null
   on_failure: null
 - id: enter_coastal_jungle
@@ -656,5 +725,8 @@ actions:
       fullness: -3
     time_cost: 1
   source: null
+  keywords:
+  - 丛林
+  - 树林
   on_success: null
   on_failure: null

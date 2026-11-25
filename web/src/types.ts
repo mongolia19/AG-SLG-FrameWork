@@ -28,15 +28,79 @@ export interface SkillItem {
   tag?: string;
 }
 
+export interface HUDMetricItem {
+  id: string;
+  label: string;
+  value?: number;
+  max?: number;
+  value_ref?: string;
+  max_ref?: string;
+  unit?: string;
+  icon?: string;
+  color?: 'amber' | 'sky' | 'emerald' | 'teal' | 'rose' | 'violet' | 'indigo' | string;
+  low_threshold?: number;
+  warn_outside?: [number, number];
+}
+
+export interface HUDTrackerStep {
+  label: string;
+  status?: 'done' | 'active' | 'locked';
+  done_when?: Record<string, any>;
+  active_when?: Record<string, any>;
+}
+
+export interface HUDBadge {
+  text?: string;
+  text_ref?: string;
+  tone?: 'danger' | 'amber' | 'emerald' | 'sky' | 'purple' | 'slate' | string;
+  when?: Record<string, any>;
+}
+
+export interface HUDBar {
+  label: string;
+  value?: number;
+  max?: number;
+  value_ref?: string;
+  max_ref?: string;
+  color?: 'rose' | 'violet' | 'sky' | 'amber' | 'emerald' | string;
+}
+
+export interface HUDCard {
+  title: string;
+  desc: string;
+  tone?: string;
+}
+
+export interface HUDWidget {
+  id: string;
+  type: 'metrics' | 'tracker' | 'panel' | string;
+  title?: string;
+  subtitle?: string;
+  icon?: string;
+  tone?: 'danger' | 'amber' | 'sky' | 'purple' | 'emerald' | string;
+  when?: Record<string, any>;
+  items?: HUDMetricItem[];
+  steps?: HUDTrackerStep[];
+  badges?: HUDBadge[];
+  bars?: HUDBar[];
+  cards_title?: string;
+  cards?: HUDCard[];
+  footer?: string;
+}
+
 export interface PlayerState {
   name: string;
   hp: number;
+  max_hp?: number;
+  mp?: number | null;
+  max_mp?: number | null;
   san: number;
   gold: number;
   attributes: PlayerAttributeMap;
   inventory: InventoryItem[];
   outfit?: Record<string, OutfitItem | null>;
   skills?: SkillItem[];
+  hud_widgets?: HUDWidget[];
   variables: Record<string, any>;
   current_scene: string;
 }
@@ -80,7 +144,7 @@ export interface VisualLayer {
   foreground?: string;      // 前景叠加物 / 遮罩 / 局部贴图
   hero_image?: string;      // 场景焦点主图（事件插画、关键证物特写等）
   atmosphere?: string;      // 场景氛围描述（雨夜、雾气、昏黄）
-  decorations?: PropDecoration[]; // 舞台边缘氛围装饰道具 (贝壳、螃蟹、椰树、藤蔓、石头等)
+  decorations?: PropDecoration[]; // 舞台边缘氛围装饰道具
 }
 
 export interface SceneNode {
@@ -102,7 +166,11 @@ export interface WorldSpec {
   title: string;
   version: string;
   author: string;
+  icon?: string;
+  sort_order?: number;
   initial_scene: string;
+  opening_narration?: string;
+  attribute_labels?: Record<string, string>;
   initial_player_state: PlayerState;
 }
 

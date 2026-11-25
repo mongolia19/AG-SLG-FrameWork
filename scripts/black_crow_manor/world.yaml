@@ -2,7 +2,25 @@ id: "black_crow_manor"
 title: "黑鸦公馆的雨夜"
 version: "1.0.0"
 author: "AI Lab & Agent"
+icon: "🏰"
+sort_order: 30
 initial_scene: "manor_entrance"
+opening_narration: |
+  暴风雨笼罩着荒凉的群山，古老的黑鸦公馆如同一头黑色的巨兽盘踞在悬崖之上。
+  你作为调查员亚伦，踏上了通往公馆大门的湿滑石阶……
+dm_rules: |
+  - 请忠实记录并推进调查线索发现、`butler_trust` 信任度变化与密室探索状态。
+  - 若需要展示特殊线索追踪板或信任度面板，可通过 `state_delta.hud_widgets`（支持 `tracker` / `panel` / `metrics`）声明并在事件结束后通过 `remove_hud_widgets` 撤除。
+
+attribute_labels:
+  strength: "力量"
+  agility: "敏捷"
+  intelligence: "智力"
+
+default_fallback:
+  narration: |
+    雨点不断敲打着黑鸦公馆的窗棂与石阶，你在幽暗的烛影中谨慎尝试【{clean_action}】，细细留意四周建筑结构与管家神情的微妙变化。
+  delta: {}
 
 initial_player_state:
   name: "调查员亚伦"

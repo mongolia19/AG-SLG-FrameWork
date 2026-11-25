@@ -28,6 +28,7 @@ from server.scenario_manager import (
     PlayerState,
     SceneNode,
     ActionOption,
+    WorldSpec,
     evaluate_action_condition,
     resolve_scene_actions,
     resolve_scene_decorations,
@@ -35,12 +36,6 @@ from server.scenario_manager import (
 
 
 TIME_SLOTS = ["清晨", "上午", "下午", "黄昏", "夜晚", "深夜"]
-SURVIVAL_CLAMP_100 = {"stamina", "hydration", "fullness"}
-SCENE_SCOPED_STRUCT_DEFAULTS: Dict[str, Any] = {
-    "fire_started": False,
-    "shelter_level": 0,
-    "water_collector_built": False,
-}
 
 WEATHER_CATALOG: Dict[str, Dict[str, Any]] = {
     "clear": {
@@ -52,10 +47,10 @@ WEATHER_CATALOG: Dict[str, Dict[str, Any]] = {
             "夜晚": "夜色星沉",
             "深夜": "静谧星夜",
         },
-        "atmosphere": "晴空炙烤、海天一色",
-        "night_atmosphere": "星光微寒、海浪低吟",
-        "cue": "日光穿透云隙洒下，海天交界处一片澄明，空气中带着干爽的温热。",
-        "night_cue": "夜空清澈无云，微冷的星月光洒在沙地与树梢之间。",
+        "atmosphere": "晴空炙烤、天色澄明",
+        "night_atmosphere": "星光微寒、夜色静谧",
+        "cue": "日光穿透云隙洒下，天地一片澄明，空气中带着干爽的温热。",
+        "night_cue": "夜空清澈无云，微冷的星月光洒在开阔处与枝梢之间。",
     },
     "cloudy": {
         "labels_by_slot": {
@@ -68,22 +63,22 @@ WEATHER_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "atmosphere": "阴云压顶、闷热阴沉",
         "night_atmosphere": "黑云蔽月、沉闷压抑",
-        "cue": "厚重的铅灰色云层遮住了天日，海面褪去亮色，空气潮湿闷沉，似有风雨酝酿。",
+        "cue": "厚重的铅灰色云层遮住了天日，空气潮湿闷沉，似有风雨酝酿。",
         "night_cue": "浓重的阴云遮蔽了星月，四周陷入比往常更加深沉的黑暗与闷潮。",
     },
     "windy": {
         "labels_by_slot": {
-            "清晨": "海风微急",
-            "上午": "海风呼啸",
-            "下午": "狂风劲吹",
-            "黄昏": "海风骤起",
+            "清晨": "微风转急",
+            "上午": "狂风呼啸",
+            "下午": "劲风吹拂",
+            "黄昏": "暮风骤起",
             "夜晚": "夜风呼啸",
             "深夜": "凛冽狂风",
         },
-        "atmosphere": "狂风呼啸、林叶翻飞",
-        "night_atmosphere": "夜风凛冽、涛声怒吼",
-        "cue": "劲急的海风卷着咸涩水汽迎面刮来，椰林与灌木剧烈摇晃，沙尘与落叶随风翻飞。",
-        "night_cue": "凛冽的夜风在林间与礁石缝隙中呜咽穿行，气温随之明显下降。",
+        "atmosphere": "狂风呼啸、草木翻飞",
+        "night_atmosphere": "夜风凛冽、风声怒吼",
+        "cue": "劲急的大风迎面刮来，草木剧烈摇晃，沙尘与落叶随风翻飞。",
+        "night_cue": "凛冽的夜风在林间与岩隙中呜咽穿行，气温随之明显下降。",
     },
     "rain": {
         "labels_by_slot": {
@@ -96,8 +91,8 @@ WEATHER_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "atmosphere": "雨丝绵密、湿润清凉",
         "night_atmosphere": "夜雨微寒、水滴淅沥",
-        "cue": "细密的雨点敲打着阔叶与沙面，带来久违的清凉水汽，也让人衣衫渐湿。",
-        "night_cue": "冰凉的夜雨淅沥落下，周围草木湿滑，空气中寒意加重。",
+        "cue": "细密的雨点敲打着地面与枝叶，带来清凉水汽，也让人衣衫渐湿。",
+        "night_cue": "冰凉的夜雨淅沥落下，周围地面湿滑，空气中寒意加重。",
     },
     "storm": {
         "labels_by_slot": {
@@ -109,23 +104,23 @@ WEATHER_CATALOG: Dict[str, Dict[str, Any]] = {
             "深夜": "雷暴狂风",
         },
         "atmosphere": "电闪雷鸣、狂风暴雨",
-        "night_atmosphere": "雷暴交加、黑浪翻涌",
-        "cue": "狂风裹挟着豆大的雨点倾盆而下，远处海面雷声滚滚，能见度骤降，寒意透骨。",
-        "night_cue": "电闪雷鸣撕裂夜幕，狂风暴雨猛烈拍打着岛屿，露天火源与体温都面临严峻考验。",
+        "night_atmosphere": "雷暴交加、暗夜怒涛",
+        "cue": "狂风裹挟着豆大的雨点倾盆而下，远处雷声滚滚，能见度骤降，寒意透骨。",
+        "night_cue": "电闪雷鸣撕裂夜幕，狂风暴雨猛烈拍打着大地，露天火源与体温都面临严峻考验。",
     },
     "foggy": {
         "labels_by_slot": {
-            "清晨": "海雾微凉",
+            "清晨": "晨雾微凉",
             "上午": "薄雾未散",
-            "下午": "海雾弥漫",
+            "下午": "浓雾弥漫",
             "黄昏": "暮雾沉沉",
             "夜晚": "夜雾笼罩",
             "深夜": "浓雾深重",
         },
-        "atmosphere": "海雾弥漫、视野朦胧",
-        "night_atmosphere": "浓雾锁岛、幽暗迷离",
-        "cue": "乳白色的潮湿海雾贴着地面与海面缓缓流淌，十步之外的轮廓都变得朦胧。",
-        "night_cue": "浓重的夜雾吞没了远处的海岸与密林，水汽凝结在衣领与眉梢。",
+        "atmosphere": "雾气弥漫、视野朦胧",
+        "night_atmosphere": "浓雾锁夜、幽暗迷离",
+        "cue": "乳白色的潮湿浓雾贴着地面缓缓流淌，十步之外的轮廓都变得朦胧。",
+        "night_cue": "浓重的夜雾吞没了远处的轮廓，水汽凝结在衣领与眉梢。",
     },
 }
 
@@ -168,13 +163,11 @@ def advance_weather(
     cur_type = classify_weather_type(current_label, current_type)
     candidates = list(WEATHER_TRANSITIONS.get(cur_type, WEATHER_TRANSITIONS["clear"]))
 
-    # Prevent getting stuck in the exact same weather type for too many consecutive turns
     if duration >= 2:
         filtered = [(w, p) for w, p in candidates if w != cur_type]
         if filtered:
             candidates = filtered
 
-    # Fog is most common around dawn/deep night
     if new_slot not in ("清晨", "深夜"):
         candidates = [(w, p * 0.4 if w == "foggy" else p) for w, p in candidates]
 
@@ -213,14 +206,6 @@ def get_weather_narrative_cue(weather_label: str, weather_type: str = "", time_s
     return entry["cue"]
 
 
-def _clamp_attr(key: str, value: int) -> int:
-    if key in SURVIVAL_CLAMP_100:
-        return max(0, min(100, value))
-    if key == "temperature":
-        return max(30, min(42, value))
-    return value
-
-
 def extract_message_text(content: Any) -> str:
     """Extract clean text content from string, list of parts, or structured objects."""
     if isinstance(content, str):
@@ -247,180 +232,16 @@ def extract_message_text(content: Any) -> str:
     return str(content or "")
 
 
-ITEM_META = {
-    "metal_box": {
-        "name": "防水金属盒",
-        "icon": "",
-        "desc": "从沙滩拾获并洗净的航空铝合金防水盒，密封严密，既可收纳物资也可充当容器盛水烧水。",
-    },
-    "lighter": {
-        "name": "防风打火机",
-        "icon": "/assets/items/lighter.png",
-        "desc": "军用级防水防风打火机，火花稳定，求生核心火源。",
-    },
-    "rope": {
-        "name": "坚韧纤维绳",
-        "icon": "/assets/items/rope.png",
-        "desc": "坚韧老藤与树皮编织的耐磨绳索，可用于捆绑、攀爬与搭建。",
-    },
-    "glass_bottle": {
-        "name": "厚壁玻璃瓶",
-        "icon": "/assets/items/glass_bottle.png",
-        "desc": "透明厚壁玻璃瓶，配有密封塞，可用于储水与煮水。",
-    },
-    "branches": {
-        "name": "干燥树枝浮木",
-        "icon": "/assets/items/branches.png",
-        "desc": "经日晒干燥的坚硬树枝，是生火引火与制作工具的素材。",
-    },
-    "fresh_water_bottle": {
-        "name": "装满甘泉的玻璃瓶",
-        "icon": "/assets/items/glass_bottle.png",
-        "desc": "装满了来自丛林深处的纯净泉水，饮用可补充大量水分。",
-    },
-    "wild_food": {
-        "name": "野生热带坚果",
-        "icon": "/assets/items/branches.png",
-        "desc": "富含油脂与热量的饱满坚果与棕榈芯，可直接食用或烤熟充饥。",
-    },
-    "raw_crab": {
-        "name": "鲜活礁石海蟹",
-        "icon": "/assets/props/crab.png",
-        "desc": "刚抓获的肥硕海蟹，生吃有腹泻风险，在篝火上烤熟味道极佳。",
-    },
-    "seashell": {
-        "name": "坚硬海螺与贝壳",
-        "icon": "/assets/props/seashell.png",
-        "desc": "在沙滩拾取的厚壳海螺，边缘锋利，螺肉可食用，外壳可用于挖掘与盛水。",
-    },
-    "vines": {
-        "name": "野生韧皮藤蔓",
-        "icon": "/assets/props/vines.png",
-        "desc": "从丛林灌木中割取的柔韧藤蔓，是编织绳索与固定遮蔽所的基础耗材。",
-    },
-    "driftwood": {
-        "name": "干燥海滩浮木",
-        "icon": "/assets/items/branches.png",
-        "desc": "被海浪冲上岸经太阳炙烤干燥的浮木枝干，是极好的引火木料与营地建材。",
-    },
-    "coconut": {
-        "name": "新鲜青椰",
-        "icon": "/assets/props/palmtree.png",
-        "desc": "沉甸甸的热带青椰，同时富含清甜椰汁与饱腹椰肉。",
-    },
-    "cooked_food": {
-        "name": "炭烤海鲜与坚果拼盘",
-        "icon": "/assets/items/branches.png",
-        "desc": "散发出诱人焦香的熟食，能大幅恢复饱食度与体力。",
-    },
-    "torn_linen_shirt": {
-        "name": "撕裂的白色亚麻衬衫",
-        "desc": "迫降时被海水浸湿又在烈日下微干的机舱休闲衬衫，袖口略有撕裂。",
-        "tag": "微湿 · 轻便",
-    },
-    "khaki_cargo_pants": {
-        "name": "卡其色速干长裤",
-        "desc": "耐磨的多口袋工装长裤，裤脚沾满细沙，能阻挡灌木枝刺刮伤。",
-        "tag": "耐磨 · 下装",
-    },
-    "sandy_sneakers": {
-        "name": "沾沙的运动跑鞋",
-        "desc": "鞋底厚实防滑，能保护双脚不在尖锐礁石与碎珊瑚上割伤。",
-        "tag": "防滑 · 鞋履",
-    },
-    "broken_watch": {
-        "name": "停摆的机械腕表",
-        "desc": "表盘玻璃在撞击时裂开了一道细纹，指针停在凌晨 3:14，金属表壳可反射阳光求救。",
-        "tag": "腕饰 · 可反光",
-    },
-    "pilot_windbreaker": {
-        "name": "失事机长防风夹克",
-        "desc": "在残骸附近搜获的橙灰拼色高可视度防风外套，防风防泼水，夜间保暖极佳。",
-        "tag": "防风保暖 · 外套",
-    },
-    "palm_sunhat": {
-        "name": "椰叶编织遮阳帽",
-        "desc": "宽大椰叶与韧藤编织而成的轻便草帽，有效遮挡毒辣烈日，减缓水分流失。",
-        "tag": "遮阳防晒 · 头饰",
-    },
-    "shell_necklace": {
-        "name": "潮汐贝壳挂坠",
-        "desc": "用坚硬五彩海贝与韧皮细绳串起的颈间护符，海风吹过时发出清脆声响，令人心神宁静。",
-        "tag": "安神 · 颈饰",
-    },
-    # 艾泽拉斯传说（wow_elwynn_rpg）常用物品与掉落
-    "炉石": {
-        "name": "炉石（北郡修道院）",
-        "icon": "/assets/items/hearthstone.png",
-        "desc": "刻有温暖蓝白符文的魔法石，将灵魂绑定在北郡修道院的旅店炉火旁。",
-    },
-    "初级治疗药水": {
-        "name": "初级治疗药水",
-        "icon": "/assets/items/minor_healing_potion.png",
-        "desc": "暴风城炼金师配制的红色恢复药瓶，紧急时刻饮下可快速愈合伤势。",
-    },
-    "北郡军令状": {
-        "name": "北郡军令状",
-        "icon": "/assets/items/northshire_order.png",
-        "desc": "盖有暴风城赤红雄狮火漆印的军务羊皮卷轴，委任你清剿法戈第矿洞蛛灾。",
-    },
-    "狗头人蜡烛碎块": {
-        "name": "狗头人蜡烛碎块",
-        "icon": "/assets/items/kobold_candle.png",
-        "desc": "从北郡外围狗头人斥候身上缴获的融蜡残烛，隐约散发着微弱暖光。",
-    },
-    "照明信号箭": {
-        "name": "照明信号箭",
-        "icon": "/assets/items/flare_arrow.png",
-        "desc": "巡林者艾莲娜特制的炼金信号箭，射出后能瞬间点燃并照亮幽暗矿洞。",
-    },
-    "优质狼皮": {
-        "name": "优质狼皮",
-        "icon": "/assets/items/wolf_pelt.png",
-        "desc": "厚实完整的艾尔文森林灰狼毛皮，可作护具内衬或交由工匠换取金币。",
-    },
-    "银叶解毒草": {
-        "name": "银叶解毒草",
-        "icon": "/assets/items/silverleaf_herb.png",
-        "desc": "在艾尔文林间采摘的银边解毒药草，是调配矿洞抗毒合剂的核心原料。",
-    },
-    "抗毒合剂": {
-        "name": "抗毒合剂",
-        "icon": "/assets/items/antidote_elixir.png",
-        "desc": "以银叶草熬制的碧绿澄澈合剂，饮用后可抵御法戈第矿洞中的腐败蛛毒。",
-    },
-    "幽暗蛛王丝": {
-        "name": "幽暗蛛王丝",
-        "icon": "/assets/items/spider_silk.png",
-        "desc": "闪烁着紫银微光的蜘蛛领主珍稀丝线，刀剑难断，乃编织英雄披风的上等材料。",
-    },
-    "纯净毒囊结晶": {
-        "name": "纯净毒囊结晶",
-        "icon": "/assets/items/venom_crystal.png",
-        "desc": "从蜘蛛领主·阿拉克诺斯毒腺中提取的高纯度结晶，蕴含冰蓝与紫曜魔力。",
-    },
-    "暗牙护符": {
-        "name": "阿拉克诺斯暗牙护符",
-        "icon": "/assets/items/fang_charm.png",
-        "desc": "用蜘蛛领主最坚硬的一对主螯牙雕琢而成的稀有颈饰，隐隐散发威压。",
-        "tag": "Boss 稀有掉落 · 颈饰",
-    },
-    "arachnos_fang_charm": {
-        "name": "阿拉克诺斯暗牙护符",
-        "icon": "/assets/items/fang_charm.png",
-        "desc": "用蜘蛛领主最坚硬的一对主螯牙雕琢而成的稀有颈饰，隐隐散发威压。",
-        "tag": "Boss 稀有掉落 · 颈饰",
-    },
-}
-
-
-def _enrich_item_meta(raw_item: Any) -> Dict[str, Any]:
-    """Normalize an inventory or outfit item dict and enrich missing fields from ITEM_META."""
+def _enrich_item_meta(
+    raw_item: Any,
+    item_catalog: Optional[Dict[str, Dict[str, Any]]] = None,
+) -> Dict[str, Any]:
+    """Normalize an inventory or outfit item dict and enrich missing fields from scenario catalog."""
     item = dict(raw_item) if isinstance(raw_item, dict) else {"id": str(raw_item), "name": str(raw_item)}
     item_id = item.get("id", "")
-    if item_id in ITEM_META:
-        meta = ITEM_META[item_id]
-        if not item.get("name") or item["name"] == item_id:
+    if item_catalog and item_id in item_catalog:
+        meta = item_catalog[item_id]
+        if (not item.get("name") or item["name"] == item_id) and meta.get("name"):
             item["name"] = meta["name"]
         if not item.get("icon") and meta.get("icon"):
             item["icon"] = meta["icon"]
@@ -527,13 +348,64 @@ def _hydrate_class_skills(
     return True
 
 
+def _clamp_attr(key: str, val: int, world: Optional[WorldSpec] = None) -> int:
+    bounds = (world.attribute_bounds or {}).get(key) if world else None
+    if isinstance(bounds, list) and len(bounds) >= 2:
+        return max(int(bounds[0]), min(int(bounds[1]), val))
+    return val
+
+
+def _clamp_variable(
+    key: str,
+    val: int,
+    variables: Dict[str, Any],
+    world: Optional[WorldSpec] = None,
+) -> int:
+    rule = (world.variable_bounds or {}).get(key) if world else None
+    if not isinstance(rule, dict):
+        return val
+    if rule.get("min") is not None:
+        val = max(int(rule["min"]), val)
+    max_val = rule.get("max")
+    max_var = rule.get("max_var")
+    if max_var and variables.get(max_var) is not None:
+        try:
+            max_val = int(variables[max_var])
+        except (TypeError, ValueError):
+            pass
+    if max_val is not None:
+        val = min(int(max_val), val)
+    return val
+
+
+def _matches_keyword_rules(text: str, spec: Dict[str, Any]) -> bool:
+    """Check any_keywords and all_keyword_groups declarative matchers against player action text."""
+    any_kws = spec.get("any_keywords")
+    if any_kws and not any(str(k) in text for k in any_kws):
+        return False
+    all_groups = spec.get("all_keyword_groups")
+    if all_groups:
+        for grp in all_groups:
+            if not any(str(k) in text for k in grp):
+                return False
+    return True
+
+
 class GameSession:
     """In-memory game session tracking player state and Agent conversation ID."""
 
-    def __init__(self, session_id: str, scenario_id: str, initial_state: PlayerState):
+    def __init__(
+        self,
+        session_id: str,
+        scenario_id: str,
+        initial_state: PlayerState,
+        world: Optional[WorldSpec] = None,
+    ):
         self.session_id = session_id
         self.scenario_id = scenario_id
+        self.world = world
         self.player_state = initial_state
+        self.player_state._scenario_id = scenario_id
         self.agent_conversation_id: Optional[str] = None
         self.history: List[Dict[str, str]] = []
         self.dynamic_actions: List[Dict[str, Any]] = []
@@ -544,6 +416,10 @@ class GameSession:
         """Apply state delta and return standard JSON-patch like delta list."""
         patches: List[Dict[str, Any]] = []
         prev_scene = self.player_state.current_scene
+        world = self.world
+        scoped_defaults = (world.scene_scoped_defaults if world else {}) or {}
+        item_catalog = (world.item_catalog if world else {}) or {}
+        unique_items = set((world.unique_items if world else []) or [])
 
         if "current_scene" in delta and delta["current_scene"]:
             new_scene = delta["current_scene"]
@@ -552,7 +428,7 @@ class GameSession:
                 self.dynamic_actions = []
             patches.append({"op": "replace", "path": "/current_scene", "value": new_scene})
             if new_scene != prev_scene:
-                for base_key, default_val in SCENE_SCOPED_STRUCT_DEFAULTS.items():
+                for base_key, default_val in scoped_defaults.items():
                     scoped_key = f"{new_scene}_{base_key}"
                     if scoped_key in self.player_state.variables:
                         synced_val = self.player_state.variables[scoped_key]
@@ -564,12 +440,38 @@ class GameSession:
                         self.player_state.variables[base_key] = default_val
                         patches.append({"op": "add", "path": f"/variables/{base_key}", "value": default_val})
 
+        if "max_hp" in delta and delta["max_hp"] is not None:
+            self.player_state.max_hp = max(1, int(delta["max_hp"]))
+            patches.append({"op": "replace", "path": "/max_hp", "value": self.player_state.max_hp})
+        elif "max_hp_delta" in delta:
+            base_max_hp = int(self.player_state.max_hp or 100)
+            self.player_state.max_hp = max(1, base_max_hp + int(delta["max_hp_delta"]))
+            patches.append({"op": "replace", "path": "/max_hp", "value": self.player_state.max_hp})
+
+        hp_cap = max(1, int(self.player_state.max_hp or 100))
         if "hp" in delta:
-            self.player_state.hp = max(0, min(100, int(delta["hp"])))
+            self.player_state.hp = max(0, min(hp_cap, int(delta["hp"])))
             patches.append({"op": "replace", "path": "/hp", "value": self.player_state.hp})
         elif "hp_delta" in delta:
-            self.player_state.hp = max(0, min(100, self.player_state.hp + int(delta["hp_delta"])))
+            self.player_state.hp = max(0, min(hp_cap, self.player_state.hp + int(delta["hp_delta"])))
             patches.append({"op": "replace", "path": "/hp", "value": self.player_state.hp})
+
+        if "max_mp" in delta and delta["max_mp"] is not None:
+            self.player_state.max_mp = max(0, int(delta["max_mp"]))
+            patches.append({"op": "replace", "path": "/max_mp", "value": self.player_state.max_mp})
+        elif "max_mp_delta" in delta:
+            base_max_mp = int(self.player_state.max_mp if self.player_state.max_mp is not None else 100)
+            self.player_state.max_mp = max(0, base_max_mp + int(delta["max_mp_delta"]))
+            patches.append({"op": "replace", "path": "/max_mp", "value": self.player_state.max_mp})
+
+        mp_cap = max(0, int(self.player_state.max_mp if self.player_state.max_mp is not None else 100))
+        if "mp" in delta and delta["mp"] is not None:
+            self.player_state.mp = max(0, min(mp_cap, int(delta["mp"])))
+            patches.append({"op": "replace", "path": "/mp", "value": self.player_state.mp})
+        elif "mp_delta" in delta:
+            curr_mp = self.player_state.mp if self.player_state.mp is not None else mp_cap
+            self.player_state.mp = max(0, min(mp_cap, curr_mp + int(delta["mp_delta"])))
+            patches.append({"op": "replace", "path": "/mp", "value": self.player_state.mp})
 
         if "san" in delta:
             self.player_state.san = max(0, min(100, int(delta["san"])))
@@ -591,13 +493,13 @@ class GameSession:
             for k, v in delta_vars.items():
                 self.player_state.variables[k] = v
                 patches.append({"op": "add", "path": f"/variables/{k}", "value": v})
-                if active_scene and k in SCENE_SCOPED_STRUCT_DEFAULTS:
+                if active_scene and k in scoped_defaults:
                     scoped_key = f"{active_scene}_{k}"
                     if scoped_key not in delta_vars:
                         self.player_state.variables[scoped_key] = v
                         patches.append({"op": "add", "path": f"/variables/{scoped_key}", "value": v})
                 elif active_scene:
-                    for base_key in SCENE_SCOPED_STRUCT_DEFAULTS:
+                    for base_key in scoped_defaults:
                         if k == f"{active_scene}_{base_key}" and base_key not in delta_vars:
                             self.player_state.variables[base_key] = v
                             patches.append({"op": "add", "path": f"/variables/{base_key}", "value": v})
@@ -607,6 +509,15 @@ class GameSession:
                 self.player_state.variables["weather_duration"] = 1
                 patches.append({"op": "add", "path": "/variables/weather_type", "value": inferred_type})
                 patches.append({"op": "add", "path": "/variables/weather_duration", "value": 1})
+
+        if "variables_delta" in delta and isinstance(delta["variables_delta"], dict):
+            for k, v in delta["variables_delta"].items():
+                curr_v = self.player_state.variables.get(k, 0)
+                if not isinstance(curr_v, (int, float)):
+                    curr_v = 0
+                new_v = _clamp_variable(k, int(curr_v) + int(v), self.player_state.variables, world)
+                self.player_state.variables[k] = new_v
+                patches.append({"op": "add", "path": f"/variables/{k}", "value": new_v})
 
         if "add_structures" in delta and isinstance(delta["add_structures"], list):
             existing_structs = list(self.player_state.variables.get("built_structures") or [])
@@ -662,7 +573,7 @@ class GameSession:
                 self.player_state.variables["turn_count"] = new_turn
                 patches.append({"op": "add", "path": "/variables/turn_count", "value": new_turn})
 
-                # Dynamically advance weather (clear / cloudy / windy / rain / storm / foggy)
+                # Dynamically advance weather when scenario tracks weather
                 explicit_weather = (
                     isinstance(delta.get("variables"), dict)
                     and "weather" in delta["variables"]
@@ -686,13 +597,13 @@ class GameSession:
         if "attributes_delta" in delta and isinstance(delta["attributes_delta"], dict):
             for k, v in delta["attributes_delta"].items():
                 curr_val = int(self.player_state.attributes.get(k, 0))
-                new_val = _clamp_attr(k, curr_val + int(v))
+                new_val = _clamp_attr(k, curr_val + int(v), world)
                 self.player_state.attributes[k] = new_val
                 attr_updates[k] = new_val
 
         if "attributes" in delta and isinstance(delta["attributes"], dict):
             for k, v in delta["attributes"].items():
-                new_val = _clamp_attr(k, int(v))
+                new_val = _clamp_attr(k, int(v), world)
                 self.player_state.attributes[k] = new_val
                 attr_updates[k] = new_val
 
@@ -717,11 +628,10 @@ class GameSession:
                 (i.get("id") if isinstance(i, dict) else str(i))
                 for i in self.player_state.inventory
             }
-            unique_tools = {"lighter", "metal_box", "stone_blade", "rope"}
             for raw_item in delta["add_inventory"]:
-                item = _enrich_item_meta(raw_item)
+                item = _enrich_item_meta(raw_item, item_catalog)
                 item_id = item.get("id")
-                if item_id in unique_tools and item_id in existing_ids:
+                if item_id in unique_items and item_id in existing_ids:
                     continue
                 self.player_state.inventory.append(item)
                 existing_ids.add(item_id)
@@ -756,7 +666,7 @@ class GameSession:
                         self.player_state.outfit.pop(slot, None)
                         outfit_changed = True
                 else:
-                    self.player_state.outfit[slot] = _enrich_item_meta(raw_piece)
+                    self.player_state.outfit[slot] = _enrich_item_meta(raw_piece, item_catalog)
                     outfit_changed = True
 
         if outfit_changed:
@@ -812,6 +722,53 @@ class GameSession:
         if skills_changed:
             patches.append({"op": "replace", "path": "/skills", "value": list(self.player_state.skills)})
 
+        # Process AG-UI declarative hud_widgets updates (upsert by id / replace / remove)
+        hud_changed = False
+        if delta.get("replace_hud_widgets") and isinstance(delta.get("hud_widgets"), list):
+            self.player_state.hud_widgets = [
+                dict(w) for w in delta["hud_widgets"] if isinstance(w, dict)
+            ]
+            hud_changed = True
+        else:
+            rem_widgets = delta.get("remove_hud_widgets")
+            if rem_widgets:
+                rem_w_ids = {
+                    str(x) for x in ([rem_widgets] if isinstance(rem_widgets, str) else rem_widgets)
+                }
+                filtered_w = [
+                    w for w in (self.player_state.hud_widgets or [])
+                    if str(w.get("id", "")) not in rem_w_ids
+                ]
+                if len(filtered_w) != len(self.player_state.hud_widgets or []):
+                    self.player_state.hud_widgets = filtered_w
+                    hud_changed = True
+
+            if isinstance(delta.get("hud_widgets"), list):
+                cur_widgets = [
+                    dict(w) for w in (self.player_state.hud_widgets or []) if isinstance(w, dict)
+                ]
+                for raw_w in delta["hud_widgets"]:
+                    if not isinstance(raw_w, dict):
+                        continue
+                    w = dict(raw_w)
+                    wid = w.get("id")
+                    if wid:
+                        idx = next(
+                            (i for i, existing in enumerate(cur_widgets) if existing.get("id") == wid),
+                            None,
+                        )
+                        if idx is not None:
+                            cur_widgets[idx] = {**cur_widgets[idx], **w}
+                        else:
+                            cur_widgets.append(w)
+                    else:
+                        cur_widgets.append(w)
+                    hud_changed = True
+                self.player_state.hud_widgets = cur_widgets
+
+        if hud_changed:
+            patches.append({"op": "replace", "path": "/hud_widgets", "value": list(self.player_state.hud_widgets)})
+
         if "available_actions" in delta and isinstance(delta["available_actions"], list):
             self.dynamic_actions = [a for a in delta["available_actions"] if isinstance(a, dict)]
 
@@ -825,7 +782,6 @@ class GameSession:
         return patches
 
 
-
 class AGUIBridge:
     """Bridges game events and CLI agent output to AG-UI SSE protocol."""
 
@@ -836,8 +792,20 @@ class AGUIBridge:
         self.sessions: Dict[str, GameSession] = {}
         self.studio_conversations: Dict[str, str] = {}
 
+    def _resolve_world(self, scenario_id: Optional[str]) -> Optional[WorldSpec]:
+        if not scenario_id:
+            return None
+        try:
+            return self.scenario_mgr.load_scenario(scenario_id).world
+        except Exception:
+            return None
+
     @staticmethod
-    def _sync_player_state(target: PlayerState, source: Dict[str, Any]) -> bool:
+    def _sync_player_state(
+        target: PlayerState,
+        source: Dict[str, Any],
+        world: Optional[WorldSpec] = None,
+    ) -> bool:
         """Sync runtime player state from client to prevent server restart desync.
 
         Returns True if inventory was deduplicated or updated.
@@ -845,10 +813,19 @@ class AGUIBridge:
         if not isinstance(source, dict):
             return False
 
+        item_catalog = (world.item_catalog if world else {}) or {}
+        unique_items = set((world.unique_items if world else []) or [])
+
         if "current_scene" in source and source["current_scene"]:
             target.current_scene = source["current_scene"]
+        if "max_hp" in source and isinstance(source["max_hp"], (int, float)):
+            target.max_hp = max(1, int(source["max_hp"]))
         if "hp" in source and isinstance(source["hp"], (int, float)):
             target.hp = int(source["hp"])
+        if "max_mp" in source and isinstance(source["max_mp"], (int, float)):
+            target.max_mp = max(0, int(source["max_mp"]))
+        if "mp" in source and isinstance(source["mp"], (int, float)):
+            target.mp = int(source["mp"])
         if "san" in source and isinstance(source["san"], (int, float)):
             target.san = int(source["san"])
         if "gold" in source and isinstance(source["gold"], (int, float)):
@@ -861,7 +838,7 @@ class AGUIBridge:
                 target.variables[k] = v
         if "outfit" in source and isinstance(source["outfit"], dict):
             target.outfit = {
-                k: _enrich_item_meta(v)
+                k: _enrich_item_meta(v, item_catalog)
                 for k, v in source["outfit"].items()
                 if isinstance(v, dict)
             }
@@ -871,17 +848,18 @@ class AGUIBridge:
                 for s in source["skills"]
                 if isinstance(s, (dict, str))
             ]
+        if "hud_widgets" in source and isinstance(source["hud_widgets"], list):
+            target.hud_widgets = [dict(w) for w in source["hud_widgets"] if isinstance(w, dict)]
 
         inv_changed = False
         if "inventory" in source and isinstance(source["inventory"], list):
             deduped_inv = []
             seen_unique = set()
-            unique_tools = {"lighter", "metal_box", "stone_blade", "rope"}
             for raw_item in source["inventory"]:
                 if isinstance(raw_item, dict):
-                    item = _enrich_item_meta(raw_item)
+                    item = _enrich_item_meta(raw_item, item_catalog)
                     item_id = item.get("id")
-                    if item_id in unique_tools:
+                    if item_id in unique_items:
                         if item_id in seen_unique:
                             inv_changed = True
                             continue
@@ -901,22 +879,25 @@ class AGUIBridge:
     ) -> GameSession:
         if thread_id in self.sessions:
             session = self.sessions[thread_id]
+            world = self._resolve_world(session.scenario_id) or session.world
+            session.world = world
+            session.player_state._scenario_id = session.scenario_id
             if client_state:
-                if self._sync_player_state(session.player_state, client_state):
+                if self._sync_player_state(session.player_state, client_state, world=world):
                     session.inventory_synced = True
             if _hydrate_class_skills(self.scenario_mgr, session.scenario_id, session.player_state):
                 session.skills_synced = True
             return session
 
         spec = self.scenario_mgr.load_scenario(scenario_id)
-        # Deep copy initial player state
         init_state = PlayerState(**spec.world.initial_player_state.model_dump())
+        init_state._scenario_id = scenario_id
         inv_synced = False
         if client_state:
-            inv_synced = self._sync_player_state(init_state, client_state)
+            inv_synced = self._sync_player_state(init_state, client_state, world=spec.world)
         skills_synced = _hydrate_class_skills(self.scenario_mgr, scenario_id, init_state)
 
-        session = GameSession(thread_id, scenario_id, init_state)
+        session = GameSession(thread_id, scenario_id, init_state, world=spec.world)
         session.inventory_synced = inv_synced
         session.skills_synced = skills_synced
         self.sessions[thread_id] = session
@@ -968,6 +949,11 @@ class AGUIBridge:
             for sk in (session.player_state.skills or [])
             if isinstance(sk, dict) and (sk.get("name") or sk.get("id"))
         ]
+        widgets_desc = [
+            f"{w.get('id', '?')} ({w.get('type', 'panel')}: {w.get('title', '')})"
+            for w in (session.player_state.hud_widgets or [])
+            if isinstance(w, dict)
+        ]
 
         history_block = ""
         if session.history:
@@ -990,25 +976,36 @@ class AGUIBridge:
 （请作为权威 DM 尊重并融合此综合修正结果，在剧情中生动展现装备/体魄/工具如何协助或制约该动作，并在 state_delta.check_result 中准确回传裁决数据）
 """
 
+        mp_line = ""
+        if session.player_state.mp is not None:
+            mp_label = str((session.player_state.variables or {}).get("mp_label") or "魔法值")
+            mp_max = session.player_state.max_mp if session.player_state.max_mp is not None else 100
+            mp_line = f" / {mp_label}（MP）：{session.player_state.mp}/{mp_max}"
+
+        dm_rules_block = ""
+        if scenario.world.dm_rules and scenario.world.dm_rules.strip():
+            dm_rules_block = f"\n【剧本专属规则与数值体系 (World Rules)】：\n{scenario.world.dm_rules.strip()}\n"
+
         prompt = f"""你是一款高沉浸感文字跑团（TRPG / SLG）的地下城主（DM / Game Master）兼视觉导演（遵循 ag-slg-director 规范）。
 当前世界观：{scenario.world.title} (ID: {scenario.world.id})
 玩家当前状态：
 - 角色名：{session.player_state.name}
-- HP：{session.player_state.hp} / SAN：{session.player_state.san} / 金币：{session.player_state.gold}
-- 生存与角色属性：{session.player_state.attributes}
+- HP：{session.player_state.hp}/{session.player_state.max_hp}{mp_line} / SAN：{session.player_state.san} / 金币：{session.player_state.gold}
+- 角色与生存属性：{session.player_state.attributes}
 - 背包物品：{inv_desc or '空'}
 - 当前穿着与配饰：{outfit_desc or '常规随身衣物'}
 - 技能栏：{skills_desc or '尚未习得特殊技能'}
-- 剧本变量（含时间/昼夜/气象/进度）：{session.player_state.variables}
+- 剧本变量：{session.player_state.variables}
+- 已挂载 AG-UI 专属界面组件 (hud_widgets)：{widgets_desc or '无'}
 - 当前气象与环境基调：{cur_weather or '未设定'}（氛围：{scene_atmo}）
-- 当前所在场景：{curr_scene.title if curr_scene else curr_scene_id} ({curr_scene_id})
+- 当前所在场景：{curr_scene.title if curr_scene else curr_scene_id} ({curr_scene_id}){dm_rules_block}
 
 当前场景预设视觉资源：
 - 场景底图 (Background): {scene_bg or '默认空间背景'}
 - 焦点插图 (Hero Image): {scene_hero or '无'}
 - 前景立绘 (Foreground): {scene_fg or '无'}
 - 环境氛围 (Atmosphere): {scene_atmo}
-- 左右侧图像区已建成耐用设施 (Built Camp Structures): {built_structs or '暂无'}
+- 左右侧图像区已建成耐用设施 (Built Structures): {built_structs or '暂无'}
 
 当前场景环境描述：
 {scene_desc}
@@ -1024,64 +1021,71 @@ class AGUIBridge:
 
 请作为 DM 进行剧情演绎与多图层视觉编排：
 1. 玩家意图忠实原则（最高优先级）：
-   - 仔细分辨玩家输入的具体动词与目标，严格按玩家当前行动的字面意图推进，切勿强行套用无关的预设选项结局！
-   - 例如：若玩家自由输入“捡起防水金属盒，洗干净带走”，其目的是**获得并随身携带金属盒本身**，必须如实描写捡起并清洗金属盒，并在 `add_inventory` 中加入 `metal_box`（防水金属盒），绝不要在玩家未要求打开/搜查盒内物品时擅自改为“在盒里翻找打火机”。
-   - 凡玩家明确拾取、清洗带走、制作或获得的实体物品，都必须在 `state_delta.add_inventory` 中准确写入物品（包含 `id`、`name`、`desc`），确保背包栏真实同步。
-   - **打火机与生火/烹饪的真实意图响应（绝对红线）**：若玩家明确输入使用打火机（lighter）点火、生火、引燃甘草或枯枝、搭建火堆或进行烹饪煮食，且玩家背包中已拥有打火机（id: lighter）：
-     ① 必须承认打火机是现成的核心火源！严禁无视玩家背包内的打火机，严禁谎称“没有火源”或无端判定点火失败！
-     ② 必须成功点燃火焰：在 state_delta.variables 中明确写入 `"fire_started": true`，并在 visuals.hero_image 给出篝火特写插图 `/assets/illustrations/campfire.png`。
-     ③ 若玩家同时进行了煮食物/烤食物：只要背包中有可烹饪物品（如 raw_crab、wild_food、coconut、fresh_water 等），必须在叙述中生动描绘火烤烹饪与熟食香气，在 state_delta.remove_inventory 中扣除对应食材，并通过 attributes_delta 大幅增加饱食度（fullness: +30~+40）与体力（stamina: +15~+25）！
+   - 仔细分辨玩家输入的具体动词与目标，严格按玩家当前行动的字面意图推进，切勿强行套用无关的预设选项结局，也严禁无视玩家背包或已装备道具的真实持有状态。
+   - 凡玩家明确拾取、清洗带走、制作、消耗或使用实体物品，都必须在 `state_delta.add_inventory`（含 `id`、`name`、`desc`）与 `state_delta.remove_inventory` 中准确更新，确保背包栏真实同步。
 2. DM 综合裁决与灵活判定法则（代入感与策略性核心）：
-   - 杜绝生硬机械的二元通过/失败，全面综合玩家的【属性点】+【穿戴装备与衣物】+【随身工具道具】+【生理体能状况】给出多维裁决修正；
+   - 杜绝生硬机械的二元通过/失败，全面综合玩家的【属性点】+【穿戴装备与衣物】+【随身工具道具】+【剧本状态条件】给出多维裁决修正；
    - 采用 TRPG 四阶递进式裁决深度演化剧情：
-     · 卓越成功 (Critical Success, Total >= DC + 5 或 Nat 20)：游刃有余、精妙达成，不仅达成全部目标，还可节省精力或获得额外顿悟；
+     · 卓越成功 (Critical Success, Total >= DC + 5 或 Nat 20)：游刃有余、精妙达成，不仅达成全部目标，还可节省消耗或获得额外收益；
      · 顺利达成 (Success, DC <= Total < DC + 5)：稳扎稳打达成目标，消耗标准资源；
-     · 代价成功 (Partial Success, DC - 3 <= Total < DC)：虽遇险阻但凭借装备支撑或顽强毅力达成了核心目标，付出额外体力或产生次要代价；
-     · 受挫转折 (Failure with Momentum, Total < DC - 3 或 Nat 1)：环境险恶行动受阻，但绝不卡死故事，转化为新的局势信息或避险转折，引导玩家调整策略。
+     · 代价成功 (Partial Success, DC - 3 <= Total < DC)：虽遇险阻但凭借装备或毅力达成了核心目标，付出额外代价；
+     · 受挫转折 (Failure with Momentum, Total < DC - 3 或 Nat 1)：行动受阻但不卡死故事，转化为新的局势信息或转折。
    - 若本次行动包含检定，请在回复末尾的 ```state_delta``` 中附带 `check_result` 字段记录裁决明细。
 3. 叙事文本与对话分明：生动叙述环境与行动结果，NPC 发言请以 角色名: “对话内容” 格式清晰表达。严禁在叙述文本中直接泄漏具体图片文件路径。
 4. 视觉舞台导演原则（ag-slg-director）：
-   - 背景稳定性：不要在普通的对话轮换背景；仅在发生场景转移或环境巨变时更新 visuals.background。
-   - 角色立绘调度：与具体 NPC 对话时，设置 visuals.foreground 为其立绘；玩家独处检定或离开时置空。
-   - 焦点特写镜头：当玩家成功发现关键线索、拾获或搜查物品、或遭遇高潮事件时，在 visuals.hero_image 给出特写插图路径或语义描述（如“【物品特写】洗净泥沙的防水金属盒”）。
-   - 左右侧耐用设施展示：当玩家在生存中建成耐用物品（如窝棚、篝火火堆、雨水收集器），务必在 `state_delta.variables` 中设置当前场景对应的状态标识（或 `shelter_level` / `fire_started` / `water_collector_built`）；若建成了额外自定义耐用设施，可通过 `state_delta.add_structures`（含 `id`, `name`, `image`, `side: "left"|"right"`, `caption`, `tooltip`, `scene_id`）使其展示在当前场景的左右两侧图像区。
-   - **场景隔离原则（严禁跨场景带出）**：当玩家离开当前场景前往新场景（`current_scene` 变更）时，必须同步更新 `visuals.background` 为目标场景底图，清空原场景的临时立绘与特写（将 `visuals.foreground` 与 `visuals.hero_image` 置空 `""` 或设为新场景自身资源），且**绝不可**将原场景建成的设施（如原场景的窝棚、篝火、雨水收集器等）带入新场景！每个场景的已建设施仅归属其建造所在场景。
-5. 数值与动态选项演算（非常重要）：
-   - 若玩家进食、饮水、休息、劳作或受环境影响，务必在 state_delta 中通过 `attributes_delta` 真实更新对应属性（如 `fullness` 饱食度、`hydration` 水分、`stamina` 体力、`temperature` 体温），消耗掉的食材/饮水通过 `remove_inventory` 列出道具 id 移除。
-   - 行动耗时可通过 `time_cost`（整数，如 1 表示推进一个时段：清晨→上午→下午→黄昏→夜晚→深夜）推进时间；系统也会随时间推进自然演替阴天、晴朗、刮风、阵雨、暴雨、海雾等天气变化，你也可根据剧情在 `variables.weather` 主动触发天气转折（如骤起狂风或突降暴雨），并在叙述与 `visuals.atmosphere` 中生动展现风雨冷暖与防风夹克/遮阳帽/窝棚/岩洞带来的真实影响。
-   - 如因剧情变化衍生出新的临时行动选项，可通过 `available_actions` 提供动态选项列表；预设场景选项也会随状态、时间与天气自动刷新。
-6. 若产生场景转移、数值变化、道具增减、时间推进或视觉变更，在回复最末尾附带一个 ```state_delta 代码块：
+   - 背景稳定性：不要在普通对话轮换背景；仅在发生场景转移或环境巨变时更新 visuals.background。
+   - 角色立绘调度：与具体 NPC 对话时，设置 visuals.foreground 为其立绘；玩家独处或离开时置空。
+   - 焦点特写镜头：发现关键线索、拾获物品或遭遇高潮事件时，在 visuals.hero_image 给出特写插图路径或语义描述。
+   - 左右侧耐用设施展示：建成场景耐用设施时，通过 `state_delta.variables` 或 `state_delta.add_structures`（含 `id`, `name`, `image`, `side: "left"|"right"`, `caption`, `tooltip`, `scene_id`）展示在当前场景边缘。
+   - **场景隔离原则**：离开当前场景前往新场景（`current_scene` 变更）时，同步更新 `visuals.background` 为目标场景底图，清空原场景的临时立绘与特写，且绝不将原场景已建设施带入新场景。
+5. 数值推演、动态选项与 AG-UI 声明式 HUD 调度：
+   - 可通过 `attributes_delta`、`hp_delta`、`mp_delta`、`san_delta`、`variables`、`variables_delta`、`time_cost` 更新世界状态。
+   - 如剧本需要自定义状态栏、Boss/遭遇面板、阶段追踪器或额外资源条，可通过 `hud_widgets`（支持 `metrics` / `tracker` / `panel` 三类原语，按 `id` 新增或增量更新，支持 `value_ref` 绑定 `attributes.*` / `variables.*`）自主生成或更新前端界面，并在事件结束后通过 `remove_hud_widgets` 撤除。
+   - 如因剧情变化衍生出新的临时行动选项，可通过 `available_actions` 提供动态选项列表。
+6. 若产生场景转移、数值变化、道具增减、HUD 变更或视觉更新，在回复最末尾附带一个 ```state_delta 代码块：
 ```state_delta
 {{
   "current_scene": "目标场景ID（若发生转移）",
   "hp_delta": 0,
+  "mp_delta": 0,
   "san_delta": 0,
-  "attributes_delta": {{"fullness": 25, "stamina": 10}},
+  "attributes_delta": {{}},
   "time_cost": 1,
   "add_inventory": [{{"id": "item_id", "name": "道具名", "desc": "描述"}}],
   "remove_inventory": ["consumed_item_id"],
-  "outfit": {{"outer": {{"id": "jacket_id", "name": "穿戴服装名", "desc": "描述", "tag": "状态/加成"}}}},
-  "learn_skills": [{{"id": "skill_id", "name": "技能名称", "desc": "技能简介", "effect": "具体作用说明与效果", "cost": "消耗", "cooldown": "冷却", "level": 1, "tag": "类型"}}],
+  "outfit": {{"slot": {{"id": "item_id", "name": "穿戴名称", "desc": "描述", "tag": "标签"}}}},
+  "learn_skills": [{{"id": "skill_id", "name": "技能名称", "desc": "技能简介", "effect": "作用说明", "cost": "消耗", "cooldown": "冷却", "level": 1, "tag": "类型"}}],
   "variables": {{"variable_key": "variable_value"}},
+  "variables_delta": {{"numeric_var": -10}},
+  "hud_widgets": [
+    {{
+      "id": "custom_panel",
+      "type": "panel",
+      "title": "事件或首领名称",
+      "tone": "danger",
+      "bars": [{{"label": "生命", "value_ref": "variables.boss_hp", "max_ref": "variables.boss_max_hp", "color": "rose"}}]
+    }}
+  ],
+  "remove_hud_widgets": ["obsolete_widget_id"],
   "check_result": {{
-    "skill": "survival",
+    "skill": "perception",
     "difficulty": 10,
     "roll": 12,
-    "modifier": 3,
-    "total": 15,
+    "modifier": 2,
+    "total": 14,
     "isSuccess": true,
     "outcome": "success",
     "outcome_label": "顺利达成",
-    "reason": "基础属性(+1)、防风外套(+2)",
-    "message": "成功克服恶劣海风影响"
+    "reason": "属性修正(+1)、装备加成(+1)",
+    "message": "成功洞察关键细节"
   }},
   "available_actions": [
     {{"id": "dynamic_act_1", "label": "新的情境行动", "type": "interact"}}
   ],
   "visuals": {{
     "background": "{scene_bg}",
-    "foreground": "/assets/characters/xxx.png",
-    "hero_image": "/assets/illustrations/xxx.png 或 语义特写标签",
+    "foreground": "",
+    "hero_image": "",
     "atmosphere": "{scene_atmo}"
   }}
 }}
@@ -1188,13 +1192,31 @@ class AGUIBridge:
             if rel_attrs:
                 merged["attributes_delta"] = rel_attrs
 
-        # HP / SAN delta
-        if "hp_delta" in outcome and "hp" not in merged and "hp_delta" not in merged:
+        # HP / MaxHP / MP / MaxMP / SAN / Gold delta
+        if "max_hp" in outcome and "max_hp" not in merged and "max_hp_delta" not in merged:
+            merged["max_hp"] = outcome["max_hp"]
+        elif "max_hp_delta" in outcome and "max_hp" not in merged and "max_hp_delta" not in merged:
+            merged["max_hp_delta"] = outcome["max_hp_delta"]
+        if "hp" in outcome and "hp" not in merged and "hp_delta" not in merged:
+            merged["hp"] = outcome["hp"]
+        elif "hp_delta" in outcome and "hp" not in merged and "hp_delta" not in merged:
             merged["hp_delta"] = outcome["hp_delta"]
+
+        if "max_mp" in outcome and "max_mp" not in merged and "max_mp_delta" not in merged:
+            merged["max_mp"] = outcome["max_mp"]
+        elif "max_mp_delta" in outcome and "max_mp" not in merged and "max_mp_delta" not in merged:
+            merged["max_mp_delta"] = outcome["max_mp_delta"]
+        if "mp" in outcome and "mp" not in merged and "mp_delta" not in merged:
+            merged["mp"] = outcome["mp"]
+        elif "mp_delta" in outcome and "mp" not in merged and "mp_delta" not in merged:
+            merged["mp_delta"] = outcome["mp_delta"]
+
         if "san_delta" in outcome and "san" not in merged and "san_delta" not in merged:
             merged["san_delta"] = outcome["san_delta"]
+        if "gold_delta" in outcome and "gold" not in merged and "gold_delta" not in merged:
+            merged["gold_delta"] = outcome["gold_delta"]
 
-        # Variables
+        # Variables & relative variable deltas
         if isinstance(outcome.get("variables"), dict):
             vars_dict = dict(merged.get("variables") or {})
             for k, v in outcome["variables"].items():
@@ -1203,6 +1225,38 @@ class AGUIBridge:
             if vars_dict:
                 merged["variables"] = vars_dict
 
+        if isinstance(outcome.get("variables_delta"), dict):
+            vdelta_dict = dict(merged.get("variables_delta") or {})
+            for k, v in outcome["variables_delta"].items():
+                if k not in vdelta_dict:
+                    vdelta_dict[k] = v
+            if vdelta_dict:
+                merged["variables_delta"] = vdelta_dict
+
+        # AG-UI declarative hud_widgets passthrough
+        if outcome.get("replace_hud_widgets") and "replace_hud_widgets" not in merged:
+            merged["replace_hud_widgets"] = outcome["replace_hud_widgets"]
+        if isinstance(outcome.get("hud_widgets"), list):
+            existing_hw = list(merged.get("hud_widgets") or [])
+            existing_ids = {w.get("id") for w in existing_hw if isinstance(w, dict) and w.get("id")}
+            for w in outcome["hud_widgets"]:
+                if isinstance(w, dict) and (not w.get("id") or w["id"] not in existing_ids):
+                    existing_hw.append(dict(w))
+            if existing_hw:
+                merged["hud_widgets"] = existing_hw
+        if outcome.get("remove_hud_widgets"):
+            raw_rem = outcome["remove_hud_widgets"]
+            rem_items = [raw_rem] if isinstance(raw_rem, str) else list(raw_rem)
+            rem_hw = list(merged.get("remove_hud_widgets") or [])
+            for wid in rem_items:
+                if wid not in rem_hw:
+                    rem_hw.append(wid)
+            if rem_hw:
+                merged["remove_hud_widgets"] = rem_hw
+
+        if isinstance(outcome.get("visuals"), dict) and "visuals" not in merged:
+            merged["visuals"] = dict(outcome["visuals"])
+
         # Time cost
         if outcome.get("time_cost") and "time_cost" not in merged:
             merged["time_cost"] = outcome["time_cost"]
@@ -1210,120 +1264,74 @@ class AGUIBridge:
         return merged
 
     @staticmethod
+    def _format_rule_label(tpl: str, player_state: PlayerState) -> str:
+        outfit = player_state.outfit or {}
+
+        def _repl(match: re.Match) -> str:
+            parts = match.group(1).split(".")
+            if len(parts) == 3 and parts[0] == "outfit":
+                piece = outfit.get(parts[1])
+                if isinstance(piece, dict):
+                    return str(piece.get(parts[2]) or piece.get("id") or "")
+            return match.group(0)
+
+        return re.sub(r"\{([a-zA-Z0-9_.]+)\}", _repl, tpl)
+
     def evaluate_agent_adjudication(
+        self,
         skill: str,
         base_dc: int,
         player_state: PlayerState,
         clean_action: str,
         client_roll: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """Comprehensively evaluate action check based on player attributes, outfit, tools, and stamina."""
-        import random
+        """Comprehensively evaluate action check from attributes and scenario adjudication_rules."""
         roll = client_roll if (client_roll is not None and 1 <= client_roll <= 20) else random.randint(1, 20)
 
         # 1. Attribute modifier
-        attr_val = int(player_state.attributes.get(skill, 10) or 10)
+        attr_val = int((player_state.attributes or {}).get(skill, 10) or 10)
         attr_mod = (attr_val - 10) // 2
 
-        # 2. Outfit & clothing bonuses
-        outfit_mod = 0
-        outfit_reasons = []
+        # 2. Data-driven scenario adjudication rules
+        world = self._resolve_world(getattr(player_state, "_scenario_id", ""))
+        rule_mod = 0
+        rule_reasons: List[str] = []
+        matched_groups: set[str] = set()
         outfit = player_state.outfit or {}
-        if outfit.get("outer"):
-            outfit_mod += 2
-            outfit_reasons.append(f"{outfit['outer'].get('name', '防风外套')}(+2)")
-        if outfit.get("shoes") and skill in ("agility", "survival"):
-            outfit_mod += 1
-            outfit_reasons.append(f"{outfit['shoes'].get('name', '防滑跑鞋')}(+1)")
-        if outfit.get("wrist") and skill in ("perception", "survival"):
-            outfit_mod += 1
-            outfit_reasons.append(f"{outfit['wrist'].get('name', '反光腕表')}(+1)")
-        if outfit.get("neck"):
-            outfit_mod += 1
-            outfit_reasons.append(f"{outfit['neck'].get('name', '潮汐护符')}(+1)")
 
-        # 3. Tool bonuses
-        tool_mod = 0
-        tool_reasons = []
-        inv_ids = {
-            item.get("id", "") for item in (player_state.inventory or []) if isinstance(item, dict)
-        }
-        if "stone_blade" in inv_ids and any(k in clean_action for k in ("割", "切", "削", "剥", "撬", "磨", "修")):
-            tool_mod += 2
-            tool_reasons.append("石刀精制(+2)")
-        if "lighter" in inv_ids and any(k in clean_action for k in ("火", "点", "燃", "烧")):
-            tool_mod += 3
-            tool_reasons.append("防风打火机(+3)")
-        if "rope" in inv_ids and any(k in clean_action for k in ("捆", "扎", "绑", "绳", "编", "爬", "攀")):
-            tool_mod += 2
-            tool_reasons.append("坚韧绳索(+2)")
-        if "metal_box" in inv_ids and any(k in clean_action for k in ("水", "煮", "装", "存", "盒")):
-            tool_mod += 1
-            tool_reasons.append("防水金属盒(+1)")
-        variables = player_state.variables or {}
-        curr_scene = player_state.current_scene or ""
-        shelter_val = variables.get(f"{curr_scene}_shelter_level") if curr_scene and f"{curr_scene}_shelter_level" in variables else variables.get("shelter_level", 0)
-        fire_val = variables.get(f"{curr_scene}_fire_started") if curr_scene and f"{curr_scene}_fire_started" in variables else variables.get("fire_started")
+        for rule in (world.adjudication_rules if world else []) or []:
+            if not isinstance(rule, dict):
+                continue
+            grp = rule.get("exclusive_group")
+            if grp and grp in matched_groups:
+                continue
+            skill_in = rule.get("skill_in")
+            if skill_in and skill not in skill_in:
+                continue
+            outfit_slot = rule.get("outfit_slot")
+            if outfit_slot and not outfit.get(outfit_slot):
+                continue
+            act_kws = rule.get("action_keywords")
+            if act_kws and not any(str(k) in clean_action for k in act_kws):
+                continue
+            not_act_kws = rule.get("not_action_keywords")
+            if not_act_kws and any(str(k) in clean_action for k in not_act_kws):
+                continue
+            when_cond = rule.get("when")
+            if when_cond and not evaluate_action_condition(when_cond, player_state):
+                continue
 
-        if (shelter_val or 0) >= 1 and any(
-            k in clean_action for k in ("休息", "睡", "过夜", "庇护", "窝棚", "躲", "避雨")
-        ):
-            tool_mod += 2
-            tool_reasons.append("稳固防风窝棚(+2)")
-        if fire_val and any(
-            k in clean_action for k in ("夜", "寒", "烤", "煮", "火", "守夜")
-        ):
-            tool_mod += 1
-            tool_reasons.append("温暖营地篝火(+1)")
+            mod_val = int(rule.get("mod", 0) or 0)
+            rule_mod += mod_val
+            if grp:
+                matched_groups.add(grp)
+            raw_label = str(rule.get("label") or "").strip()
+            if raw_label:
+                rule_reasons.append(self._format_rule_label(raw_label, player_state))
 
-        # 4. Physical condition penalties/bonuses
-        cond_mod = 0
-        cond_reasons = []
-        stamina = int(player_state.attributes.get("stamina", 50) or 50)
-        hydration = int(player_state.attributes.get("hydration", 50) or 50)
-        fullness = int(player_state.attributes.get("fullness", 50) or 50)
-
-        if stamina >= 75 and hydration >= 60 and fullness >= 50:
-            cond_mod += 1
-            cond_reasons.append("体能充沛(+1)")
-        elif stamina < 30:
-            cond_mod -= 2
-            cond_reasons.append("体力透支(-2)")
-        if hydration < 25:
-            cond_mod -= 2
-            cond_reasons.append("严重口渴(-2)")
-        if fullness < 25:
-            cond_mod -= 2
-            cond_reasons.append("饥肠辘辘(-2)")
-
-        # 5. Dynamic weather modifiers
-        weather_mod = 0
-        weather_reasons = []
-        weather_label = str(variables.get("weather") or "")
-        weather_type = classify_weather_type(weather_label, str(variables.get("weather_type") or ""))
-        if weather_type in ("windy", "storm"):
-            if any(k in clean_action for k in ("火", "点", "燃", "烧")) and (shelter_val or 0) == 0 and "lighter" not in inv_ids:
-                weather_mod -= 2
-                weather_reasons.append("狂风干扰生火(-2)")
-        if weather_type == "storm" and (shelter_val or 0) == 0 and not outfit.get("outer"):
-            weather_mod -= 1
-            weather_reasons.append("暴雨湿滑受阻(-1)")
-        if weather_type in ("windy", "rain", "storm") and outfit.get("outer"):
-            weather_mod += 1
-            weather_reasons.append("防风防水护佑(+1)")
-        if weather_type == "clear" and outfit.get("head") and any(
-            k in clean_action for k in ("采", "摘", "捡", "抓", "搜", "寻", "攀", "挖")
-        ):
-            weather_mod += 1
-            weather_reasons.append("遮阳防晒护佑(+1)")
-        if weather_type == "foggy" and skill == "perception":
-            weather_mod -= 1
-            weather_reasons.append("海雾遮蔽视线(-1)")
-
-        total_mod = attr_mod + outfit_mod + tool_mod + cond_mod + weather_mod
+        total_mod = attr_mod + rule_mod
         total = roll + total_mod
 
-        # Graded evaluation
         if total >= base_dc + 5:
             outcome = "critical_success"
             label = "卓越成功"
@@ -1338,14 +1346,7 @@ class AGUIBridge:
             label = "受挫转折"
 
         reason_parts = [f"{skill.upper()}属性({attr_mod:+d})"]
-        if outfit_reasons:
-            reason_parts.extend(outfit_reasons)
-        if tool_reasons:
-            reason_parts.extend(tool_reasons)
-        if cond_reasons:
-            reason_parts.extend(cond_reasons)
-        if weather_reasons:
-            reason_parts.extend(weather_reasons)
+        reason_parts.extend(rule_reasons)
 
         return {
             "skill": skill,
@@ -1359,6 +1360,29 @@ class AGUIBridge:
             "reason": " · ".join(reason_parts),
         }
 
+    @staticmethod
+    def _resolve_declarative_branch(
+        spec: Dict[str, Any],
+        player_state: PlayerState,
+        fmt_vars: Dict[str, str],
+    ) -> tuple[str, Dict[str, Any]]:
+        """Resolve a declarative fallback recipe or default_fallback block."""
+        import copy
+
+        chosen = spec
+        for branch in spec.get("branches") or []:
+            if not isinstance(branch, dict):
+                continue
+            when_cond = branch.get("when")
+            if not when_cond or evaluate_action_condition(when_cond, player_state):
+                chosen = branch
+                break
+
+        raw_narration = str(chosen.get("narration") or spec.get("narration") or "")
+        narration = raw_narration.format(**fmt_vars) if raw_narration else ""
+        delta = copy.deepcopy(chosen.get("delta") if isinstance(chosen.get("delta"), dict) else (spec.get("delta") or {}))
+        return narration, delta
+
     def generate_fallback_turn(
         self,
         session: GameSession,
@@ -1368,10 +1392,13 @@ class AGUIBridge:
         current_scene: Optional[SceneNode],
         client_roll: Optional[int] = None,
     ) -> tuple[str, Dict[str, Any]]:
-        """Fallback local SLG Director: generates vivid narrative and state delta when external agent is unavailable."""
+        """Fallback local SLG Director: generates narrative and state delta from scenario YAML when agent is unavailable."""
+        import copy
+
         clean_action = re.sub(r"^【.*?】", "", user_text).strip()
         clean_action = re.sub(r"\[检定数据:.*?\]", "", clean_action).strip()
         delta: Dict[str, Any] = {}
+        world = session.world or self._resolve_world(session.scenario_id)
 
         if matched_action:
             if matched_action.type == "check":
@@ -1404,10 +1431,10 @@ class AGUIBridge:
                         f"{succ_msg}\n\n"
                         f"完美的预判让你不仅顺利达成了目标，甚至几乎没有消耗额外精力，信心大振！"
                     )
-                    delta = dict(matched_action.on_success or {})
+                    delta = copy.deepcopy(matched_action.on_success or {})
                     if "attributes_delta" in delta and isinstance(delta["attributes_delta"], dict):
                         delta["attributes_delta"] = {
-                            k: (v // 2 if k == "stamina" and v < 0 else v)
+                            k: (v // 2 if v < 0 else v)
                             for k, v in delta["attributes_delta"].items()
                         }
                     delta["san_delta"] = int(delta.get("san_delta", 0)) + 3
@@ -1418,29 +1445,33 @@ class AGUIBridge:
                         f"判定依据：{eval_res['reason']}。\n\n"
                         f"{succ_msg}"
                     )
-                    delta = dict(matched_action.on_success or {})
+                    delta = copy.deepcopy(matched_action.on_success or {})
                 elif eval_res["outcome"] == "partial_success":
                     narration = (
-                        f"周围环境险恶复杂，潮气与海风不断侵扰。虽然过程波折重重，但幸得【{eval_res['reason']}】的有力支撑，你咬牙撑过难关，终究在付出额外汗水后艰难达成了目标！\n\n"
+                        f"周围环境险恶复杂，阻碍不断侵扰。虽然过程波折重重，但幸得【{eval_res['reason']}】的有力支撑，你咬牙撑过难关，终究在付出额外代价后艰难达成了目标！\n\n"
                         f"【DM综合裁决 · 代价成功】（投骰 {eval_res['roll']} + 修正 {eval_res['modifier']} = {eval_res['total']} vs DC: {eval_res['difficulty']}）\n\n"
                         f"{succ_msg}\n\n"
-                        f"主要目标顺利达成，但激烈的应对让你多消耗了些许体能。"
+                        f"主要目标顺利达成，但激烈的应对让你多消耗了些许状态。"
                     )
-                    delta = dict(matched_action.on_success or {})
-                    if "attributes_delta" not in delta or not isinstance(delta["attributes_delta"], dict):
-                        delta["attributes_delta"] = {}
-                    delta["attributes_delta"]["stamina"] = int(delta["attributes_delta"].get("stamina", -4)) - 3
+                    delta = copy.deepcopy(matched_action.on_success or {})
+                    if "stamina" in (session.player_state.attributes or {}):
+                        if "attributes_delta" not in delta or not isinstance(delta["attributes_delta"], dict):
+                            delta["attributes_delta"] = {}
+                        delta["attributes_delta"]["stamina"] = int(delta["attributes_delta"].get("stamina", -4)) - 3
+                    elif session.player_state.mp is not None:
+                        delta["hp_delta"] = int(delta.get("hp_delta", 0)) - 4
+                        delta["mp_delta"] = int(delta.get("mp_delta", 0)) - 5
                 else:
                     narration = (
                         f"自然与环境的阻碍超乎预料。纵然有【{eval_res['reason']}】的勉力支撑，这次突进依然未能尽如人意。\n\n"
                         f"【DM综合裁决 · 受挫转折】（投骰 {eval_res['roll']} + 修正 {eval_res['modifier']} = {eval_res['total']} vs DC: {eval_res['difficulty']}）\n\n"
                         f"{fail_msg}\n\n"
-                        f"你稳住阵脚向后轻撤半步。这次尝试虽未达成，却让你彻底探明了前方的虚实暗礁，为你下一次策略调整赢得了关键的情报！"
+                        f"你稳住阵脚向后轻撤半步。这次尝试虽未达成，却让你探明了前方的虚实暗礁，为下一次调整策略赢得了情报！"
                     )
-                    delta = dict(matched_action.on_failure or {})
-                    if "time_cost" not in delta:
+                    delta = copy.deepcopy(matched_action.on_failure or {})
+                    if "time_cost" not in delta and "time_slot" in (session.player_state.variables or {}):
                         delta["time_cost"] = 1
-                    if "attributes_delta" not in delta:
+                    if "attributes_delta" not in delta and "stamina" in (session.player_state.attributes or {}):
                         delta["attributes_delta"] = {"stamina": -3, "hydration": -2}
 
                 delta["check_result"] = eval_res
@@ -1449,9 +1480,7 @@ class AGUIBridge:
                         delta["add_inventory"] = [{"id": delta["gain_item"]}]
                     if "equip_outfit" in delta and "outfit" not in delta:
                         delta["outfit"] = delta["equip_outfit"]
-                    if "variables" not in delta and matched_action.id == "scavenge_bottle":
-                        delta["variables"] = {"found_bottle": True}
-                    if "time_cost" not in delta:
+                    if "time_cost" not in delta and "time_slot" in (session.player_state.variables or {}):
                         delta["time_cost"] = 1
             elif matched_action.type == "interact":
                 succ_msg = ""
@@ -1463,16 +1492,14 @@ class AGUIBridge:
                 narration = (
                     f"你沉下心来，专注地在四周开展行动。\n\n"
                     f"【行动结果】{succ_msg}\n\n"
-                    f"周围的环境因你的努力而悄然改变，为你接下来的求生开辟了新的可能。"
+                    f"周围的环境因你的努力而悄然改变，为你接下来的行动开辟了新的可能。"
                 )
-                delta = dict(matched_action.on_success or {})
+                delta = copy.deepcopy(matched_action.on_success or {})
                 if "gain_item" in delta:
                     delta["add_inventory"] = [{"id": delta["gain_item"]}]
                 if "equip_outfit" in delta and "outfit" not in delta:
                     delta["outfit"] = delta["equip_outfit"]
-                if matched_action.id == "pickup_metal_box" and "visuals" not in delta:
-                    delta["visuals"] = {"hero_image": "【物品特写】洗净泥沙的防水金属盒"}
-                if "time_cost" not in delta:
+                if "time_cost" not in delta and "time_slot" in (session.player_state.variables or {}):
                     delta["time_cost"] = 1
             elif matched_action.type == "transition":
                 target_title = matched_action.target_scene or "未知新区域"
@@ -1481,146 +1508,56 @@ class AGUIBridge:
                     if target_obj:
                         target_title = target_obj.title
                 narration = (
-                    f"你收拾起为数不多的物资，迈开脚步朝着新的方向前进。\n\n"
-                    f"狂风吹拂着你的衣角，你穿过狭窄陡峭的路径，终于抵达了【{target_title}】。\n\n"
+                    f"你收拾好随身行装，迈开脚步朝着新的方向前进。\n\n"
+                    f"穿过前方的通路后，你终于抵达了【{target_title}】。\n\n"
                     f"眼前的景象豁然开朗，全新的机遇与潜在的危险正静候着你的探索。"
                 )
                 delta = {
                     "current_scene": matched_action.target_scene,
-                    "time_cost": 1,
-                    "attributes_delta": {"stamina": -5, "hydration": -4},
                 }
+                if "time_slot" in (session.player_state.variables or {}):
+                    delta["time_cost"] = 1
+                if "stamina" in (session.player_state.attributes or {}):
+                    delta["attributes_delta"] = {"stamina": -5, "hydration": -4}
             else:
                 narration = f"你专注于执行【{matched_action.label}】，谨慎地推动着当前的事态发展。"
-                delta = {"time_cost": 1}
+                delta = {"time_cost": 1} if "time_slot" in (session.player_state.variables or {}) else {}
         else:
-            # Open-ended scenario resolution
-            if session.scenario_id == "island_survival":
-                has_lighter = any(
-                    (isinstance(i, dict) and i.get("id") == "lighter")
-                    for i in (session.player_state.inventory or [])
+            p_vars = session.player_state.variables or {}
+            w_label = str(p_vars.get("weather") or "")
+            w_type = str(p_vars.get("weather_type") or "")
+            w_slot = str(p_vars.get("time_slot") or "")
+            w_cue = get_weather_narrative_cue(w_label, w_type, w_slot) if w_label else ""
+            fmt_vars = {"clean_action": clean_action, "weather_cue": w_cue}
+
+            matched_recipe = None
+            for recipe in (world.fallback_recipes if world else []) or []:
+                if not isinstance(recipe, dict):
+                    continue
+                if not _matches_keyword_rules(clean_action, recipe):
+                    continue
+                when_cond = recipe.get("when")
+                if when_cond and not evaluate_action_condition(when_cond, session.player_state):
+                    continue
+                matched_recipe = recipe
+                break
+
+            if matched_recipe:
+                narration, delta = self._resolve_declarative_branch(
+                    matched_recipe, session.player_state, fmt_vars
                 )
-                fire_terms = ("打火机", "火机", "点火", "生火", "引燃", "点燃", "火堆", "篝火", "甘草", "枯草", "升火", "烧火")
-                cook_terms = ("煮", "烤", "吃", "食", "饭", "烹", "蟹", "肉")
-                wants_fire = any(k in clean_action for k in fire_terms)
-                wants_cook = any(k in clean_action for k in cook_terms)
-
-                if wants_fire and has_lighter:
-                    delta["variables"] = {"fire_started": True}
-                    delta["visuals"] = {"hero_image": "/assets/illustrations/campfire.png"}
-                    inv_ids = [
-                        (i.get("id") if isinstance(i, dict) else str(i))
-                        for i in (session.player_state.inventory or [])
-                    ]
-                    if wants_cook and ("raw_crab" in inv_ids or "wild_food" in inv_ids or "coconut" in inv_ids):
-                        target_food = "raw_crab" if "raw_crab" in inv_ids else ("wild_food" if "wild_food" in inv_ids else "coconut")
-                        delta["remove_inventory"] = [target_food]
-                        delta["attributes_delta"] = {"fullness": 35, "stamina": 16, "temperature": 1}
-                        delta["san_delta"] = 6
-                        delta["time_cost"] = 1
-                        food_desc = "新鲜海蟹" if target_food == "raw_crab" else ("采摘坚果" if target_food == "wild_food" else "烤椰肉")
-                        narration = (
-                            f"你从背包中稳稳取出防风打火机。咔哒一声脆响，强劲的橙蓝色防风火苗猛烈喷吐，迅速引燃了收集堆叠的干燥甘草与枯枝！\n\n"
-                            f"【行动成功】火舌飞快舔舐木柴，一堆明亮温暖的篝火在身前熊熊燃烧起来，彻底驱散了周遭的湿冷海风与野兽威胁！\n\n"
-                            f"紧接着，你将背包中的{food_desc}架在篝火上炙烤。火焰将食物烤得滋滋作响、通红滚烫，诱人的焦香海鲜肉气在四周弥漫！\n\n"
-                            f"你大快朵颐吃下温热熟透的食物，空虚的胃部被彻底充实，体温与体力大幅回升，精神为之一振！"
-                        )
-                    else:
-                        delta["attributes_delta"] = {"stamina": -4, "temperature": 1}
-                        delta["san_delta"] = 5
-                        delta["time_cost"] = 1
-                        narration = (
-                            f"你从背包中取出可靠的防风打火机，拇指一擦打火轮，稳定的火苗立刻喷吐而出！\n\n"
-                            f"【行动成功】防风打火机精准引燃了干燥的甘草与引火碎木，火焰腾空而起，生起了一堆明亮温暖的篝火！周围的湿冷瞬间消散。\n\n"
-                            f"稳定的火源已经就绪，接下来可以随时在篝火上烧水、煮熟食材或安然过夜。"
-                        )
-                elif wants_fire and not has_lighter:
-                    delta["time_cost"] = 1
-                    narration = (
-                        f"你试图在四周寻找火源生火，但你在随身背包中仔细翻找后发现并没有携带打火机。\n\n"
-                        f"海风呼啸而过，未处理的干柴无法凭空引燃。或许可以在沙滩散落的客机残骸或防水金属盒中搜寻生火工具。"
-                    )
-                else:
-                    inv_ids = [
-                        (i.get("id") if isinstance(i, dict) else str(i))
-                        for i in (session.player_state.inventory or [])
-                    ]
-                    shelter_terms = ("窝棚", "庇护所", "遮蔽所", "木棚", "搭棚", "搭建营地")
-                    collector_terms = ("集水器", "雨水收集", "接水", "集水装置")
-                    wants_shelter = any(k in clean_action for k in shelter_terms)
-                    wants_collector = any(k in clean_action for k in collector_terms)
-
-                    if wants_shelter:
-                        if "branches" in inv_ids and "rope" in inv_ids:
-                            delta["remove_inventory"] = ["branches", "rope"]
-                            delta["variables"] = {"shelter_level": 1}
-                            delta["visuals"] = {"hero_image": "/assets/props/shelter.png"}
-                            delta["attributes_delta"] = {"stamina": -14, "hydration": -8, "fullness": -6, "temperature": 1}
-                            delta["san_delta"] = 8
-                            delta["time_cost"] = 1
-                            narration = (
-                                "你将干燥硬木枝干斜靠在背风处，用坚韧的纤维绳反复绞紧主梁，再铺上宽大椰叶封顶。\n\n"
-                                "【建造成功】一座结实耐用的防风窝棚拔地而起，已稳稳立在营地边缘的视觉区！从此你拥有了遮风挡雨、安心休整的稳固据点。"
-                            )
-                        else:
-                            missing = []
-                            if "branches" not in inv_ids:
-                                missing.append("干燥树枝浮木")
-                            if "rope" not in inv_ids:
-                                missing.append("坚韧纤维绳")
-                            delta["time_cost"] = 1
-                            narration = (
-                                f"你选好了搭建防风窝棚的背风平地，但翻找背包后发现还缺少关键建材：{'、'.join(missing)}。\n\n"
-                                "收集齐树枝与纤维绳后，即可随时搭起这座耐用的荒岛庇护所。"
-                            )
-                    elif wants_collector:
-                        if "glass_bottle" in inv_ids and "rope" in inv_ids:
-                            delta["remove_inventory"] = ["glass_bottle", "rope"]
-                            delta["variables"] = {"water_collector_built": True}
-                            delta["visuals"] = {"hero_image": "/assets/props/water_collector.png"}
-                            delta["attributes_delta"] = {"stamina": -10, "hydration": -4}
-                            delta["san_delta"] = 5
-                            delta["time_cost"] = 1
-                            narration = (
-                                "你用木架支起漏斗状的大片热带阔叶，以纤维绳扎实固定，再将厚壁玻璃瓶安放在导流叶尖下方。\n\n"
-                                "【建造成功】简易雨水收集器已搭建完毕并展示在营地侧栏！露水与雨水正沿着叶脉一滴滴汇入瓶中。"
-                            )
-                        else:
-                            missing = []
-                            if "glass_bottle" not in inv_ids:
-                                missing.append("厚壁玻璃瓶")
-                            if "rope" not in inv_ids:
-                                missing.append("坚韧纤维绳")
-                            delta["time_cost"] = 1
-                            narration = (
-                                f"你想架设一套持续蓄水的雨水收集器，但目前缺少关键构件：{'、'.join(missing)}。"
-                            )
-                    else:
-                        w_label = str((session.player_state.variables or {}).get("weather") or "")
-                        w_type = str((session.player_state.variables or {}).get("weather_type") or "")
-                        w_slot = str((session.player_state.variables or {}).get("time_slot") or "")
-                        w_cue = get_weather_narrative_cue(w_label, w_type, w_slot)
-                        narration = (
-                            f"你在险恶的孤岛环境中尝试【{clean_action}】。{w_cue}\n\n"
-                            f"沙滩与灌木间回荡着你的脚步声，潮水在不远处涨落起伏。虽然并未立即触发某种机关或质变，"
-                            f"但这番探寻让你对周遭的地形与动静有了更深入的把握。体力略有消耗，但你的求生意志愈加坚定。"
-                        )
-                        delta = {
-                            "time_cost": 1,
-                            "attributes_delta": {"stamina": -3, "hydration": -2},
-                        }
+            elif world and isinstance(world.default_fallback, dict):
+                narration, delta = self._resolve_declarative_branch(
+                    world.default_fallback, session.player_state, fmt_vars
+                )
             else:
                 narration = (
-                    f"幽暗的公馆大厅中蜡烛影影绰绰，窗外寒鸦惊啼。你谨慎地尝试【{clean_action}】。\n\n"
-                    f"沉闷的脚步声在石质地板间激起微弱的回响。空气中弥漫着旧羊皮纸与蜡油的味道，"
-                    f"整座宅邸的压迫感似乎无处不在，随时可能揭开更深层的谜团。"
+                    f"你在当前环境中谨慎地尝试【{clean_action}】。\n\n"
+                    f"虽然并未立即触发预设机关或质变，但这番探寻让你对周遭的局势有了更清晰的把握。"
                 )
-                delta = {
-                    "time_cost": 1,
-                    "san_delta": -1,
-                }
+                delta = {"time_cost": 1} if "time_slot" in p_vars else {}
 
-        if session.scenario_id == "island_survival" and (delta.get("time_cost") or 0) > 0:
+        if (delta.get("time_cost") or 0) > 0:
             w_label = str((session.player_state.variables or {}).get("weather") or "")
             w_type = str((session.player_state.variables or {}).get("weather_type") or "")
             w_slot = str((session.player_state.variables or {}).get("time_slot") or "")
@@ -1632,13 +1569,14 @@ class AGUIBridge:
         formatted = f"{narration}\n\n```state_delta\n{json.dumps(delta, ensure_ascii=False, indent=2)}\n```\n"
         return formatted, delta
 
-    @staticmethod
     def _match_freeform_action(
+        self,
         scene: Optional[SceneNode],
         user_text: str,
         player_state: PlayerState,
+        world: Optional[WorldSpec] = None,
     ) -> tuple[Optional[ActionOption], bool]:
-        """Match free-form player text to an eligible scene action without hijacking distinct intents.
+        """Match free-form player text to an eligible scene action via declarative rules and keywords.
 
         Returns (matched_action, is_exact_label_match).
         """
@@ -1661,97 +1599,33 @@ class AGUIBridge:
             if clean_input == a.label or a.label in clean_input:
                 return a, True
 
-        # 2. Intent-aware disambiguation for metal box / luggage actions
-        box_nouns = ("金属盒", "铁盒", "铝盒", "防水盒", "盒子")
-        if any(noun in clean_input for noun in box_nouns):
-            search_verbs = ("搜", "翻", "找", "撬", "打开", "拆开", "里面", "内里", "夹层", "打火机")
-            pickup_verbs = ("捡", "拾", "拿", "洗", "冲", "擦", "带走", "收", "装")
-            wants_search = any(v in clean_input for v in search_verbs)
-            wants_pickup = any(v in clean_input for v in pickup_verbs)
-            if wants_search:
-                for target_id in ("search_luggage", "open_metal_box_coastal", "open_metal_box_in_jungle"):
-                    act = next((a for a in eligible_actions if a.id == target_id), None)
-                    if act:
-                        return act, False
+        # 2. Scenario declarative freeform disambiguation rules
+        resolved_world = world or self._resolve_world(getattr(player_state, "_scenario_id", ""))
+        for rule in (resolved_world.freeform_rules if resolved_world else []) or []:
+            if not isinstance(rule, dict):
+                continue
+            if not _matches_keyword_rules(clean_input, rule):
+                continue
+            when_cond = rule.get("when")
+            if when_cond and not evaluate_action_condition(when_cond, player_state):
+                continue
+            if rule.get("passthrough"):
                 return None, False
-            if wants_pickup:
-                act = next((a for a in eligible_actions if a.id == "pickup_metal_box"), None)
+            target_ids = list(rule.get("target_actions") or [])
+            if rule.get("target_action"):
+                target_ids.insert(0, rule["target_action"])
+            for target_id in target_ids:
+                act = next((a for a in eligible_actions if a.id == target_id), None)
                 if act:
                     return act, False
+            if rule.get("exclusive"):
                 return None, False
-            # Ambiguous reference to the box (e.g. "把金属盒当锅烧水"): let LLM handle freely
-            if "烧水" in clean_input or "煮水" in clean_input:
-                act = next((a for a in eligible_actions if a.id == "boil_water_in_metal_box"), None)
-                if act:
-                    return act, False
-            return None, False
 
-        # 3. Fire-making & cooking intent-aware resolution
-        fire_terms = ("点火", "生火", "升火", "引燃", "点燃", "篝火", "火堆", "烧火", "甘草", "枯草")
-        cook_terms = ("煮", "烤", "热食", "烹饪", "做饭", "煮食", "烤食", "熟食")
-        wants_fire = any(v in clean_input for v in fire_terms)
-        wants_cook = any(v in clean_input for v in cook_terms)
-        has_lighter = any(
-            (isinstance(i, dict) and i.get("id") == "lighter")
-            for i in (player_state.inventory or [])
-        )
-
-        # Composite action: player wants to both light fire AND cook/eat food
-        # Do not collapse to a single-step preset action; let the open-ended handler fulfill both
-        if wants_fire and wants_cook:
-            return None, False
-
-        if wants_fire and has_lighter:
-            for act_id in ("beach_campfire", "coastal_campfire", "light_campfire", "craft_campfire"):
-                act = next((a for a in eligible_actions if a.id == act_id), None)
-                if act:
-                    return act, False
-
-        if wants_cook:
-            for act_id in ("beach_cook_food", "coastal_cook_food", "cook_food_on_fire", "cook_meal"):
-                act = next((a for a in eligible_actions if a.id == act_id), None)
-                if act:
-                    return act, False
-
-        # 4. Substring or domain keyword match across eligible actions
-        kw_map = {
-            "scavenge_bottle": ["玻璃瓶", "瓶子", "漂流瓶"],
-            "search_luggage": ["行李", "打火机"],
-            "pick_seashell": ["贝壳", "海螺", "螺"],
-            "catch_shore_crab": ["螃蟹", "海蟹", "抓蟹", "红蟹"],
-            "gather_driftwood": ["干柴", "树枝", "浮木", "捡柴"],
-            "cut_vines": ["藤蔓", "老藤", "割藤"],
-            "collect_fresh_water": ["泉水", "甘泉", "装水", "打水"],
-            "gather_coconuts": ["椰子", "采摘椰子", "摘椰子"],
-            "beach_campfire": ["生火", "点火", "篝火", "火堆", "引燃", "点燃", "升火"],
-            "coastal_campfire": ["生火", "点火", "篝火", "火堆", "引燃", "点燃", "升火"],
-            "light_campfire": ["生火", "点火", "篝火", "火堆", "引燃", "点燃", "升火"],
-            "craft_campfire": ["生火", "点火", "篝火", "火堆", "引燃", "点燃", "升火"],
-            "beach_cook_food": ["烤蟹", "烤肉", "煮食", "烤食物", "煮食物", "做饭", "烹饪"],
-            "coastal_cook_food": ["烤肉", "烤蟹", "烤椰子", "煮食", "烤食物", "煮食物", "做饭", "烹饪"],
-            "cook_food_on_fire": ["烤肉", "烤蟹", "煮食", "烤食物", "煮食物", "做饭", "热食"],
-            "cook_meal": ["烤肉", "烤蟹", "做饭", "烹饪"],
-            "craft_rope": ["搓绳", "编织绳索", "做绳子", "编绳"],
-            "build_beach_shelter": ["窝棚", "庇护所", "搭棚", "遮蔽所"],
-            "build_jungle_shelter": ["窝棚", "庇护所", "搭棚", "遮蔽所"],
-            "build_deep_shelter": ["窝棚", "庇护所", "搭棚", "遮蔽所"],
-            "build_water_collector_beach": ["集水器", "雨水收集", "接水装置"],
-            "build_water_collector_coastal": ["集水器", "雨水收集", "接水装置"],
-            "build_water_collector_deep": ["集水器", "雨水收集", "接水装置"],
-            "collect_water_beach": ["接水喝", "喝集水器", "取集水"],
-            "collect_water_coastal": ["接水喝", "喝集水器", "取集水"],
-            "collect_water_deep": ["接水喝", "喝集水器", "取集水"],
-            "rest_in_shelter_beach": ["窝棚休息", "进窝棚", "庇护所休息"],
-            "rest_in_shelter_coastal": ["窝棚休息", "进窝棚", "庇护所休息"],
-            "rest_in_shelter_deep": ["窝棚休息", "进窝棚", "庇护所休息"],
-            "rest_by_fire": ["休息", "睡觉", "过夜"],
-            "rest_by_campfire": ["休息", "睡觉", "过夜"],
-        }
+        # 3. Substring or ActionOption.keywords match across eligible actions
         for a in eligible_actions:
             if len(clean_input) >= 2 and clean_input in a.label:
                 return a, False
-            kws = kw_map.get(a.id, [])
-            if any(kw in clean_input for kw in kws):
+            if a.keywords and any(kw in clean_input for kw in a.keywords):
                 return a, False
 
         return None, False
@@ -1807,7 +1681,7 @@ class AGUIBridge:
             explicit_action = matched_action is not None
         elif not matched_action and pre_scene and pre_scene.actions:
             matched_action, explicit_action = self._match_freeform_action(
-                pre_scene, user_text, session.player_state
+                pre_scene, user_text, session.player_state, world=session.world
             )
 
         eval_res: Optional[Dict[str, Any]] = None
@@ -1858,13 +1732,13 @@ class AGUIBridge:
                 call_id = event.data.get("call_id", str(uuid.uuid4()))
                 tool_name = event.data.get("tool_name", "tool")
                 yield self.encoder.encode(
-                    ToolCallStartEvent(call_id=call_id, tool_name=tool_name)
+                    ToolCallStartEvent(tool_call_id=call_id, tool_call_name=tool_name)
                 )
 
             elif event.event_type == "tool_call_end":
                 call_id = event.data.get("call_id", str(uuid.uuid4()))
                 yield self.encoder.encode(
-                    ToolCallEndEvent(call_id=call_id)
+                    ToolCallEndEvent(tool_call_id=call_id)
                 )
 
             elif event.event_type == "done":
@@ -2046,9 +1920,16 @@ class AGUIBridge:
         if input_data.forwarded_props and isinstance(input_data.forwarded_props, dict):
             scenario_id = input_data.forwarded_props.get("scenario_id", scenario_id)
 
-        prompt = f"""你是一名专业的游戏剧本设计与代码协作者（AG-SLG Studio Co-pilot，遵循 ag-slg-director 视觉分层规范）。
+        prompt = f"""你是一名专业的游戏剧本设计与视觉导演协作者（AG-SLG Studio Co-pilot，遵循 ag-slg-director 视觉分层规范）。
 当前剧本资产目录位于当前工作区的 scripts/{scenario_id}/ 下。
 用户创作需求：{user_text}
+
+【核心红线约束 — 严禁修改框架代码】：
+1. 你的工作范围**仅限**当前剧本目录 `scripts/{scenario_id}/`（包括 `world.yaml`、`scenes/*.yaml`）及对应静态美术资源。
+2. **绝对禁止**修改、覆盖或重构任何框架引擎代码（包括但不限于 `server/`、`web/`、`tests/`、`run_services.py`、`pyproject.toml`），除非用户在本次对话中明确要求你排查并修复框架本身的 Bug！
+3. 如果剧本需要专属状态栏、Boss/遭遇面板、阶段追踪器、专属数值上下限、战斗公式、检定修正或物品目录：
+   - 请通过 `scripts/{scenario_id}/world.yaml` 的声明式字段（`dm_rules`、`item_catalog`、`attribute_bounds`、`variable_bounds`、`adjudication_rules`、`initial_player_state.hud_widgets`）配置，或直接在场景动作 `on_success`/`on_failure` 中配置 `hud_widgets` / `remove_hud_widgets`；
+   - 或在游玩期引导 DM Agent 通过 AG-UI ```state_delta``` 的 `hud_widgets`（支持 `metrics` / `tracker` / `panel`）与 `remove_hud_widgets` 动态渲染与撤除界面，绝不要为了迎合单个剧本而改动引擎源码。
 
 你可以直接输出剧本构思与建议。如果你构思了一个完整的场景节点或更新了场景，请在回复中包含如下格式的代码块，以便系统自动将其写盘生效。请务必配置完整的多图层视觉资源（background, foreground, hero_image, visuals.atmosphere）：
 ```scene_yaml:场景ID

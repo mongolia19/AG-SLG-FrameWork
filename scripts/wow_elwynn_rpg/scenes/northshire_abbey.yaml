@@ -7,16 +7,23 @@ music: "/assets/bgm/northshire_dawn.mp3"
 
 description: |
   清晨的薄雾正从艾尔文森林苍翠的树梢间散去，北郡修道院高耸的石砌钟楼敲响了晨祷钟声。
-  石阶广场上飘扬着蓝金相间的暴风城雄狮战旗，几名神色严峻的卫兵正低声清点着战备补给。
-  修道院大门前，治安官麦格布莱德双臂抱胸站在征召榜旁。南方的法戈第矿洞近日频频传出蜘蛛异动与毒雾蔓延的坏消息，
-  暴风城急需新的英雄挺身而出——在你踏上艾泽拉斯的冒险之前，必须先觉醒属于自己的种族血脉与职业技艺。
+  石阶广场上飘扬着蓝金相间的暴风城雄狮战旗，几名神色严峻的卫兵正低声清点着战备补给与红蓝炼金药水。
+  修道院大门前，治安官麦格布莱德双臂抱胸站在征召榜旁。南方的法戈第矿洞近日不仅盘踞着狂暴狗头人矿工与护卫蛛群，深处更潜伏着拥有三阶段毒潮魔力的【蜘蛛领主·阿拉克诺斯】——在你踏上征程之前，必须先觉醒职业、积蓄血量与魔法（HP/MP）并做好战备！
 
 visuals:
   background: "【场景全景】艾尔文森林·北郡修道院晨光广场，石砌钟楼与圣光旗帜矗立在绿茵山谷之中"
   foreground: "/assets/characters/marshal_mcbride.png"
   hero_image: "【焦点插画】北郡修道院圣光祭坛与暴风城新兵征召榜"
   atmosphere: "晨光熹微、庄严肃穆、号角蓄势"
-  decorations: []
+  decorations:
+    - id: "abbey_supply_crate"
+      name: "北郡战备药箱"
+      image: "/assets/items/northshire_order.png"
+      side: "left"
+      category: "env"
+      tag: "军需补给"
+      caption: "北郡战备卷宗"
+      tooltip: "存放着暴风城军令状与红蓝恢复药剂的修道院补给箱"
 
 decorations: []
 
@@ -24,17 +31,21 @@ npcs:
   - id: "marshal_mcbride"
     name: "治安官麦格布莱德"
     avatar: "/assets/characters/marshal_mcbride.png"
-    greeting: "圣光保佑你，年轻的冒险者！先选定你的种族与职业之道，再完成北郡新兵试炼吧。切记，法戈第矿洞的蜘蛛领主绝非一人之力可敌。"
+    greeting: "圣光保佑你，年轻的冒险者！先选定你的种族与职业之道，激活血量与魔法槽位，再完成北郡新兵试炼。切记带足红蓝药水，法戈第矿洞深处的蜘蛛领主绝非昔日可比！"
 
 actions:
   - id: "choose_human_paladin"
-    label: "【开局抉择】人类 · 圣骑士（初始技能：十字军打击/圣光闪现/虔诚光环 Lv.1）"
+    label: "【开局抉择】人类 · 圣骑士（115 HP / 110 圣能 · 十字军打击/圣光闪现/虔诚光环 Lv.1）"
     type: "interact"
     target_npc: "marshal_mcbride"
     condition:
       variables:
         class_selected: false
     on_success:
+      max_hp: 115
+      hp: 115
+      max_mp: 110
+      mp: 110
       attributes_delta:
         strength: 4
         intelligence: 3
@@ -57,7 +68,7 @@ actions:
           level: 1
           tag: "近战 · 圣光"
           desc: "将圣光之力灌注战锤重击目标，造成物理与神圣混合伤害。"
-          effect: "对亡灵与魔物伤害提升 30%，并提高力量近战破防检定成功率。"
+          effect: "伤害公式：(20 + 力量×2.5 + 等级×10)，消耗 20 圣能，命中后削减敌方魔力。"
           cost: "20 圣能"
           cooldown: "1 回合"
         - id: "flash_of_light"
@@ -65,7 +76,7 @@ actions:
           level: 1
           tag: "治疗 · 圣光"
           desc: "快速引导温和圣光愈合自身或同伴伤势，稳定战斗续航。"
-          effect: "立即恢复自身或队友 25~35 点生命值，并安抚心智（SAN +3）。"
+          effect: "立即恢复自身 42 点生命值，净化蛛网缠绕并安抚心智（SAN +4）。"
           cost: "25 圣能"
           cooldown: "2 回合"
         - id: "devotion_aura"
@@ -73,7 +84,7 @@ actions:
           level: 1
           tag: "守护 · 光环"
           desc: "展开白银之手神圣防御力场，持续守护自身与身旁同伴。"
-          effect: "常驻减免 20% 物理与毒素冲击伤害，提升正面抗压与体质检定表现。"
+          effect: "常驻减免物理与毒素冲击伤害，提升正面抗压与体质检定表现。"
           cost: "常驻光环"
           cooldown: "持续生效"
       variables:
@@ -81,6 +92,7 @@ actions:
         race: "人类"
         class_name: "圣骑士"
         class_id: "paladin"
+        mp_label: "圣能/法力"
         level: 1
         xp: 0
         xp_next: 100
@@ -88,16 +100,20 @@ actions:
         skills: "十字军打击 Lv.1 · 圣光闪现 Lv.1 · 虔诚光环 Lv.1"
       visuals:
         hero_image: "【职业觉醒】白银之手圣光照耀人类圣骑士徽记"
-      message: "圣光在你掌心燃起温暖金芒！你觉醒为【人类 · 圣骑士】，力量+4、智力+3、体质+3，掌握初始技能：十字军打击 Lv.1、圣光闪现 Lv.1、虔诚光环 Lv.1。"
+      message: "圣光在你掌心燃起温暖金芒！你觉醒为【人类 · 圣骑士】（115 HP / 110 圣能），力量+4、智力+3、体质+3，掌握初始技能：十字军打击 Lv.1、圣光闪现 Lv.1、虔诚光环 Lv.1。"
 
   - id: "choose_nightelf_hunter"
-    label: "【开局抉择】暗夜精灵 · 猎人（初始技能：奥术射击/毒蛇钉刺/猎豹守护 Lv.1）"
+    label: "【开局抉择】暗夜精灵 · 猎人（105 HP / 100 集中 · 奥术射击/毒蛇钉刺/猎豹守护 Lv.1）"
     type: "interact"
     target_npc: "marshal_mcbride"
     condition:
       variables:
         class_selected: false
     on_success:
+      max_hp: 105
+      hp: 105
+      max_mp: 100
+      mp: 100
       attributes_delta:
         agility: 5
         perception: 3
@@ -120,15 +136,15 @@ actions:
           level: 1
           tag: "远程 · 奥术"
           desc: "将奥术能量附着于箭矢之上瞬间射出，精准穿透敌方护甲。"
-          effect: "无视目标部分物理甲壳防御，提高敏捷远程打击与狙击弱点命中率。"
+          effect: "伤害公式：(20 + 敏捷×2.5 + 等级×10)，消耗 20 集中值，兼顾远程破防与打断。"
           cost: "20 集中值"
           cooldown: "1 回合"
         - id: "serpent_sting"
           name: "毒蛇钉刺"
           level: 1
           tag: "毒素 · 持续"
-          desc: "射出淬炼自然剧毒的倒钩箭矢，令目标持续失血并受创。"
-          effect: "附加持续毒素侵蚀，每回合削弱敌方体力并迟滞其扑击动作。"
+          desc: "射出淬炼自然剧毒的倒钩箭矢，令目标持续失血并压制施法。"
+          effect: "消耗 15 集中值，造成伤害并削减 Boss 30 点魔法值，配合灵巧走位大幅降低受击。"
           cost: "15 集中值"
           cooldown: "2 回合"
         - id: "aspect_of_the_cheetah"
@@ -144,6 +160,7 @@ actions:
         race: "暗夜精灵"
         class_name: "猎人"
         class_id: "hunter"
+        mp_label: "集中值"
         level: 1
         xp: 0
         xp_next: 100
@@ -151,16 +168,20 @@ actions:
         skills: "奥术射击 Lv.1 · 毒蛇钉刺 Lv.1 · 猎豹守护 Lv.1"
       visuals:
         hero_image: "【职业觉醒】艾露恩银辉萦绕的暗夜精灵紫杉长弓"
-      message: "银月清辉映照你的双眸！你觉醒为【暗夜精灵 · 猎人】，敏捷+5、感知+3、体质+2，掌握初始技能：奥术射击 Lv.1、毒蛇钉刺 Lv.1、猎豹守护 Lv.1。"
+      message: "银月清辉映照你的双眸！你觉醒为【暗夜精灵 · 猎人】（105 HP / 100 集中），敏捷+5、感知+3、体质+2，掌握初始技能：奥术射击 Lv.1、毒蛇钉刺 Lv.1、猎豹守护 Lv.1。"
 
   - id: "choose_gnome_mage"
-    label: "【开局抉择】侏儒 · 法师（初始技能：火球术/寒冰箭/奥术智慧 Lv.1）"
+    label: "【开局抉择】侏儒 · 法师（90 HP / 140 奥术法力 · 火球术/寒冰箭/奥术智慧 Lv.1）"
     type: "interact"
     target_npc: "marshal_mcbride"
     condition:
       variables:
         class_selected: false
     on_success:
+      max_hp: 90
+      hp: 90
+      max_mp: 140
+      mp: 140
       attributes_delta:
         intelligence: 5
         perception: 3
@@ -182,16 +203,16 @@ actions:
           name: "火球术"
           level: 1
           tag: "火焰 · 爆发"
-          desc: "凝聚炽热火元素投射爆裂火球，正面轰击敌人或障碍。"
-          effect: "造成高额火焰爆发伤害，可瞬间引燃并清扫矿洞蛛网与易燃毒囊。"
-          cost: "30 法力值"
+          desc: "凝聚炽热火元素投射爆裂火球，正面轰击敌人或焚毁蛛网。"
+          effect: "伤害公式：(30 + 智力×2.5 + 等级×10)，消耗 25 法力，高额爆发并烧毁缠身蛛网。"
+          cost: "25 法力值"
           cooldown: "1 回合"
         - id: "frostbolt"
           name: "寒冰箭"
           level: 1
           tag: "冰霜 · 控制"
-          desc: "发射极寒冰晶箭刺穿敌人，将凛冽寒气注入目标关节。"
-          effect: "造成冰霜伤害并强效减速控制，限制强敌冲锋、打断敌方连招。"
+          desc: "发射极寒冰晶箭刺穿敌人，冻结关节并强效打断强敌施法。"
+          effect: "消耗 20 法力，造成稳定冰霜伤害并打断 Boss 蓄力（削减 Boss 35 MP）。"
           cost: "20 法力值"
           cooldown: "瞬发"
         - id: "arcane_intellect"
@@ -199,7 +220,7 @@ actions:
           level: 1
           tag: "奥术 · 增益"
           desc: "激发达拉然奥术符文强化心智，保持清醒专注的魔力感知。"
-          effect: "常驻提升智力法术精准度与魔法抗性，减缓毒雾造成的理智（SAN）流失。"
+          effect: "常驻提升法力上限与法术精准度，减缓毒雾造成的理智（SAN）流失。"
           cost: "常驻增益"
           cooldown: "持续生效"
       variables:
@@ -207,6 +228,7 @@ actions:
         race: "侏儒"
         class_name: "法师"
         class_id: "mage"
+        mp_label: "奥术法力"
         level: 1
         xp: 0
         xp_next: 100
@@ -214,16 +236,20 @@ actions:
         skills: "火球术 Lv.1 · 寒冰箭 Lv.1 · 奥术智慧 Lv.1"
       visuals:
         hero_image: "【职业觉醒】紫罗兰奥术符文阵与元素火球术法杖"
-      message: "奥术星芒在你指尖跃动！你觉醒为【侏儒 · 法师】，智力+5、感知+3、敏捷+2，掌握初始技能：火球术 Lv.1、寒冰箭 Lv.1、奥术智慧 Lv.1。"
+      message: "奥术星芒在你指尖跃动！你觉醒为【侏儒 · 法师】（90 HP / 140 奥术法力），智力+5、感知+3、敏捷+2，掌握初始技能：火球术 Lv.1、寒冰箭 Lv.1、奥术智慧 Lv.1。"
 
   - id: "choose_dwarf_warrior"
-    label: "【开局抉择】矮人 · 战士（初始技能：英勇打击/雷霆一击/盾牌格挡 Lv.1）"
+    label: "【开局抉择】矮人 · 战士（130 HP / 100 战意 · 英勇打击/雷霆一击/盾牌格挡 Lv.1）"
     type: "interact"
     target_npc: "marshal_mcbride"
     condition:
       variables:
         class_selected: false
     on_success:
+      max_hp: 130
+      hp: 130
+      max_mp: 100
+      mp: 100
       attributes_delta:
         strength: 4
         constitution: 5
@@ -246,16 +272,16 @@ actions:
           level: 1
           tag: "近战 · 爆发"
           desc: "蓄力挥出势大力沉的战斧重劈，倾泻全部力量直击敌躯。"
-          effect: "造成高倍率破甲近战伤害，有效劈碎野兽厚皮与巨蛛硬壳。"
+          effect: "伤害公式：(25 + 力量×2.5 + 等级×10)，消耗 20 战意，重创破甲后的目标。"
           cost: "20 怒气值"
           cooldown: "1 回合"
         - id: "thunder_clap"
           name: "雷霆一击"
           level: 1
           tag: "震荡 · 群攻"
-          desc: "重踏地面激起雷霆冲击波，向四周扩散强劲震荡气浪。"
-          effect: "震慑周遭敌群并强行打断扑击节奏，压制群体敌人的攻击频次。"
-          cost: "25 怒气值"
+          desc: "重踏地面激起雷霆冲击波，震荡群敌并压制 Boss 蓄力。"
+          effect: "消耗 15 战意，配合盾牌格挡大幅减伤、清剿幼蛛并打断 Boss 魔法（-35 MP）。"
+          cost: "15 战意"
           cooldown: "2 回合"
         - id: "shield_block"
           name: "盾牌格挡"
@@ -270,6 +296,7 @@ actions:
         race: "矮人"
         class_name: "战士"
         class_id: "warrior"
+        mp_label: "战意/怒气"
         level: 1
         xp: 0
         xp_next: 100
@@ -277,7 +304,7 @@ actions:
         skills: "英勇打击 Lv.1 · 雷霆一击 Lv.1 · 盾牌格挡 Lv.1"
       visuals:
         hero_image: "【职业觉醒】铁炉堡熔火纹章战盾与钢铁战斧"
-      message: "铁炉堡的山丘之力在你血脉中奔涌！你觉醒为【矮人 · 战士】，力量+4、体质+5、敏捷+1，掌握初始技能：英勇打击 Lv.1、雷霆一击 Lv.1、盾牌格挡 Lv.1。"
+      message: "铁炉堡的山丘之力在你血脉中奔涌！你觉醒为【矮人 · 战士】（130 HP / 100 战意），力量+4、体质+5、敏捷+1，掌握初始技能：英勇打击 Lv.1、雷霆一击 Lv.1、盾牌格挡 Lv.1。"
 
   - id: "talk_mcbride_quest"
     label: "向治安官麦格布莱德请命，接取《清剿法戈第蛛灾》任务并领取军饷"
@@ -288,26 +315,29 @@ actions:
         class_selected: true
         mcbride_quest_accepted: false
     on_success:
-      gold_delta: 20
+      gold_delta: 25
       gain_item: "北郡军令状"
       variables:
         mcbride_quest_accepted: true
       visuals:
         foreground: "/assets/characters/marshal_mcbride.png"
-      message: "麦格布莱德将盖有暴风城火漆的【北郡军令状】与 20 枚金币交到你手中：‘先在修道院外围磨炼技能，再前往艾尔文野外与斥候艾莲娜汇合！只有两人配合，才能拿下矿洞深处的蜘蛛领主！’"
+      message: "麦格布莱德将盖有暴风城火漆的【北郡军令状】与 25 枚金币交到你手中：‘先在修道院外围磨炼技能，再前往艾尔文野外与斥候艾莲娜汇合！法戈第矿洞外围已被狗头人与护卫蛛封锁，清剿前哨小怪后才能挑战深处的蜘蛛领主！’"
 
   - id: "northshire_wolf_trial"
-    label: "【新手试炼】运用初始技能清剿修道院外围灰狼与狗头人斥候"
+    label: "【新手试炼】运用初始技能清剿修道院外围灰狼与狗头人斥候（消耗 15 MP）"
     type: "check"
     skill: "perception"
     difficulty: 9
     condition:
+      min_hp: 1
+      min_mp: 15
       variables:
         class_selected: true
         northshire_trial_done: false
     on_success:
       xp: 100
-      hp_delta: -6
+      hp_delta: -8
+      mp_delta: -15
       gold_delta: 15
       gain_item: "狗头人蜡烛碎块"
       variables:
@@ -316,13 +346,14 @@ actions:
       visuals:
         foreground: ""
         hero_image: "【战斗特写】修道院林边击溃偷蜡烛的狗头人斥候"
-      message: "你果断施展 Lv.1 初始职业技能，漂亮地击退了潜伏在修道院篱笆旁的森林灰狼与狗头人斥候！积累了宝贵战斗经验（XP +100），现在可以找治安官麦格布莱德突破等级了！"
+      message: "你消耗 15 点魔法能量施展 Lv.1 职业技能，干净利落地击退了潜伏在修道院篱笆旁的森林灰狼与狗头人斥候（HP -8，MP -15）！积累战斗经验（XP +100）并缴获【狗头人蜡烛碎块】与 15 金币！"
     on_failure:
-      hp_delta: -12
-      message: "狗头人趁你收招间隙挥舞矿镐偷袭，划伤了你的手臂（HP -12）。调整呼吸后你可以再次发起清剿。"
+      hp_delta: -14
+      mp_delta: -10
+      message: "狗头人趁你收招间隙挥舞矿镐偷袭，划伤了你的手臂（HP -14，MP -10）。调整呼吸或补充药水后可以再次发起清剿。"
 
   - id: "upgrade_to_lv2"
-    label: "【等级突破 Lv.1 → Lv.2】向麦格布莱德汇报战果，全面提升属性与技能等级"
+    label: "【等级突破 Lv.1 → Lv.2】向麦格布莱德汇报战果（MaxHP +25 / MaxMP +20，全属性 +2）"
     type: "interact"
     target_npc: "marshal_mcbride"
     condition:
@@ -331,7 +362,10 @@ actions:
         northshire_trial_done: true
         level: 1
     on_success:
-      hp_delta: 25
+      max_hp_delta: 25
+      max_mp_delta: 20
+      hp_delta: 40
+      mp_delta: 40
       san_delta: 5
       attributes_delta:
         strength: 2
@@ -344,14 +378,57 @@ actions:
         xp: 100
         xp_next: 300
         skill_rank: 2
-        skills: "初始职业三技能全面晋升至 Lv.2（威力提升 35%，冷却缩短）"
+        skills: "初始职业三技能全面晋升至 Lv.2（威力公式阶跃提升）"
       visuals:
         foreground: "/assets/characters/marshal_mcbride.png"
-        hero_image: "【等级跃升】金光涌动！角色晋升 Lv.2，全属性提升，技能迈入 Lv.2"
-      message: "麦格布莱德满意地点了点头，亲自指点你发力与施法的窍门！你成功晋升至【Lv.2】！全基础属性 +2、生命恢复，所有初始职业技能正式突破至【Lv.2】！"
+        hero_image: "【等级跃升】金光涌动！角色晋升 Lv.2，血量与魔法上限提升，技能迈入 Lv.2"
+      message: "麦格布莱德亲自指点你发力与魔力引导的窍门！你成功晋升至【Lv.2】！生命上限 +25、魔法上限 +20、全基础属性 +2，生命与魔法大幅恢复，所有职业技能正式突破至【Lv.2】！"
+
+  - id: "buy_healing_potion_abbey"
+    label: "【军需补给】花费 15 金币向北郡军需官购入【初级治疗药水】（HP +45）"
+    type: "interact"
+    target_npc: "marshal_mcbride"
+    condition:
+      min_gold: 15
+      not_has_item: "初级治疗药水"
+      variables:
+        class_selected: true
+    on_success:
+      gold_delta: -15
+      gain_item: "初级治疗药水"
+      message: "你向北郡后勤官支付 15 枚金币，换取了一瓶封口完好的【初级治疗药水】（HP +45）。"
+
+  - id: "buy_mana_potion_abbey"
+    label: "【军需补给】花费 15 金币向北郡军需官购入【初级法力药水】（MP +55）"
+    type: "interact"
+    target_npc: "marshal_mcbride"
+    condition:
+      min_gold: 15
+      not_has_item: "初级法力药水"
+      variables:
+        class_selected: true
+    on_success:
+      gold_delta: -15
+      gain_item: "初级法力药水"
+      message: "你向北郡后勤官支付 15 枚金币，购入了一瓶澄澈湛蓝的【初级法力药水】（MP +55）。"
+
+  - id: "rest_abbey_chapel"
+    label: "【修道院休整】在圣光祭坛旁静坐祈祷与整备（恢复 60 HP / 60 MP）"
+    type: "interact"
+    condition:
+      variables:
+        class_selected: true
+    on_success:
+      hp_delta: 60
+      mp_delta: 60
+      san_delta: 5
+      visuals:
+        foreground: ""
+        hero_image: "【安全区休整】圣光祭坛的暖光治愈伤痛并重聚魔力"
+      message: "你在北郡修道院安静的圣光祭坛旁调息休整，创伤逐渐愈合，魔力与斗志重新充盈（HP +60，MP +60）。"
 
   - id: "drink_healing_potion_village"
-    label: "饮用随身携带的【初级治疗药水】恢复生命值"
+    label: "饮用随身携带的【初级治疗药水】恢复生命值（HP +45）"
     type: "interact"
     condition:
       has_item: "初级治疗药水"
@@ -359,8 +436,20 @@ actions:
       consume_item: "初级治疗药水"
       remove_inventory:
         - "初级治疗药水"
-      hp_delta: 40
-      message: "甘甜而温暖的炼金药液顺喉而下，身上的擦伤迅速愈合（HP +40）。"
+      hp_delta: 45
+      message: "甘甜而温暖的炼金药液顺喉而下，身上的擦伤迅速愈合（HP +45）。"
+
+  - id: "drink_mana_potion_village"
+    label: "饮用随身携带的【初级法力药水】恢复魔法值（MP +55）"
+    type: "interact"
+    condition:
+      has_item: "初级法力药水"
+    on_success:
+      consume_item: "初级法力药水"
+      remove_inventory:
+        - "初级法力药水"
+      mp_delta: 55
+      message: "清冽的奥术蓝液在经脉中流淌，枯竭的魔力与职业能量迅速充盈（MP +55）。"
 
   - id: "turn_in_boss_materials"
     label: "【凯旋交差】向麦格布莱德呈交蜘蛛领主掉落材料，锻造暴风城英雄披风"

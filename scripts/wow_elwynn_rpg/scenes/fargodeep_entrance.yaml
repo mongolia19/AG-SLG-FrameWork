@@ -1,0 +1,329 @@
+id: "fargodeep_entrance"
+title: "矿洞前哨 · 法戈第外围坑道"
+background: "【场景全景】法戈第矿洞外围幽暗坑道，锈蚀矿车与摇曳火把间潜伏着狗头人矿工与护卫蛛群"
+foreground: "/assets/characters/elena_swiftarrow.png"
+hero_image: "【前哨战局】拦在蜘蛛领主巢穴前的狗头人矿工小队与精英护卫蛛群"
+music: "/assets/bgm/elwynn_forest.mp3"
+
+description: |
+  顺着陡峭的山坡木架步入法戈第矿洞外围坑道，潮湿阴冷的岩风扑面而来。
+  锈迹斑斑的矿车轨道两旁点着零星融蜡火把，一群凶悍的【狗头人矿工与地穴工头】正举着铁镐与火油罐在拐角处巡逻；更前方的碎石闸门旁，数只体型硕大的【法戈第精英护卫蛛】倒悬在矿柱间吐丝结阵。
+  若想直面最深处的【蜘蛛领主·阿拉克诺斯】，必须先用职业技能击溃这两波守卫矿道的小怪！
+
+visuals:
+  background: "【场景全景】法戈第矿洞外围幽暗坑道，锈蚀矿车与摇曳火把间潜伏着狗头人矿工与护卫蛛群"
+  foreground: "/assets/characters/elena_swiftarrow.png"
+  hero_image: "【前哨战局】拦在蜘蛛领主巢穴前的狗头人矿工小队与精英护卫蛛群"
+  atmosphere: "矿道回响、火把摇曳、伏兵拦路"
+  decorations:
+    - id: "entrance_kobold_candles"
+      name: "狗头人矿道残烛"
+      image: "/assets/items/kobold_candle.png"
+      side: "left"
+      category: "env"
+      tag: "前哨警示"
+      caption: "狗头人哨卡火烛"
+      tooltip: "狗头人矿工视若珍宝的照明蜡烛，标志着外围坑道已进入交战区"
+    - id: "entrance_ore_rocks"
+      name: "崩裂矿石堆"
+      image: "/assets/props/rocks.png"
+      side: "right"
+      category: "env"
+      tag: "掩体地形"
+      caption: "坑道碎石掩体"
+      tooltip: "可用于躲避投掷物与休整喘息的天然矿石掩体"
+
+decorations: []
+
+npcs:
+  - id: "elena_swiftarrow"
+    name: "巡林者艾莲娜·迅箭"
+    avatar: "/assets/characters/elena_swiftarrow.png"
+    greeting: "前方的狗头人和护卫蛛都是蜘蛛领主的耳目。按照战法稳步清掉两波守卫、保留好血量和魔法状态，再踏入深处的主巢穴！"
+
+actions:
+  - id: "clear_kobold_vanguard"
+    label: "【Boss前小怪战 ① · 正面强攻】清剿狗头人矿工与地穴工头（敌方 140 HP · 消耗 20 MP）"
+    type: "check"
+    skill: "strength"
+    difficulty: 11
+    condition:
+      min_hp: 1
+      min_mp: 20
+      variables:
+        cave_kobolds_cleared: false
+    on_success:
+      gain_item: "狗头人火油炸药"
+      gold_delta: 25
+      hp_delta: -16
+      mp_delta: -20
+      variables:
+        cave_kobolds_cleared: true
+        xp: 450
+      visuals:
+        foreground: ""
+        hero_image: "【前哨胜果】击溃狗头人矿工小队，缴获矿洞火油炸药"
+      message: "‘休想抢走我们的蜡烛！’狗头人地穴工头挥舞矿镐咆哮扑来，你消耗 20 点魔法施展职业技强攻（HP -16，MP -20），正面轰碎狗头人防线！缴获【狗头人火油炸药】与 25 金币，XP 升至 450！"
+    on_failure:
+      hp_delta: -24
+      mp_delta: -15
+      message: "狗头人矿工趁乱投掷融蜡火球炸伤了你的肩甲（HP -24，MP -15），你退回矿石掩体后重整架势。"
+
+  - id: "clear_kobold_vanguard_tactical"
+    label: "【Boss前小怪战 ① · 法术/精准引爆】引燃狗头人火油桶清剿矿工小队（敌方 140 HP · 消耗 20 MP）"
+    type: "check"
+    skill: "intelligence"
+    difficulty: 11
+    condition:
+      min_hp: 1
+      min_mp: 20
+      variables:
+        cave_kobolds_cleared: false
+    on_success:
+      gain_item: "狗头人火油炸药"
+      gold_delta: 25
+      hp_delta: -14
+      mp_delta: -20
+      variables:
+        cave_kobolds_cleared: true
+        xp: 450
+      visuals:
+        foreground: ""
+        hero_image: "【前哨胜果】精准引爆矿道火油桶，击溃狗头人矿工小队"
+      message: "你消耗 20 点魔法精准引爆狗头人哨卡旁的油桶并顺势清场（HP -14，MP -20），成功击溃 140 HP 的狗头人矿工小队！缴获【狗头人火油炸药】与 25 金币，XP 升至 450！"
+    on_failure:
+      hp_delta: -22
+      mp_delta: -15
+      message: "火油溅射偏移，狗头人矿工借机投出融蜡火球击中了你（HP -22，MP -15）。"
+
+  - id: "clear_broodguard_pack"
+    label: "【Boss前小怪战 ② · 灵巧合击】突破法戈第精英护卫蛛群（敌方 90×2 HP · 消耗 25 MP）"
+    type: "check"
+    skill: "agility"
+    difficulty: 12
+    condition:
+      min_hp: 1
+      min_mp: 25
+      variables:
+        cave_kobolds_cleared: true
+        cave_spiders_cleared: false
+    on_success:
+      gain_item: "初级法力药水"
+      gold_delta: 30
+      hp_delta: -20
+      mp_delta: -25
+      variables:
+        cave_spiders_cleared: true
+        cave_vanguard_cleared: true
+        xp: 600
+      visuals:
+        foreground: "/assets/characters/elena_swiftarrow.png"
+        hero_image: "【通道打通】精英护卫蛛群伏诛，蜘蛛领主主巢穴大门敞开！"
+      message: "两只覆满毒毛的精英护卫蛛从矿顶骤然扑下！你消耗 25 点魔法与艾莲娜的冰霜箭雨前后合击（HP -20，MP -25），成功斩杀护卫蛛群并打通前往主巢穴的通道！在矿工遗留背包中拾获【初级法力药水】与 30 金币（XP 达 600）！"
+    on_failure:
+      hp_delta: -28
+      mp_delta: -18
+      message: "护卫蛛群喷吐腐蚀毒液封锁了矿轨，你闪避不及被利爪擦伤（HP -28，MP -18）！"
+
+  - id: "clear_broodguard_pack_perception"
+    label: "【Boss前小怪战 ② · 破绽截杀】洞察倒悬护卫蛛群弱点施放职业爆发（敌方 90×2 HP · 消耗 25 MP）"
+    type: "check"
+    skill: "perception"
+    difficulty: 12
+    condition:
+      min_hp: 1
+      min_mp: 25
+      variables:
+        cave_kobolds_cleared: true
+        cave_spiders_cleared: false
+    on_success:
+      gain_item: "初级法力药水"
+      gold_delta: 30
+      hp_delta: -18
+      mp_delta: -25
+      variables:
+        cave_spiders_cleared: true
+        cave_vanguard_cleared: true
+        xp: 600
+      visuals:
+        foreground: "/assets/characters/elena_swiftarrow.png"
+        hero_image: "【通道打通】精准截杀倒悬护卫蛛群，主巢穴碎石拱门敞开！"
+      message: "你提前识破矿柱顶部的伏击丝线，消耗 25 点魔法与艾莲娜的箭雨同步齐射（HP -18，MP -25），干净利落地斩杀两只 90 HP 精英护卫蛛！拾获【初级法力药水】与 30 金币（XP 达 600）！"
+    on_failure:
+      hp_delta: -26
+      mp_delta: -18
+      message: "毒雾遮蔽了矿顶视线，护卫蛛群趁机俯冲撕咬（HP -26，MP -18），你迅速后撤重整防线！"
+
+  - id: "entrance_tactical_recover"
+    label: "【小怪战调息】依托矿石掩体回气蓄能（HP +15 / MP +25）"
+    type: "interact"
+    condition:
+      min_hp: 1
+      variables:
+        cave_vanguard_cleared: false
+    on_success:
+      hp_delta: 15
+      mp_delta: 25
+      message: "你靠在矿石掩体后短暂平息呼吸，重新凝聚魔法与体能以应对前哨守卫（HP +15，MP +25）。"
+
+  - id: "rest_before_boss"
+    label: "【Boss 战前整备】清空前哨后在安全火盆旁大休整（HP +40 / MP +50）"
+    type: "interact"
+    condition:
+      min_hp: 1
+      variables:
+        cave_vanguard_cleared: true
+        pre_boss_rest_done: false
+    on_success:
+      hp_delta: 40
+      mp_delta: 50
+      san_delta: 5
+      variables:
+        pre_boss_rest_done: true
+      visuals:
+        foreground: "/assets/characters/elena_swiftarrow.png"
+        hero_image: "【战前整备】两位战友在矿洞火盆旁检修装备、回复状态，准备决战蜘蛛领主"
+      message: "前哨小怪已尽数肃清。你与艾莲娜借着矿道火盆包扎伤口、冥想回蓝（HP +40，MP +50），状态重回巅峰，随时准备踏入蜘蛛领主的深渊巢穴！"
+
+  - id: "drink_healing_potion_entrance"
+    label: "饮用【初级治疗药水】恢复生命值（HP +45）"
+    type: "interact"
+    condition:
+      has_item: "初级治疗药水"
+    on_success:
+      consume_item: "初级治疗药水"
+      remove_inventory:
+        - "初级治疗药水"
+      hp_delta: 45
+      message: "红光微闪，【初级治疗药水】迅速止住了前哨战斗留下的创口（HP +45）。"
+
+  - id: "drink_mana_potion_entrance"
+    label: "饮用【初级法力药水】恢复魔法值（MP +55）"
+    type: "interact"
+    condition:
+      has_item: "初级法力药水"
+    on_success:
+      consume_item: "初级法力药水"
+      remove_inventory:
+        - "初级法力药水"
+      mp_delta: 55
+      message: "湛蓝魔药顺喉而下，消耗一空的魔法能量池瞬间重聚澎湃（MP +55）。"
+
+  - id: "enter_fargodeep_cave"
+    label: "【开启 Boss 决战】穿过碎石拱门，深入【洞穴深处 · 蜘蛛领主巢穴】"
+    type: "transition"
+    target_scene: "fargodeep_cave"
+    condition:
+      min_hp: 1
+      variables:
+        cave_vanguard_cleared: true
+        boss_defeated: false
+    on_success:
+      variables:
+        boss_active: true
+        boss_name: "蜘蛛领主·阿拉克诺斯"
+        boss_hp: 360
+        boss_max_hp: 360
+        boss_mp: 180
+        boss_max_mp: 180
+        boss_phase: 1
+        boss_armor_broken: false
+        boss_web_trapped: false
+        boss_minions: 0
+        combat_round: 1
+        boss_casting: "【阶段一】甲壳硬化（减伤45%）· 伺机蛛网茧缚（30MP）"
+      visuals:
+        background: "【场景全景】阴暗潮湿的废弃矿洞深处，巨型蛛网悬垂于朽坏矿柱之间，幽绿毒雾在洞窟底部翻涌"
+        foreground: "/assets/characters/elena_swiftarrow.png"
+        hero_image: "【Boss 特写】法戈第蜘蛛领主·阿拉克诺斯 · 360HP/180MP 三阶段巨型蛛王"
+        atmosphere: "幽暗阴寒、蛛丝密布、杀机四伏"
+      remove_hud_widgets:
+        - "fargodeep_vanguard"
+      hud_widgets:
+        - id: "arachnos_boss_panel"
+          type: "panel"
+          title: "蜘蛛领主·阿拉克诺斯"
+          tone: "danger"
+          when:
+            variables:
+              boss_active: true
+              boss_defeated: false
+          badges:
+            - text_ref: "阶段 {variables.boss_phase}/3"
+              tone: "amber"
+            - text: "✓ 软甲已暴露"
+              tone: "emerald"
+              when:
+                variables:
+                  boss_armor_broken: true
+            - text: "🛡 甲壳硬化"
+              tone: "danger"
+              when:
+                variables:
+                  boss_armor_broken: false
+            - text_ref: "毒囊幼蛛 ×{variables.boss_minions}"
+              tone: "amber"
+              when:
+                variables:
+                  boss_minions:
+                    gt: 0
+            - text: "⚠ 蛛网茧缚中"
+              tone: "purple"
+              when:
+                variables:
+                  boss_web_trapped: true
+            - text_ref: "意图: {variables.boss_casting}"
+              tone: "sky"
+          bars:
+            - label: "Boss 血量"
+              value_ref: "variables.boss_hp"
+              max_ref: "variables.boss_max_hp"
+              color: "rose"
+            - label: "Boss 魔法"
+              value_ref: "variables.boss_mp"
+              max_ref: "variables.boss_max_mp"
+              color: "violet"
+          cards_title: "查看Boss技能"
+          cards:
+            - title: "甲壳硬化 (被动/30MP)"
+              desc: "未破甲前减免伤害，需合作照明箭或强攻破甲。"
+              tone: "danger"
+            - title: "蛛网茧缚 (30MP)"
+              desc: "缠住冒险者（检定-2），需及时挣脱或火攻烧断。"
+              tone: "purple"
+            - title: "召唤毒囊幼蛛 (35MP)"
+              desc: "二阶段孵化2只幼蛛协同撕咬，干扰命中与施法。"
+              tone: "amber"
+            - title: "剧毒新星 (40MP)"
+              desc: "高伤毒爆蓄力，可趁蓄力间隙打断并反削Boss魔法。"
+              tone: "fuchsia"
+            - title: "深渊狂暴 (45MP)"
+              desc: "低血量三阶段触发，同时腐蚀玩家血量与魔法。"
+              tone: "red"
+          footer: "战斗公式：玩家技能伤 = (基础威力 + 主属性×2.5 + 技能等级×10) × 破甲(0.55/1.0) × 检定倍率 | Boss MP < 30 进入【魔力枯竭】并蓄力 +35MP | 幼蛛每只 +4 伤(-1检定) · 茧缚 +5 毒伤(-2检定) · 抗毒合剂 -6 毒伤(+1检定)"
+
+  - id: "reenter_fargodeep_cave_cleared"
+    label: "穿过碎石拱门，重返【洞穴深处 · 已清剿的蛛王巢穴】"
+    type: "transition"
+    target_scene: "fargodeep_cave"
+    condition:
+      min_hp: 1
+      variables:
+        cave_vanguard_cleared: true
+        boss_defeated: true
+    on_success:
+      variables:
+        boss_active: false
+      remove_hud_widgets:
+        - "fargodeep_vanguard"
+        - "arachnos_boss_panel"
+      visuals:
+        background: "【场景全景】阴暗潮湿的废弃矿洞深处，巨型蛛网悬垂于朽坏矿柱之间，幽绿毒雾在洞窟底部翻涌"
+        foreground: "/assets/characters/elena_swiftarrow.png"
+        hero_image: "【战后余晖】蜘蛛领主已伏诛，矿洞深处恢复宁静"
+        atmosphere: "幽暗阴寒、战后余烟"
+
+  - id: "return_to_wilds_from_entrance"
+    label: "退出矿洞前哨，返回【野外 · 艾尔文密林与哨岗】"
+    type: "transition"
+    target_scene: "elwynn_wilds"

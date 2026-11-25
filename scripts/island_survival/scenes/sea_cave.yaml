@@ -63,6 +63,10 @@ actions:
     time_cost: 1
     message: 你在远离海浪的高处岩架摸到了一捆存放已久的干燥木柴，即使外面阴雨连绵也依然干爽易燃！
   on_failure: null
+  keywords:
+  - 干柴
+  - 树枝
+  - 木柴
 - id: drink_cave_drip_water
   label: 接饮岩壁石灰岩缝隙渗出的清冽山泉滴水
   type: interact
@@ -84,6 +88,10 @@ actions:
     time_cost: 1
     message: 经过岩层自然过滤的冰凉水珠一滴滴落入掌心，入口甘洌，暂时缓解了干渴。
   on_failure: null
+  keywords:
+  - 喝水
+  - 饮水
+  - 山泉滴水
 - id: light_cave_campfire
   label: 在避风的岩洞深处用打火机生起篝火
   type: interact
@@ -109,6 +117,10 @@ actions:
     time_cost: 1
     message: 岩洞内完全不受海风吹袭，打火机一擦即燃，橙红火光瞬间将潮湿冰冷的石壁映照得温暖明亮！
   on_failure: null
+  keywords:
+  - 生火
+  - 篝火
+  - 点火
 - id: rest_in_sea_cave
   label: 在遮风避雨的天然岩洞内安心休整（恢复体力与体温）
   type: interact
@@ -132,6 +144,10 @@ actions:
     time_cost: 1
     message: 岩洞隔绝了外界的烈日或风雨侵袭，你靠着岩壁闭目养神，体力与体温稳步回升。
   on_failure: null
+  keywords:
+  - 休整
+  - 休息
+  - 过夜
 - id: observe_storm_from_cave
   label: 守在洞口安全地观察海面阴晴风雨变化
   type: interact
@@ -172,3 +188,6 @@ actions:
   source: null
   on_success: null
   on_failure: null
+  keywords:
+  - 离开岩洞
+  - 返回沙滩

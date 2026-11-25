@@ -89,6 +89,8 @@ When a turn alters player attributes, inventory, current scene, or stage visuals
 - `hp_delta` / `san_delta` / `gold` (int, optional): Numeric modifications to player vitals.
 - `add_inventory` (list of objects, optional): Items discovered in this turn.
 - `variables` (dict, optional): Story flags and world progression keys.
+- `hud_widgets` (list of objects, optional): Declarative AG-UI HUD widgets upserted by `id` (`metrics` | `tracker` | `panel`). Supports `value_ref` / `max_ref` (e.g. `"attributes.stamina"`, `"variables.boss_hp"`) and conditional `when` blocks.
+- `remove_hud_widgets` (list of strings, optional): Widget IDs to unmount when an encounter or phase ends.
 - `visuals` (dict, optional):
   - `background`: Path to ambient room background.
   - `foreground`: Path to active character portrait/avatar. Set to `""` to dismiss current NPC.
@@ -153,9 +155,12 @@ The AG-SLG UI will render an aesthetic placeholder badge with ambient icon, read
 
 ---
 
-## 5. Studio Mode Authoring Guide
+## 5. Studio Mode Authoring Guide & Engine Boundary
 
-When collaborating in **Studio Mode** (`stream_studio`), write complete, lint-clean scenario nodes using ````scene_yaml:<id>` blocks:
+> [!CAUTION]
+> **STRICT ENGINE ISOLATION RULE**: When authoring or modifying scenarios in Studio Mode, **NEVER edit framework engine code** (`server/`, `web/`, `tests/`, `run_services.py`, `pyproject.toml`) unless the user explicitly asks to debug an engine bug. All scenario UI, rules, formulas, items, and Boss/tracker panels MUST live in `scripts/<scenario_id>/` (`world.yaml` + `scenes/*.yaml`) or be emitted dynamically via AG-UI `state_delta.hud_widgets`.
+
+When collaborating in **Studio Mode** (`stream_studio`), write complete, lint-clean scenario nodes using ````scene_yaml:<id>` blocks, and put scenario-wide rules (`dm_rules`, `item_catalog`, `attribute_bounds`, `variable_bounds`, `adjudication_rules`, `initial_player_state.hud_widgets`) in `scripts/<scenario_id>/world.yaml`:
 
 ````yaml
 ```scene_yaml:secret_library
@@ -204,11 +209,13 @@ actions:
 3. Every scene specifies at least one `background`.
 4. NPCs include `id`, `name`, `avatar`, and `greeting`.
 5. Actions provide explicit `on_success` / `on_failure` paths for checks.
+6. Custom status bars, wave trackers, or Boss panels use `hud_widgets` (`metrics` | `tracker` | `panel`) instead of modifying `web/src/` or `server/`.
 
 ---
 
 ## 6. Anti-Patterns to Avoid
 
+- ❌ **Modifying Engine Code for a Scenario**: Touching `server/agui_bridge.py` or `web/src/components/play/GameHUD.tsx` to add scenario-specific panels, items, or Boss state machines instead of using `world.yaml` + AG-UI `hud_widgets`.
 - ❌ **Background Thrashing**: Changing `background` on every dialogue step. Only change backgrounds on scene entry.
 - ❌ **Orphaned NPC**: Leaving an NPC's bust on screen when the player leaves the room or inspects an empty cellar alone.
 - ❌ **Leaking Technical Asset Paths in Chat**: Saying *"我已经为你切换到了背景 /assets/scenes/drawing_room.png"* instead of providing atmospheric narrative prose.

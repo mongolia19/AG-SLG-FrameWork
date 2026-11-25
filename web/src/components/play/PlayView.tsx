@@ -11,6 +11,7 @@ import {
 import GameHUD from './GameHUD';
 import StoryStream from './StoryStream';
 import ActionPanel from './ActionPanel';
+import { evaluateActionCondition } from '../../utils/conditions';
 
 interface PlayViewProps {
   scenarioId?: string;
@@ -51,16 +52,17 @@ export default function PlayView({
       ...initPlayer,
       outfit: initPlayer.outfit ? { ...initPlayer.outfit } : {},
       skills: Array.isArray(initPlayer.skills) ? [...initPlayer.skills] : [],
+      hud_widgets: Array.isArray(initPlayer.hud_widgets)
+        ? initPlayer.hud_widgets.map((w) => ({ ...w }))
+        : [],
       current_scene: initPlayer.current_scene || sc.world.initial_scene,
     });
 
     const initialSceneNode = sc.scenes[initPlayer.current_scene || sc.world.initial_scene];
     const openingText =
-      scenarioId === 'island_survival'
-        ? `海浪轰鸣，烈日高悬。你在一阵剧烈的咳嗽中清醒过来，口鼻中满是咸涩的海水与细沙。\n你作为一名空难幸存者漂流到了未知的荒岛沙滩上，眼前是一望无际的汪洋与茂密的未涉密林……\n体力正在流失，必须尽快搜查散落物资、寻找纯净淡水，并准备生火度过危机重重的夜晚！`
-        : scenarioId === 'wow_elwynn_rpg'
-        ? (initialSceneNode?.description || `晨祷钟声在艾尔文森林的薄雾中回荡，北郡修道院的石砌广场上战旗猎猎。\n作为艾泽拉斯的新兵，法戈第矿洞的危机正等待着你去平息！`)
-        : (initialSceneNode?.description || `暴风雨笼罩着荒凉的群山，古老的${sc.world.title}如同一头黑色的巨兽盘踞在悬崖之上。\n你作为${initPlayer.name}，踏上了通往公馆大门的石阶……`);
+      sc.world.opening_narration?.trim() ||
+      initialSceneNode?.description?.trim() ||
+      `欢迎来到【${sc.world.title}】，你作为 ${initPlayer.name} 开始了这段旅程。`;
 
     threadIdRef.current = `session-${scenarioId}-${Date.now()}`;
     setActiveVisuals(null);
@@ -111,6 +113,50 @@ export default function PlayView({
     return state.skills || [];
   };
 
+  // 兼容旧存档与 Studio 同步：补齐新增的血量上限、魔法槽位及剧本初始变量
+  const hydrateMissingStateDefaults = (
+    state: PlayerState,
+    spec: ScenarioSpec
+  ): PlayerState => {
+    const init = spec.world.initial_player_state;
+    const mergedVars: Record<string, any> = {
+      ...(init.variables || {}),
+      ...(state.variables || {}),
+    };
+    const nextMaxHp =
+      state.max_hp && state.max_hp > 0
+        ? state.max_hp
+        : init.max_hp && init.max_hp > 0
+          ? init.max_hp
+          : 100;
+    const hasInitMp = init.mp !== undefined && init.mp !== null;
+    const nextMaxMp =
+      state.max_mp !== undefined && state.max_mp !== null
+        ? state.max_mp
+        : hasInitMp
+          ? init.max_mp ?? 100
+          : state.max_mp;
+    const nextMp =
+      state.mp !== undefined && state.mp !== null
+        ? state.mp
+        : hasInitMp
+          ? init.mp
+          : state.mp;
+
+    const hydrated: PlayerState = {
+      ...state,
+      max_hp: nextMaxHp,
+      mp: nextMp,
+      max_mp: nextMaxMp,
+      outfit: state.outfit ?? init.outfit ?? {},
+      skills: state.skills ?? init.skills ?? [],
+      hud_widgets: state.hud_widgets ?? init.hud_widgets ?? [],
+      variables: mergedVars,
+    };
+    hydrated.skills = hydrateMissingSkills(hydrated, spec);
+    return hydrated;
+  };
+
   // 1. 加载剧本与本地持久化存档
   useEffect(() => {
     fetch(`/api/scenarios/${scenarioId}`)
@@ -135,12 +181,7 @@ export default function PlayView({
               saved.messages.length > 0;
 
             if (isValidScenarioMatch) {
-              const restoredState: PlayerState = {
-                ...saved.playerState,
-                outfit: saved.playerState.outfit ?? data.world.initial_player_state.outfit ?? {},
-                skills: saved.playerState.skills ?? data.world.initial_player_state.skills ?? [],
-              };
-              restoredState.skills = hydrateMissingSkills(restoredState, data);
+              const restoredState = hydrateMissingStateDefaults(saved.playerState, data);
               setPlayerState(restoredState);
               setMessages(saved.messages);
               setActiveVisuals(saved.activeVisuals || null);
@@ -174,12 +215,7 @@ export default function PlayView({
         setScenario(data);
         setPlayerState((prev) => {
           if (!prev) return prev;
-          if (Array.isArray(prev.skills) && prev.skills.length > 0) return prev;
-          const hydrated = hydrateMissingSkills(prev, data);
-          if (hydrated && hydrated.length > 0) {
-            return { ...prev, skills: hydrated };
-          }
-          return prev;
+          return hydrateMissingStateDefaults(prev, data);
         });
         if (showNotice) {
           setSyncFeedback('已同步 Studio 最新修改');
@@ -240,129 +276,6 @@ export default function PlayView({
   const currentSceneId = playerState?.current_scene || scenario?.world.initial_scene || '';
   latestSceneIdRef.current = currentSceneId;
   const currentScene: SceneNode | undefined = scenario?.scenes[currentSceneId];
-
-  // 根据玩家当前状态（背包、变量、属性、时间）评估预设行动的可见性
-  const compareConditionValue = (actual: any, expected: any): boolean => {
-    if (expected && typeof expected === 'object' && !Array.isArray(expected)) {
-      const numActual = typeof actual === 'number' ? actual : 0;
-      if ('lt' in expected && !(numActual < expected.lt)) return false;
-      if ('lte' in expected && !(numActual <= expected.lte)) return false;
-      if ('gt' in expected && !(numActual > expected.gt)) return false;
-      if ('gte' in expected && !(numActual >= expected.gte)) return false;
-      if ('ne' in expected && !(actual !== expected.ne)) return false;
-      if ('in' in expected && !expected.in.includes(actual)) return false;
-      if ('not_in' in expected && expected.not_in.includes(actual)) return false;
-      return true;
-    }
-    return actual === expected;
-  };
-
-  const evaluateActionCondition = (
-    condition: Record<string, any> | undefined,
-    state: PlayerState | null
-  ): boolean => {
-    if (!condition || !state) return true;
-    const invIds = new Set((state.inventory || []).map((item) => item.id));
-
-    if ('has_item' in condition) {
-      const reqs = Array.isArray(condition.has_item) ? condition.has_item : [condition.has_item];
-      if (!reqs.every((id: string) => invIds.has(id))) return false;
-    }
-    if ('has_any_item' in condition) {
-      const anyReqs: string[] = condition.has_any_item || [];
-      if (!anyReqs.some((id: string) => invIds.has(id))) return false;
-    }
-    if ('not_has_item' in condition) {
-      const forbs = Array.isArray(condition.not_has_item)
-        ? condition.not_has_item
-        : [condition.not_has_item];
-      if (forbs.some((id: string) => invIds.has(id))) return false;
-    }
-    const skillKeys = new Set<string>();
-    for (const sk of state.skills || []) {
-      if (sk?.id) skillKeys.add(String(sk.id));
-      if (sk?.name) skillKeys.add(String(sk.name));
-    }
-    if ('has_skill' in condition) {
-      const reqs = Array.isArray(condition.has_skill) ? condition.has_skill : [condition.has_skill];
-      if (!reqs.every((id: string) => skillKeys.has(id))) return false;
-    }
-    if ('not_has_skill' in condition) {
-      const forbs = Array.isArray(condition.not_has_skill)
-        ? condition.not_has_skill
-        : [condition.not_has_skill];
-      if (forbs.some((id: string) => skillKeys.has(id))) return false;
-    }
-    if (condition.variables && typeof condition.variables === 'object') {
-      for (const [k, expected] of Object.entries(condition.variables)) {
-        if (!compareConditionValue(state.variables?.[k], expected)) return false;
-      }
-    }
-    if (condition.attributes && typeof condition.attributes === 'object') {
-      for (const [k, expected] of Object.entries(condition.attributes)) {
-        if (!compareConditionValue(state.attributes?.[k], expected)) return false;
-      }
-    }
-    const timeSlot = state.variables?.time_slot;
-    if ('time_slot_in' in condition && !condition.time_slot_in.includes(timeSlot)) {
-      return false;
-    }
-    if ('time_slot_not_in' in condition && condition.time_slot_not_in.includes(timeSlot)) {
-      return false;
-    }
-    const matchWeatherTargets = (targets: string[]): boolean => {
-      const wStr = String(state.variables?.weather || '').trim();
-      const wType = String(state.variables?.weather_type || '').trim().toLowerCase();
-      if (!wStr && !wType) return false;
-      const aliasMap: Record<string, string[]> = {
-        晴天: ['clear'],
-        晴朗: ['clear'],
-        clear: ['clear'],
-        阴天: ['cloudy'],
-        多云: ['cloudy'],
-        cloudy: ['cloudy'],
-        overcast: ['cloudy'],
-        刮风: ['windy', 'storm'],
-        大风: ['windy', 'storm'],
-        狂风: ['windy', 'storm'],
-        windy: ['windy', 'storm'],
-        wind: ['windy', 'storm'],
-        雨天: ['rain', 'storm'],
-        下雨: ['rain', 'storm'],
-        小雨: ['rain'],
-        阵雨: ['rain'],
-        rain: ['rain', 'storm'],
-        暴雨: ['storm'],
-        雷暴: ['storm'],
-        storm: ['storm'],
-        海雾: ['foggy'],
-        雾天: ['foggy'],
-        foggy: ['foggy'],
-        fog: ['foggy'],
-      };
-      return targets.some((raw) => {
-        const t = String(raw).trim();
-        if (!t) return false;
-        if (t === wStr || t.toLowerCase() === wType) return true;
-        if (wStr.includes(t)) return true;
-        const mapped = aliasMap[t.toLowerCase()] || aliasMap[t];
-        return Boolean(mapped && mapped.includes(wType));
-      });
-    };
-    if ('weather_in' in condition) {
-      const list = Array.isArray(condition.weather_in) ? condition.weather_in : [condition.weather_in];
-      if (!matchWeatherTargets(list)) return false;
-    }
-    if ('weather_not_in' in condition) {
-      const list = Array.isArray(condition.weather_not_in) ? condition.weather_not_in : [condition.weather_not_in];
-      if (matchWeatherTargets(list)) return false;
-    }
-    if ('min_day' in condition) {
-      const day = Number(state.variables?.day ?? 1);
-      if (day < Number(condition.min_day)) return false;
-    }
-    return true;
-  };
 
   const effectiveActions: ActionOption[] =
     dynamicActions !== null
@@ -470,12 +383,19 @@ export default function PlayView({
         inventory: [...(prev.inventory || [])],
         outfit: { ...(prev.outfit || {}) },
         skills: [...(prev.skills || [])],
+        hud_widgets: [...(prev.hud_widgets || [])],
       };
       for (const patch of patches) {
         if (patch.path === '/current_scene') {
           next.current_scene = patch.value;
         } else if (patch.path === '/hp') {
           next.hp = patch.value;
+        } else if (patch.path === '/max_hp') {
+          next.max_hp = patch.value;
+        } else if (patch.path === '/mp') {
+          next.mp = patch.value;
+        } else if (patch.path === '/max_mp') {
+          next.max_mp = patch.value;
         } else if (patch.path === '/san') {
           next.san = patch.value;
         } else if (patch.path === '/gold') {
@@ -507,6 +427,8 @@ export default function PlayView({
           next.skills = Array.isArray(patch.value) ? patch.value : [];
         } else if (patch.path === '/skills/-') {
           next.skills = [...(next.skills || []), patch.value];
+        } else if (patch.path === '/hud_widgets') {
+          next.hud_widgets = Array.isArray(patch.value) ? patch.value : [];
         }
       }
       return next;
@@ -623,7 +545,7 @@ export default function PlayView({
 
       const displayText =
         cleanText ||
-        '你环顾四周，海浪持续拍打着岩滩。当前行动已由地下城主完成记录并推演，世界状态已更新。';
+        '你仔细察看着周遭的动静。当前行动已由地下城主完成记录并推演，世界状态已更新。';
 
       // 判断是否以 NPC 对话为主
       const isDialogue = displayText.includes('“') && displayText.includes('”');
@@ -709,6 +631,7 @@ export default function PlayView({
       {/* 顶部 HUD */}
       <GameHUD
         playerState={playerState}
+        world={scenario.world}
         currentSceneTitle={currentScene?.title || currentSceneId}
         onResetGame={() => handleResetGame()}
         onSyncScenario={() => refreshScenario(true)}

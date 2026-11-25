@@ -5,12 +5,15 @@ import shutil
 from typing import Any, Dict, List, Optional
 import zipfile
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr
 
 
 class PlayerState(BaseModel):
     name: str = "调查员"
     hp: int = 100
+    max_hp: int = 100
+    mp: Optional[int] = None
+    max_mp: Optional[int] = None
     san: int = 80
     gold: int = 50
     attributes: Dict[str, int] = Field(default_factory=lambda: {
@@ -22,7 +25,9 @@ class PlayerState(BaseModel):
     outfit: Dict[str, Any] = Field(default_factory=dict)
     skills: List[Dict[str, Any]] = Field(default_factory=list)
     variables: Dict[str, Any] = Field(default_factory=dict)
+    hud_widgets: List[Dict[str, Any]] = Field(default_factory=list)
     current_scene: str = ""
+    _scenario_id: str = PrivateAttr(default="")
 
 
 class WorldSpec(BaseModel):
@@ -30,8 +35,22 @@ class WorldSpec(BaseModel):
     title: str
     version: str = "1.0.0"
     author: str = "Unknown"
+    icon: str = ""
+    sort_order: int = 100
     initial_scene: str
+    opening_narration: Optional[str] = None
+    dm_rules: Optional[str] = None
     initial_player_state: PlayerState
+    item_catalog: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+    unique_items: List[str] = Field(default_factory=list)
+    scene_scoped_defaults: Dict[str, Any] = Field(default_factory=dict)
+    attribute_bounds: Dict[str, List[int]] = Field(default_factory=dict)
+    variable_bounds: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+    adjudication_rules: List[Dict[str, Any]] = Field(default_factory=list)
+    freeform_rules: List[Dict[str, Any]] = Field(default_factory=list)
+    fallback_recipes: List[Dict[str, Any]] = Field(default_factory=list)
+    default_fallback: Optional[Dict[str, Any]] = None
+    attribute_labels: Dict[str, str] = Field(default_factory=dict)
 
 
 class NPC(BaseModel):
@@ -52,6 +71,7 @@ class ActionOption(BaseModel):
     condition: Optional[Dict[str, Any]] = None
     effects: Optional[Dict[str, Any]] = None
     source: Optional[str] = None
+    keywords: List[str] = Field(default_factory=list)
     on_success: Optional[Dict[str, Any]] = None
     on_failure: Optional[Dict[str, Any]] = None
 
@@ -178,6 +198,19 @@ def evaluate_action_condition(
         if any(f in outfit_ids for f in forbs):
             return False
 
+    outfit_map = player_state.outfit or {}
+    if "has_outfit_slot" in condition:
+        req_slots = condition["has_outfit_slot"]
+        slots = [req_slots] if isinstance(req_slots, str) else list(req_slots)
+        if not all(bool(outfit_map.get(s)) for s in slots):
+            return False
+
+    if "not_has_outfit_slot" in condition:
+        forb_slots = condition["not_has_outfit_slot"]
+        slots = [forb_slots] if isinstance(forb_slots, str) else list(forb_slots)
+        if any(bool(outfit_map.get(s)) for s in slots):
+            return False
+
     skill_keys = set()
     for sk in (player_state.skills or []):
         if isinstance(sk, dict):
@@ -234,6 +267,28 @@ def evaluate_action_condition(
     if "min_day" in condition:
         day = int(player_state.variables.get("day", 1) or 1)
         if day < int(condition["min_day"]):
+            return False
+
+    if "min_hp" in condition:
+        if int(player_state.hp or 0) < int(condition["min_hp"]):
+            return False
+
+    if "hp_lte" in condition:
+        if int(player_state.hp or 0) > int(condition["hp_lte"]):
+            return False
+
+    if "min_mp" in condition:
+        curr_mp = int(player_state.mp if player_state.mp is not None else 0)
+        if curr_mp < int(condition["min_mp"]):
+            return False
+
+    if "max_mp" in condition:
+        curr_mp = int(player_state.mp if player_state.mp is not None else 0)
+        if curr_mp > int(condition["max_mp"]):
+            return False
+
+    if "min_gold" in condition:
+        if int(player_state.gold or 0) < int(condition["min_gold"]):
             return False
 
     return True
@@ -381,25 +436,29 @@ class ScenarioManager:
             if p.is_dir() and (p / "world.yaml").exists()
         ]
 
-    def list_scenario_summaries(self) -> List[Dict[str, str]]:
-        """Return list of scenarios with id and title from world.yaml."""
+    def list_scenario_summaries(self) -> List[Dict[str, Any]]:
+        """Return list of scenarios with id, title, and icon from world.yaml."""
         if not self.base_dir.exists():
             return []
-        summaries: List[Dict[str, str]] = []
+        entries: List[tuple[int, str, Dict[str, Any]]] = []
         for p in self.base_dir.iterdir():
             if p.is_dir():
                 world_file = p / "world.yaml"
                 if world_file.exists():
                     title = p.name
+                    icon = ""
+                    sort_order = 100
                     try:
                         with open(world_file, "r", encoding="utf-8") as f:
                             data = yaml.safe_load(f) or {}
                             title = data.get("title") or p.name
+                            icon = data.get("icon") or ""
+                            sort_order = int(data.get("sort_order", 100))
                     except Exception:
                         pass
-                    summaries.append({"id": p.name, "title": title})
-        # Sort with island_survival first or stable order
-        return sorted(summaries, key=lambda s: 0 if s["id"] == "island_survival" else (1 if s["id"] == "wow_elwynn_rpg" else 2))
+                    entries.append((sort_order, p.name, {"id": p.name, "title": title, "icon": icon}))
+        entries.sort(key=lambda item: (item[0], item[1]))
+        return [item[2] for item in entries]
 
     def load_scenario(self, scenario_id: str) -> ScenarioSpec:
         scenario_path = self.base_dir / scenario_id
@@ -414,6 +473,7 @@ class ScenarioManager:
         world_spec = WorldSpec(**world_data)
         if not world_spec.initial_player_state.current_scene:
             world_spec.initial_player_state.current_scene = world_spec.initial_scene
+        world_spec.initial_player_state._scenario_id = world_spec.id
 
         scenes_dir = scenario_path / "scenes"
         scenes: Dict[str, SceneNode] = {}

@@ -535,7 +535,7 @@ class ScenarioManager:
             for file_path in scenario_dir.rglob("*"):
                 if file_path.is_file() and not file_path.name.startswith("."):
                     rel_path = file_path.relative_to(scenario_dir)
-                    zf.write(file_path, arcname=str(rel_path))
+                    zf.write(file_path, arcname=rel_path.as_posix())
 
         return target_zip
 
@@ -551,7 +551,7 @@ class ScenarioManager:
             nested_folder = ""
 
             for name in names:
-                parts = Path(name).parts
+                parts = Path(name.replace("\\", "/")).parts
                 if len(parts) == 1 and parts[0] == "world.yaml":
                     world_entry = name
                     break
@@ -571,7 +571,7 @@ class ScenarioManager:
             for member in zf.infolist():
                 if member.is_dir():
                     continue
-                member_path = Path(member.filename)
+                member_path = Path(member.filename.replace("\\", "/"))
                 if ".." in member_path.parts:
                     continue
 

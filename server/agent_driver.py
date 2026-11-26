@@ -6,6 +6,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, AsyncIterator, Dict, List, Optional
@@ -30,6 +31,17 @@ class BaseAgentDriver(abc.ABC):
     ) -> AsyncIterator[AgentEvent]:
         """Run agent with prompt and yield AgentEvent stream."""
         raise NotImplementedError
+
+
+def _prepare_command(cmd: List[str]) -> List[str]:
+    """On Windows, wrap .cmd/.bat shims (e.g. npx.cmd) so create_subprocess_exec can run them."""
+    if os.name != "nt" or not cmd:
+        return list(cmd)
+    resolved = shutil.which(cmd[0]) or cmd[0]
+    if resolved.lower().endswith((".cmd", ".bat")):
+        comspec = os.environ.get("COMSPEC") or "cmd.exe"
+        return [comspec, "/d", "/c", resolved, *cmd[1:]]
+    return [resolved, *cmd[1:]]
 
 
 class AcpDriver(BaseAgentDriver):
@@ -80,7 +92,24 @@ class AcpDriver(BaseAgentDriver):
         self._stderr_task = None
         self._known_sessions.clear()
         if proc and proc.returncode is None:
-            proc.terminate()
+            if proc.stdin:
+                try:
+                    proc.stdin.close()
+                except Exception:
+                    pass
+            if os.name == "nt":
+                # cmd.exe /d /c wrappers leave child node processes behind on plain terminate()
+                try:
+                    await asyncio.to_thread(
+                        subprocess.run,
+                        ["taskkill", "/F", "/T", "/PID", str(proc.pid)],
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                    )
+                except Exception:
+                    pass
+            if proc.returncode is None:
+                proc.terminate()
             try:
                 await asyncio.wait_for(proc.wait(), timeout=3.0)
             except asyncio.TimeoutError:
@@ -223,8 +252,9 @@ class AcpDriver(BaseAgentDriver):
             spawn_env = None
             if self.env is not None:
                 spawn_env = {**os.environ, **self.env}
+            spawn_cmd = _prepare_command(self.cmd)
             self._proc = await asyncio.create_subprocess_exec(
-                *self.cmd,
+                *spawn_cmd,
                 stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,

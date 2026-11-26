@@ -1,17 +1,45 @@
 import { useState, useEffect } from 'react';
 import PlayView from './components/play/PlayView';
 import StudioView from './components/studio/StudioView';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Cpu } from 'lucide-react';
 
 interface ScenarioItem {
   id: string;
   title: string;
 }
 
+interface DriverInfo {
+  current: string;
+  available: string[];
+}
+
+const DRIVER_LABELS: Record<string, string> = {
+  agy: 'Antigravity (agy)',
+  codex: 'Codex',
+  mock: 'Mock (测试)',
+};
+
 export default function App() {
+  const [driverInfo, setDriverInfo] = useState<DriverInfo | null>(null);
+  const [isSwitchingDriver, setIsSwitchingDriver] = useState(false);
+  const [driverError, setDriverError] = useState<string | null>(null);
   const [mode, setMode] = useState<'play' | 'studio'>('play');
-  const [selectedScenario, setSelectedScenario] = useState('island_survival');
+  const [selectedScenario, setSelectedScenario] = useState(() => {
+    try {
+      return localStorage.getItem('ag_slg_selected_scenario') || 'island_survival';
+    } catch {
+      return 'island_survival';
+    }
+  });
   const [scenarioItems, setScenarioItems] = useState<ScenarioItem[]>([]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('ag_slg_selected_scenario', selectedScenario);
+    } catch {
+      // ignore storage errors
+    }
+  }, [selectedScenario]);
 
   const fetchScenarios = () => {
     fetch('/api/scenarios')
@@ -40,6 +68,42 @@ export default function App() {
         }
       })
       .catch((e) => console.error(e));
+  };
+
+  useEffect(() => {
+    fetch('/api/driver')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && typeof data.current === 'string' && Array.isArray(data.available)) {
+          setDriverInfo(data);
+        }
+      })
+      .catch(() => {
+        // 后端暂不可用时隐藏选择器
+      });
+  }, []);
+
+  const switchDriver = async (name: string) => {
+    if (!driverInfo || name === driverInfo.current || isSwitchingDriver) return;
+    setIsSwitchingDriver(true);
+    setDriverError(null);
+    try {
+      const res = await fetch('/api/driver', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.detail || `HTTP ${res.status}`);
+      }
+      setDriverInfo(await res.json());
+    } catch (e: any) {
+      setDriverError(String(e?.message || e));
+      setTimeout(() => setDriverError(null), 4000);
+    } finally {
+      setIsSwitchingDriver(false);
+    }
   };
 
   useEffect(() => {
@@ -81,6 +145,34 @@ export default function App() {
               ))}
             </select>
           </div>
+
+          {/* Agent 后端选择器 */}
+          {driverInfo && (
+            <div
+              className="relative flex items-center gap-1.5 text-xs text-slate-300 bg-slate-900/90 px-2.5 py-1 rounded-md border border-slate-700/60 shadow-sm"
+              title="切换驱动剧情与创作的 Agent 后端（切换后各自开启新的 Agent 会话，游戏状态不受影响）"
+            >
+              <Cpu className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <select
+                value={driverInfo.current}
+                disabled={isSwitchingDriver}
+                onChange={(e) => switchDriver(e.target.value)}
+                className="bg-transparent text-emerald-300 font-medium text-xs focus:outline-none cursor-pointer pr-1 disabled:opacity-60 disabled:cursor-wait"
+              >
+                {driverInfo.available.map((name) => (
+                  <option key={name} value={name} className="bg-slate-900 text-slate-200">
+                    {DRIVER_LABELS[name] || name}
+                  </option>
+                ))}
+              </select>
+              {isSwitchingDriver && <span className="text-[10px] text-slate-500">切换中…</span>}
+              {driverError && (
+                <span className="absolute left-0 top-full mt-1 z-40 whitespace-nowrap text-[10px] text-red-300 bg-red-950/90 border border-red-800/60 rounded px-2 py-1">
+                  切换失败：{driverError}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* 模式切换 */}

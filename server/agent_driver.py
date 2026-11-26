@@ -279,7 +279,13 @@ class AcpDriver(BaseAgentDriver):
             work_dir = str(cwd.resolve()) if cwd else os.getcwd()
             sid = await self._acquire_session(conversation_id, work_dir)
         except Exception as exc:
-            yield AgentEvent(event_type="error", data={"error": str(exc)})
+            # asyncio.TimeoutError etc. stringify to "", which surfaced as an unhelpful blank error.
+            detail = str(exc).strip() or (
+                f"Agent 启动/握手超时（>{self.handshake_timeout:.0f}s）"
+                if isinstance(exc, asyncio.TimeoutError)
+                else type(exc).__name__
+            )
+            yield AgentEvent(event_type="error", data={"error": detail})
             return
 
         assert self._loop is not None
@@ -403,15 +409,18 @@ class CodexDriver(AcpDriver):
         codex_acp = executable or os.getenv("CODEX_ACP_BIN") or shutil.which("codex-acp")
         if codex_acp:
             cmd = [codex_acp]
+            handshake_timeout = 30.0
         else:
             cmd = [shutil.which("npx") or "npx", "--yes", "@agentclientprotocol/codex-acp"]
+            # First run downloads the package via npx, which can exceed the default 30s handshake.
+            handshake_timeout = 120.0
 
         env: Dict[str, str] = {}
         if not os.getenv("CODEX_PATH"):
             codex_bin = shutil.which("codex")
             if codex_bin:
                 env["CODEX_PATH"] = codex_bin
-        super().__init__(cmd=cmd, env=env or None)
+        super().__init__(cmd=cmd, env=env or None, handshake_timeout=handshake_timeout)
 
 class MockAgentDriver(BaseAgentDriver):
     """In-memory driver for deterministic unit tests and offline testing."""

@@ -792,6 +792,19 @@ class AGUIBridge:
         self.sessions: Dict[str, GameSession] = {}
         self.studio_conversations: Dict[str, str] = {}
 
+    def set_driver(self, driver: BaseAgentDriver) -> BaseAgentDriver:
+        """Hot-swap the agent backend; returns the previous driver so the caller can close it.
+
+        Agent-side conversation ids belong to the old backend and cannot be resumed on the new
+        one, so they are dropped (game state itself lives in the client/session player_state).
+        """
+        old = self.driver
+        self.driver = driver
+        for session in self.sessions.values():
+            session.agent_conversation_id = None
+        self.studio_conversations.clear()
+        return old
+
     def _resolve_world(self, scenario_id: Optional[str]) -> Optional[WorldSpec]:
         if not scenario_id:
             return None
@@ -1654,11 +1667,13 @@ class AGUIBridge:
         client_roll: Optional[int] = None
         client_state: Optional[Dict[str, Any]] = None
         recent_history: Optional[List[Dict[str, str]]] = None
+        regenerate = False
         if input_data.forwarded_props and isinstance(input_data.forwarded_props, dict):
             scenario_id = input_data.forwarded_props.get("scenario_id", scenario_id)
             action_id = input_data.forwarded_props.get("action_id")
             client_state = input_data.forwarded_props.get("player_state")
             recent_history = input_data.forwarded_props.get("recent_history")
+            regenerate = bool(input_data.forwarded_props.get("regenerate"))
             if "client_roll" in input_data.forwarded_props:
                 try:
                     client_roll = int(input_data.forwarded_props.get("client_roll"))
@@ -1666,6 +1681,12 @@ class AGUIBridge:
                     client_roll = None
             if "check_passed" in input_data.forwarded_props:
                 check_passed = bool(input_data.forwarded_props.get("check_passed"))
+
+        if regenerate:
+            # Re-run / edited re-run of the previous turn: discard everything the abandoned attempt
+            # left on the server (variables, dynamic actions, history, agent conversation) so the
+            # session is rebuilt purely from the client's pre-turn snapshot.
+            self.sessions.pop(thread_id, None)
 
         session = self.get_or_create_session(thread_id, scenario_id, client_state=client_state)
         if recent_history and not session.history:

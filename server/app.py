@@ -10,6 +10,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from ag_ui.core import RunAgentInput
+from pydantic import BaseModel
 
 from server.agent_driver import AgyDriver, CodexDriver, MockAgentDriver, BaseAgentDriver
 from server.agui_bridge import AGUIBridge
@@ -46,21 +47,78 @@ app.add_middleware(
 BASE_DIR = Path(__file__).resolve().parent.parent
 scenario_manager = ScenarioManager(base_dir=BASE_DIR / "scripts")
 
-# Select driver based on environment or availability
-DRIVER_NAME = os.getenv("AG_DRIVER", "agy").lower()
-if DRIVER_NAME == "mock":
-    driver: BaseAgentDriver = MockAgentDriver()
-elif DRIVER_NAME == "codex":
-    driver = CodexDriver()
-else:
-    driver = AgyDriver()
+# Select driver: explicit AG_DRIVER env > persisted UI choice (.agent_driver) > agy
+DRIVER_FILE = BASE_DIR / ".agent_driver"
+KNOWN_DRIVERS = ("agy", "codex", "mock")
+
+
+def build_driver(name: str) -> BaseAgentDriver:
+    if name == "mock":
+        return MockAgentDriver()
+    if name == "codex":
+        return CodexDriver()
+    return AgyDriver()
+
+
+def resolve_initial_driver_name() -> str:
+    env_name = os.getenv("AG_DRIVER", "").strip().lower()
+    if env_name:
+        return env_name
+    try:
+        saved = DRIVER_FILE.read_text(encoding="utf-8").strip().lower()
+        if saved in KNOWN_DRIVERS:
+            return saved
+    except OSError:
+        pass
+    return "agy"
+
+
+DRIVER_NAME = resolve_initial_driver_name()
+driver: BaseAgentDriver = build_driver(DRIVER_NAME)
 
 bridge = AGUIBridge(scenario_mgr=scenario_manager, driver=driver)
+
+
+def driver_info() -> Dict[str, Any]:
+    available = ["agy", "codex"] + (["mock"] if DRIVER_NAME == "mock" else [])
+    return {"current": DRIVER_NAME, "available": available}
+
+
+class DriverSwitchRequest(BaseModel):
+    name: str
 
 
 @app.get("/health")
 def health() -> Dict[str, Any]:
     return {"status": "ok", "driver": DRIVER_NAME}
+
+
+@app.get("/api/driver")
+def get_driver() -> Dict[str, Any]:
+    return driver_info()
+
+
+@app.post("/api/driver")
+async def switch_driver(req: DriverSwitchRequest) -> Dict[str, Any]:
+    """Hot-swap the Agent backend (agy / codex) without restarting the service."""
+    global DRIVER_NAME
+    name = req.name.strip().lower()
+    if name not in KNOWN_DRIVERS:
+        raise HTTPException(status_code=400, detail=f"Unknown driver: {req.name}")
+    if name != DRIVER_NAME:
+        old_driver = bridge.set_driver(build_driver(name))
+        DRIVER_NAME = name
+        try:
+            DRIVER_FILE.write_text(name + "\n", encoding="utf-8")
+        except OSError:
+            pass  # persistence is best-effort; the in-memory switch already took effect
+        aclose = getattr(old_driver, "aclose", None)
+        if callable(aclose):
+            try:
+                await aclose()
+            except Exception:
+                pass
+    return driver_info()
 
 
 @app.get("/api/scenarios")

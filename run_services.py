@@ -110,6 +110,14 @@ def status():
 
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "status"
+    # Optional 2nd arg selects the agent backend: agy | codex | mock. It is persisted to
+    # .agent_driver (same file the UI's backend selector writes), so it survives later restarts.
+    if len(sys.argv) > 2:
+        chosen = sys.argv[2].lower()
+        if chosen not in ("agy", "codex", "mock"):
+            sys.exit(f"Unknown driver '{chosen}', expected agy | codex | mock")
+        (ROOT_DIR / ".agent_driver").write_text(chosen + "\n", encoding="utf-8")
+        os.environ.pop("AG_DRIVER", None)  # an exported AG_DRIVER would otherwise override it
     if cmd == "start":
         start()
     elif cmd == "stop":

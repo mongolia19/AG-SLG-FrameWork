@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Loader2, Copy, Check } from 'lucide-react';
+import { Send, Bot, User, Sparkles, Loader2, Copy, Check, Pencil, RefreshCw, X } from 'lucide-react';
 
 
 interface AuthoringMessage {
@@ -79,6 +79,8 @@ export default function AuthoringChat({
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState('');
   const [activeToolName, setActiveToolName] = useState<string | null>(null);
+  // 编辑上一条输入时暂存“回滚后的消息列表”，发送时用它替换上一轮对话
+  const [editBase, setEditBase] = useState<AuthoringMessage[] | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const prevScenarioIdRef = useRef(scenarioId);
   const threadIdRef = useRef<string>(loadStudioThreadId(scenarioId));
@@ -88,6 +90,7 @@ export default function AuthoringChat({
     if (prevScenarioIdRef.current !== scenarioId) {
       prevScenarioIdRef.current = scenarioId;
       threadIdRef.current = loadStudioThreadId(scenarioId);
+      setEditBase(null);
       setMessages(loadCachedMessages(scenarioId));
       try {
         const draft = localStorage.getItem(`ag_slg_studio_draft_${scenarioId}`) || '';
@@ -128,10 +131,47 @@ export default function AuthoringChat({
     }
   }, [messages, streamingText, isStreaming, activeToolName]);
 
-  const handleSend = async (e: React.FormEvent) => {
+  const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     const prompt = inputText.trim();
     if (!prompt || isStreaming) return;
+
+    const base = editBase;
+    setEditBase(null);
+    setInputText('');
+    try {
+      localStorage.removeItem(`ag_slg_studio_draft_${scenarioId}`);
+    } catch {}
+    void runPrompt(prompt, base ?? undefined);
+  };
+
+  const lastUserIdx = (() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].sender === 'user') return i;
+    }
+    return -1;
+  })();
+
+  // 重新生成本轮：丢弃上一条输入之后的回复，用同样的输入重新发送
+  const handleRegenerate = () => {
+    if (isStreaming || lastUserIdx < 0) return;
+    runPrompt(messages[lastUserIdx].content, messages.slice(0, lastUserIdx));
+  };
+
+  // 重新编辑输入：把上一条输入放回输入框，发送时替换上一轮对话
+  const handleEditLast = () => {
+    if (isStreaming || lastUserIdx < 0) return;
+    setEditBase(messages.slice(0, lastUserIdx));
+    setInputText(messages[lastUserIdx].content);
+  };
+
+  const handleCancelEdit = () => {
+    setEditBase(null);
+    setInputText('');
+  };
+
+  const runPrompt = async (prompt: string, baseMessages?: AuthoringMessage[]) => {
+    if (isStreaming) return;
 
     const userMsg: AuthoringMessage = {
       id: `user-${Date.now()}`,
@@ -140,18 +180,14 @@ export default function AuthoringChat({
       timestamp: Date.now(),
     };
 
-    // 立即保存用户发送的消息，并清理草稿
+    // 立即保存用户发送的消息（编辑/重新生成时基于回滚后的列表）
     setMessages((prev) => {
-      const next = [...prev, userMsg];
+      const next = [...(baseMessages ?? prev), userMsg];
       try {
         localStorage.setItem(`ag_slg_studio_chat_${scenarioId}`, JSON.stringify(next));
       } catch {}
       return next;
     });
-    setInputText('');
-    try {
-      localStorage.removeItem(`ag_slg_studio_draft_${scenarioId}`);
-    } catch {}
 
     setIsStreaming(true);
     setStreamingText('');
@@ -379,6 +415,44 @@ export default function AuthoringChat({
           + 扩写【隐秘密室】场景与插画
         </button>
       </div>
+
+      {/* 上一轮操作：编辑输入 / 重新生成 */}
+      {editBase ? (
+        <div className="px-3 py-1.5 border-t border-slate-800/80 bg-indigo-950/40 flex items-center gap-2 text-[10px] text-indigo-200">
+          <Pencil className="w-3 h-3 shrink-0" />
+          <span className="flex-1">正在编辑上一条输入，发送后将替换上一轮对话</span>
+          <button
+            type="button"
+            onClick={handleCancelEdit}
+            className="p-0.5 rounded hover:bg-indigo-900/60 text-indigo-300 hover:text-white transition"
+            title="取消编辑"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      ) : (
+        !isStreaming &&
+        lastUserIdx >= 0 && (
+          <div className="px-3 py-1.5 border-t border-slate-800/80 bg-slate-950 flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handleEditLast}
+              className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-200 px-2 py-0.5 rounded border border-slate-800 hover:border-slate-600 transition"
+              title="修改上一条输入后重新发送"
+            >
+              <Pencil className="w-3 h-3" /> 编辑上一条
+            </button>
+            <button
+              type="button"
+              onClick={handleRegenerate}
+              className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-indigo-300 px-2 py-0.5 rounded border border-slate-800 hover:border-indigo-500/60 transition"
+              title="丢弃上一轮回复并用同样的输入重新生成"
+            >
+              <RefreshCw className="w-3 h-3" /> 重新生成
+            </button>
+          </div>
+        )
+      )}
 
       {/* 输入栏 */}
       <form onSubmit={handleSend} className="p-3 border-t border-slate-800 bg-[#141721] flex gap-2">

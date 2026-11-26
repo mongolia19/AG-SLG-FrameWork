@@ -5,8 +5,8 @@ function uriMalformedShield() {
   return {
     name: 'uri-malformed-shield',
     configureServer(server: any) {
-      // 1. Pre-middleware: sanitize incoming req.url before Vite's transform middleware
-      server.middlewares.use((req: any, _res: any, next: any) => {
+      // 1. Pre-middleware: sanitize incoming req.url & block dev-server exploit probes before Vite transform
+      server.middlewares.use((req: any, res: any, next: any) => {
         if (req.url) {
           try {
             decodeURI(req.url);
@@ -18,6 +18,16 @@ function uriMalformedShield() {
             } catch {
               req.url = req.url.replace(/%/g, '%25');
             }
+          }
+          const lowerUrl = req.url.toLowerCase();
+          if (
+            lowerUrl.includes('__vite-browser-external:') ||
+            lowerUrl.includes('/etc/passwd') ||
+            lowerUrl.includes('..')
+          ) {
+            res.statusCode = 403;
+            res.end('Forbidden');
+            return;
           }
         }
         next();
@@ -41,6 +51,7 @@ function uriMalformedShield() {
 export default defineConfig({
   plugins: [uriMalformedShield(), react()],
   server: {
+    host: process.env.VITE_HOST || '127.0.0.1',
     port: 5173,
     proxy: {
       '/api': {

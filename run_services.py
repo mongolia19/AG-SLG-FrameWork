@@ -123,10 +123,11 @@ def start():
     )
     backend_pid = backend_proc.pid
 
-    # 2. Start Frontend Vite (port 5173)
+    # 2. Start Frontend Vite (port 5173; bind 127.0.0.1 by default to avoid exposing dev server on LAN)
+    vite_host = os.getenv("VITE_HOST", "127.0.0.1")
     frontend_log = open(ROOT_DIR / "web.log", "a", encoding="utf-8")
     frontend_proc = subprocess.Popen(
-        [*resolve_vite_cmd(), "--host", "0.0.0.0", "--port", "5173"],
+        [*resolve_vite_cmd(), "--host", vite_host, "--port", "5173"],
         cwd=str(WEB_DIR),
         stdin=subprocess.PIPE,   # Keep stdin pipe open so Vite interactive prompt doesn't exit on EOF
         stdout=frontend_log,

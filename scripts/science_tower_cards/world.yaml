@@ -1,0 +1,725 @@
+id: "science_tower_cards"
+title: "实验之塔 · 自然科学卡牌试炼"
+version: "0.2.0"
+author: "AG-SLG Studio Co-pilot"
+icon: "⚗️"
+sort_order: 30
+initial_scene: "tower_entry"
+opening_narration: |
+  洁白的实验塔在地底深处静默旋转。你作为唯一的物理学家，带着八张由逻辑写成的研究卡牌，
+  即将沿塔层向下推进。每一层都由成双的概念守护，击败它们可从四张掉落卡牌中挑选两张加入卡组；
+  而在塔心最深处等待你的，是身披尖刺外壳的最终主宰——「神学」。
+dm_rules: |
+  - 【核心铁律 · 严禁口头估算】：
+    所有卡牌出牌、抽牌、弃牌、伤害、护盾、尖刺反伤与敌方反击，都必须先用
+    `scripts/science_tower_cards/scripts/card_engine.py --json '{...}'` 计算出精确结果，
+    再把脚本返回的 `state_delta` 原样写入叙事末尾。不要凭印象加减血量或改牌堆。
+  - 【回合流程】：
+    1. 每回合开始时能量重置为 5，从牌堆补抽至 5 张手牌；若牌堆耗尽，则将弃牌堆洗回牌堆。
+    2. 玩家按任意顺序打出若干张手牌（攻击牌可指定目标 `target: 1 | 2`）；每张牌立即结算并消耗对应能量。
+    3. 所有出牌结算完成后，场上仍存活的敌人依次执行一次确定性反击。
+    4. 反击结束后进入下一回合，继续抽牌与出牌循环。
+  - 【基础卡牌 · 初始 8 张】：
+    - 实验：1 能量，攻击 6；若有归纳增益则追加（最高 +12）并清空增益。
+    - 校验：1 能量，攻击 0，获得 5 点护盾。
+    - 归纳法：2 能量，攻击 0，下一次「实验」伤害 +4（单回合最高 +12）。
+    - 批判思维：1 能量，攻击 0，抽 3 张保留 1 张入手，其余 2 张进弃牌堆。
+  - 【第一层双敌同场 · 未知 & 无知】：
+    - 未知（HP 36，防御 0）：反击造成 6 点伤害，并使下一回合「实验」伤害 -1（最多 -2）。战后掉落：假设检验、控制变量。
+    - 无知（HP 44，防御 3）：反击造成 4 点伤害，但使你下一次「校验」护盾 +1。战后掉落：精密测量、双倍校验。
+    - 战后四选二：击败未知与无知后，玩家从 4 张掉落卡牌中任选 2 张加入卡组。
+  - 【第二层双敌同场 · 盲从 & 谬证】：
+    - 盲从（HP 60，初始防御 0）：反击造成 5 点伤害，若玩家回合末仍持有归纳增益，则复制并使自身防御 +2 且清空玩家归纳增益。战后掉落：反证法、证伪重击。
+    - 谬证（HP 68，防御 0）：反击造成 7 点伤害，并移除玩家最左侧 1 张手牌。战后掉落：严密公理、奥卡姆剃刀。
+    - 战后四选二：击败盲从与谬证后，玩家从 4 张掉落卡牌中任选 2 张加入卡组。
+  - 【最终 Boss · 神学】：
+    - 神学（HP 96，防御 1）：拥有被动「尖刺外壳」——每次受到玩家攻击卡牌伤害后，立即对攻击者反伤 3 点（护盾优先抵挡，剩余扣减生命）；回合末反击造成 9 点伤害。
+  - 【视觉铁律】：
+    每个遭遇场景都使用真实背景图与焦点插画，`visuals.foreground` 保持为空。
+    左侧边栏在展示角色「物理学家」的同时，依据 `hand_card_1` ~ `hand_card_5` 自动展示当前持有的手牌（含攻击伤害与消耗能量）；
+    右侧边栏实时展示当前存活的敌方角色卡。
+
+attribute_labels:
+  intelligence: "逻辑"
+  observation: "观察"
+  resilience: "韧性"
+
+variable_bounds:
+  deck_count:
+    min: 0
+    max: 16
+  hand_count:
+    min: 0
+    max: 10
+  discard_count:
+    min: 0
+    max: 16
+  energy:
+    min: 0
+    max: 5
+  shield:
+    min: 0
+    max: 999
+  induction_bonus:
+    min: 0
+    max: 12
+  experiment_penalty:
+    min: 0
+    max: 2
+  shield_bonus_next:
+    min: 0
+    max: 6
+  enemy_hp:
+    min: 0
+    max: 999
+  enemy_max_hp:
+    min: 1
+    max: 999
+  enemy1_hp:
+    min: 0
+    max: 999
+  enemy2_hp:
+    min: 0
+    max: 999
+  layer1_picks_left:
+    min: 0
+    max: 2
+  layer2_picks_left:
+    min: 0
+    max: 2
+  turn_count:
+    min: 0
+
+item_catalog:
+  experiment_note:
+    name: "实验笔记"
+    icon: "/assets/items/experiment_note.svg"
+    desc: "记录了八张初始科学卡与实验塔的基础规则。"
+  假设检验:
+    name: "假设检验"
+    icon: "/assets/cards/card_hypothesis_test.svg"
+    desc: "【未知掉落 · 攻击8 · 耗能1】造成 8 点伤害，并清除敌方对「实验」的削弱效果。"
+  控制变量:
+    name: "控制变量"
+    icon: "/assets/cards/card_control_variable.svg"
+    desc: "【未知掉落 · 攻击0 · 耗能1】获得 7 点护盾，下一次「校验」护盾 +2。"
+  精密测量:
+    name: "精密测量"
+    icon: "/assets/cards/card_precision_measure.svg"
+    desc: "【无知掉落 · 攻击5 · 耗能1】无视敌方护甲，造成 5 点穿甲真实伤害。"
+  双倍校验:
+    name: "双倍校验"
+    icon: "/assets/cards/card_double_verification.svg"
+    desc: "【无知掉落 · 攻击0 · 耗能2】获得 10 点护盾，下一次「校验」护盾 +3。"
+  反证法:
+    name: "反证法"
+    icon: "/assets/cards/card_counterproof.svg"
+    desc: "【盲从掉落 · 攻击12 · 耗能2】造成 12 点逻辑伤害，并使目标护甲 -2。"
+  证伪重击:
+    name: "证伪重击"
+    icon: "/assets/cards/card_falsify_strike.svg"
+    desc: "【盲从掉落 · 攻击7 · 耗能1】造成 7 点伤害；若目标带有护甲，额外 +4 破甲伤害。"
+  严密公理:
+    name: "严密公理"
+    icon: "/assets/cards/card_strict_axiom.svg"
+    desc: "【谬证掉落 · 攻击0 · 耗能1】获得 6 点护盾并抽 1 张牌。"
+  奥卡姆剃刀:
+    name: "奥卡姆剃刀"
+    icon: "/assets/cards/card_occams_razor.svg"
+    desc: "【谬证掉落 · 攻击9 · 耗能2】造成 9 点伤害并抽 1 张牌。"
+
+unique_items:
+  - "experiment_note"
+  - "假设检验"
+  - "控制变量"
+  - "精密测量"
+  - "双倍校验"
+  - "反证法"
+  - "证伪重击"
+  - "严密公理"
+  - "奥卡姆剃刀"
+
+adjudication_rules:
+  - when:
+      variables:
+        current_encounter: "encounter_layer1"
+        enemy2_hp:
+          gt: 0
+    mod: 0
+    label: "无知防御 (+3)"
+  - when:
+      variables:
+        current_encounter: "encounter_theology"
+        enemy1_hp:
+          gt: 0
+    mod: 0
+    label: "神学 · 尖刺外壳 (反伤3)"
+
+initial_player_state:
+  name: "物理学家"
+  hp: 72
+  max_hp: 72
+  mp: 0
+  max_mp: 0
+  san: 100
+  gold: 0
+  attributes:
+    intelligence: 12
+    observation: 12
+    resilience: 12
+  inventory:
+    - id: "experiment_note"
+      name: "实验笔记"
+      icon: "/assets/items/experiment_note.svg"
+      desc: "记录了八张初始科学卡与实验塔的基础规则。"
+  outfit:
+    top:
+      id: "physics_coat"
+      name: "物理学家实验袍"
+      desc: "充满焦痕与墨迹的白色实验袍，象征冷静与纯粹逻辑。"
+      tag: "物理学 · 基础"
+  variables:
+    tower_stage: "entry"
+    current_encounter: "tower_entry"
+    enemy_count: 0
+    enemy_name: "无"
+    enemy_hp: 0
+    enemy_max_hp: 0
+    enemy_armor: 0
+    enemy_alive: false
+    enemy1_name: "无"
+    enemy1_hp: 0
+    enemy1_max_hp: 1
+    enemy1_armor: 0
+    enemy2_name: ""
+    enemy2_hp: 0
+    enemy2_max_hp: 1
+    enemy2_armor: 0
+    turn_count: 0
+    deck_count: 3
+    hand_count: 5
+    discard_count: 0
+    energy: 5
+    shield: 0
+    induction_bonus: 0
+    experiment_penalty: 0
+    shield_bonus_next: 0
+    layer1_picks_left: 2
+    l1_picked_1: false
+    l1_picked_2: false
+    l1_picked_3: false
+    l1_picked_4: false
+    layer2_picks_left: 2
+    l2_picked_1: false
+    l2_picked_2: false
+    l2_picked_3: false
+    l2_picked_4: false
+    hand_card_1: "实验"
+    hand_card_2: "实验"
+    hand_card_3: "校验"
+    hand_card_4: "实验"
+    hand_card_5: "校验"
+  hud_widgets:
+    - id: "card_resource_metrics"
+      type: "metrics"
+      title: "卡牌资源"
+      icon: "⚗️"
+      items:
+        - id: "energy"
+          label: "能量"
+          icon: "⚡"
+          value_ref: "variables.energy"
+          max: 5
+          color: "amber"
+          low_threshold: 1
+        - id: "shield"
+          label: "护盾"
+          icon: "🛡️"
+          value_ref: "variables.shield"
+          max: 30
+          color: "teal"
+        - id: "induction_bonus"
+          label: "归纳增益"
+          icon: "🧠"
+          value_ref: "variables.induction_bonus"
+          max: 12
+          color: "violet"
+        - id: "deck_count"
+          label: "牌堆"
+          icon: "🗂️"
+          value_ref: "variables.deck_count"
+          max: 12
+          color: "sky"
+        - id: "hand_count"
+          label: "手牌"
+          icon: "✋"
+          value_ref: "variables.hand_count"
+          max: 10
+          color: "emerald"
+        - id: "discard_count"
+          label: "弃牌"
+          icon: "🗑️"
+          value_ref: "variables.discard_count"
+          max: 12
+          color: "rose"
+    - id: "tower_tracker"
+      type: "tracker"
+      title: "塔层进度"
+      icon: "🏰"
+      steps:
+        - label: "抵达实验塔"
+          done_when:
+            variables:
+              tower_stage:
+                in: ["layer1", "layer2", "boss", "victory"]
+          active_when:
+            variables:
+              tower_stage: "entry"
+        - label: "层一 · 未知与无知"
+          done_when:
+            variables:
+              tower_stage:
+                in: ["layer2", "boss", "victory"]
+          active_when:
+            variables:
+              tower_stage: "layer1"
+        - label: "层二 · 盲从与谬证"
+          done_when:
+            variables:
+              tower_stage:
+                in: ["boss", "victory"]
+          active_when:
+            variables:
+              tower_stage: "layer2"
+        - label: "Boss · 神学"
+          done_when:
+            variables:
+              tower_stage: "victory"
+          active_when:
+            variables:
+              tower_stage: "boss"
+        - label: "抵达塔心"
+          done_when:
+            variables:
+              tower_stage: "victory"
+          active_when:
+            variables:
+              tower_stage: "victory"
+    - id: "encounter_panel_layer1"
+      type: "panel"
+      title: "第一层遭遇 · 未知 & 无知"
+      icon: "⚔️"
+      tone: "danger"
+      when:
+        variables:
+          current_encounter: "encounter_layer1"
+          enemy_alive: true
+      badges:
+        - text_ref: "未知 甲+{variables.enemy1_armor}"
+          tone: "purple"
+          when:
+            variables:
+              enemy1_hp:
+                gt: 0
+        - text_ref: "无知 甲+{variables.enemy2_armor}"
+          tone: "slate"
+          when:
+            variables:
+              enemy2_hp:
+                gt: 0
+        - text_ref: "回合 {variables.turn_count}"
+          tone: "amber"
+      bars:
+        - label: "未知"
+          value_ref: "variables.enemy1_hp"
+          max_ref: "variables.enemy1_max_hp"
+          color: "violet"
+        - label: "无知"
+          value_ref: "variables.enemy2_hp"
+          max_ref: "variables.enemy2_max_hp"
+          color: "sky"
+      cards_title: "双敌机制与掉落"
+      cards:
+        - title: "未知（反击 6 · 削弱实验 -1）"
+          desc: "战后掉落：假设检验（⚔8 ⚡1）、控制变量（⚔0 ⚡1）。"
+        - title: "无知（防御 3 · 反击 4 · 馈盾 +1）"
+          desc: "战后掉落：精密测量（⚔5 ⚡1 穿甲）、双倍校验（⚔0 ⚡2）。"
+      footer: "击败两者后可从 4 张掉落卡中四选二加入卡组"
+    - id: "encounter_panel_layer2"
+      type: "panel"
+      title: "第二层遭遇 · 盲从 & 谬证"
+      icon: "⚔️"
+      tone: "danger"
+      when:
+        variables:
+          current_encounter: "encounter_layer2"
+          enemy_alive: true
+      badges:
+        - text_ref: "盲从 甲+{variables.enemy1_armor}"
+          tone: "amber"
+          when:
+            variables:
+              enemy1_hp:
+                gt: 0
+        - text_ref: "谬证 甲+{variables.enemy2_armor}"
+          tone: "red"
+          when:
+            variables:
+              enemy2_hp:
+                gt: 0
+        - text_ref: "回合 {variables.turn_count}"
+          tone: "purple"
+      bars:
+        - label: "盲从"
+          value_ref: "variables.enemy1_hp"
+          max_ref: "variables.enemy1_max_hp"
+          color: "amber"
+        - label: "谬证"
+          value_ref: "variables.enemy2_hp"
+          max_ref: "variables.enemy2_max_hp"
+          color: "rose"
+      cards_title: "双敌机制与掉落"
+      cards:
+        - title: "盲从（反击 5 · 复制归纳 +2甲）"
+          desc: "战后掉落：反证法（⚔12 ⚡2 破甲）、证伪重击（⚔7 ⚡1）。"
+        - title: "谬证（反击 7 · 偷走最左手牌）"
+          desc: "战后掉落：严密公理（⚔0 ⚡1 抽1）、奥卡姆剃刀（⚔9 ⚡2 抽1）。"
+      footer: "击败两者后可从 4 张掉落卡中四选二加入卡组"
+    - id: "encounter_panel_theology"
+      type: "panel"
+      title: "最终 Boss · 神学"
+      icon: "👑"
+      tone: "danger"
+      when:
+        variables:
+          current_encounter: "encounter_theology"
+          enemy_alive: true
+      badges:
+        - text: "尖刺外壳 · 每次被击反伤 3"
+          tone: "danger"
+        - text_ref: "神圣护甲 +{variables.enemy1_armor}"
+          tone: "amber"
+        - text_ref: "回合 {variables.turn_count}"
+          tone: "purple"
+      bars:
+        - label: "神学"
+          value_ref: "variables.enemy1_hp"
+          max_ref: "variables.enemy1_max_hp"
+          color: "rose"
+      cards_title: "Boss 机制"
+      cards:
+        - title: "尖刺外壳（每次被攻击反伤 3 点）"
+          desc: "每次受到玩家的攻击牌命中，立即对玩家反伤 3 点（护盾优先抵挡）。"
+        - title: "绝对教条（回合末反击 9 点）"
+          desc: "每回合出牌结束后，对玩家造成 9 点伤害。"
+      footer: "建议先叠盾或使用高单发/穿甲卡牌，避免高频低伤攻击触发多次反伤"
+    - id: "hand_cards_panel"
+      type: "panel"
+      title: "持有手牌"
+      icon: "🃏"
+      when:
+        variables:
+          hand_count:
+            gt: 0
+      badges:
+        - text: "① 实验 · ⚔6 ⚡1"
+          tone: "red"
+          when:
+            variables:
+              hand_card_1: "实验"
+        - text: "① 校验 · ⚔0 ⚡1"
+          tone: "emerald"
+          when:
+            variables:
+              hand_card_1: "校验"
+        - text: "① 归纳法 · ⚔0 ⚡2"
+          tone: "purple"
+          when:
+            variables:
+              hand_card_1: "归纳法"
+        - text: "① 批判思维 · ⚔0 ⚡1"
+          tone: "sky"
+          when:
+            variables:
+              hand_card_1: "批判思维"
+        - text: "① 假设检验 · ⚔8 ⚡1"
+          tone: "red"
+          when:
+            variables:
+              hand_card_1: "假设检验"
+        - text: "① 控制变量 · ⚔0 ⚡1"
+          tone: "emerald"
+          when:
+            variables:
+              hand_card_1: "控制变量"
+        - text: "① 精密测量 · ⚔5 ⚡1"
+          tone: "red"
+          when:
+            variables:
+              hand_card_1: "精密测量"
+        - text: "① 双倍校验 · ⚔0 ⚡2"
+          tone: "emerald"
+          when:
+            variables:
+              hand_card_1: "双倍校验"
+        - text: "① 反证法 · ⚔12 ⚡2"
+          tone: "red"
+          when:
+            variables:
+              hand_card_1: "反证法"
+        - text: "① 证伪重击 · ⚔7 ⚡1"
+          tone: "red"
+          when:
+            variables:
+              hand_card_1: "证伪重击"
+        - text: "① 严密公理 · ⚔0 ⚡1"
+          tone: "emerald"
+          when:
+            variables:
+              hand_card_1: "严密公理"
+        - text: "① 奥卡姆剃刀 · ⚔9 ⚡2"
+          tone: "red"
+          when:
+            variables:
+              hand_card_1: "奥卡姆剃刀"
+        - text: "② 实验 · ⚔6 ⚡1"
+          tone: "red"
+          when:
+            variables:
+              hand_card_2: "实验"
+        - text: "② 校验 · ⚔0 ⚡1"
+          tone: "emerald"
+          when:
+            variables:
+              hand_card_2: "校验"
+        - text: "② 归纳法 · ⚔0 ⚡2"
+          tone: "purple"
+          when:
+            variables:
+              hand_card_2: "归纳法"
+        - text: "② 批判思维 · ⚔0 ⚡1"
+          tone: "sky"
+          when:
+            variables:
+              hand_card_2: "批判思维"
+        - text: "② 假设检验 · ⚔8 ⚡1"
+          tone: "red"
+          when:
+            variables:
+              hand_card_2: "假设检验"
+        - text: "② 控制变量 · ⚔0 ⚡1"
+          tone: "emerald"
+          when:
+            variables:
+              hand_card_2: "控制变量"
+        - text: "② 精密测量 · ⚔5 ⚡1"
+          tone: "red"
+          when:
+            variables:
+              hand_card_2: "精密测量"
+        - text: "② 双倍校验 · ⚔0 ⚡2"
+          tone: "emerald"
+          when:
+            variables:
+              hand_card_2: "双倍校验"
+        - text: "② 反证法 · ⚔12 ⚡2"
+          tone: "red"
+          when:
+            variables:
+              hand_card_2: "反证法"
+        - text: "② 证伪重击 · ⚔7 ⚡1"
+          tone: "red"
+          when:
+            variables:
+              hand_card_2: "证伪重击"
+        - text: "② 严密公理 · ⚔0 ⚡1"
+          tone: "emerald"
+          when:
+            variables:
+              hand_card_2: "严密公理"
+        - text: "② 奥卡姆剃刀 · ⚔9 ⚡2"
+          tone: "red"
+          when:
+            variables:
+              hand_card_2: "奥卡姆剃刀"
+        - text: "③ 实验 · ⚔6 ⚡1"
+          tone: "red"
+          when:
+            variables:
+              hand_card_3: "实验"
+        - text: "③ 校验 · ⚔0 ⚡1"
+          tone: "emerald"
+          when:
+            variables:
+              hand_card_3: "校验"
+        - text: "③ 归纳法 · ⚔0 ⚡2"
+          tone: "purple"
+          when:
+            variables:
+              hand_card_3: "归纳法"
+        - text: "③ 批判思维 · ⚔0 ⚡1"
+          tone: "sky"
+          when:
+            variables:
+              hand_card_3: "批判思维"
+        - text: "③ 假设检验 · ⚔8 ⚡1"
+          tone: "red"
+          when:
+            variables:
+              hand_card_3: "假设检验"
+        - text: "③ 控制变量 · ⚔0 ⚡1"
+          tone: "emerald"
+          when:
+            variables:
+              hand_card_3: "控制变量"
+        - text: "③ 精密测量 · ⚔5 ⚡1"
+          tone: "red"
+          when:
+            variables:
+              hand_card_3: "精密测量"
+        - text: "③ 双倍校验 · ⚔0 ⚡2"
+          tone: "emerald"
+          when:
+            variables:
+              hand_card_3: "双倍校验"
+        - text: "③ 反证法 · ⚔12 ⚡2"
+          tone: "red"
+          when:
+            variables:
+              hand_card_3: "反证法"
+        - text: "③ 证伪重击 · ⚔7 ⚡1"
+          tone: "red"
+          when:
+            variables:
+              hand_card_3: "证伪重击"
+        - text: "③ 严密公理 · ⚔0 ⚡1"
+          tone: "emerald"
+          when:
+            variables:
+              hand_card_3: "严密公理"
+        - text: "③ 奥卡姆剃刀 · ⚔9 ⚡2"
+          tone: "red"
+          when:
+            variables:
+              hand_card_3: "奥卡姆剃刀"
+        - text: "④ 实验 · ⚔6 ⚡1"
+          tone: "red"
+          when:
+            variables:
+              hand_card_4: "实验"
+        - text: "④ 校验 · ⚔0 ⚡1"
+          tone: "emerald"
+          when:
+            variables:
+              hand_card_4: "校验"
+        - text: "④ 归纳法 · ⚔0 ⚡2"
+          tone: "purple"
+          when:
+            variables:
+              hand_card_4: "归纳法"
+        - text: "④ 批判思维 · ⚔0 ⚡1"
+          tone: "sky"
+          when:
+            variables:
+              hand_card_4: "批判思维"
+        - text: "④ 假设检验 · ⚔8 ⚡1"
+          tone: "red"
+          when:
+            variables:
+              hand_card_4: "假设检验"
+        - text: "④ 控制变量 · ⚔0 ⚡1"
+          tone: "emerald"
+          when:
+            variables:
+              hand_card_4: "控制变量"
+        - text: "④ 精密测量 · ⚔5 ⚡1"
+          tone: "red"
+          when:
+            variables:
+              hand_card_4: "精密测量"
+        - text: "④ 双倍校验 · ⚔0 ⚡2"
+          tone: "emerald"
+          when:
+            variables:
+              hand_card_4: "双倍校验"
+        - text: "④ 反证法 · ⚔12 ⚡2"
+          tone: "red"
+          when:
+            variables:
+              hand_card_4: "反证法"
+        - text: "④ 证伪重击 · ⚔7 ⚡1"
+          tone: "red"
+          when:
+            variables:
+              hand_card_4: "证伪重击"
+        - text: "④ 严密公理 · ⚔0 ⚡1"
+          tone: "emerald"
+          when:
+            variables:
+              hand_card_4: "严密公理"
+        - text: "④ 奥卡姆剃刀 · ⚔9 ⚡2"
+          tone: "red"
+          when:
+            variables:
+              hand_card_4: "奥卡姆剃刀"
+        - text: "⑤ 实验 · ⚔6 ⚡1"
+          tone: "red"
+          when:
+            variables:
+              hand_card_5: "实验"
+        - text: "⑤ 校验 · ⚔0 ⚡1"
+          tone: "emerald"
+          when:
+            variables:
+              hand_card_5: "校验"
+        - text: "⑤ 归纳法 · ⚔0 ⚡2"
+          tone: "purple"
+          when:
+            variables:
+              hand_card_5: "归纳法"
+        - text: "⑤ 批判思维 · ⚔0 ⚡1"
+          tone: "sky"
+          when:
+            variables:
+              hand_card_5: "批判思维"
+        - text: "⑤ 假设检验 · ⚔8 ⚡1"
+          tone: "red"
+          when:
+            variables:
+              hand_card_5: "假设检验"
+        - text: "⑤ 控制变量 · ⚔0 ⚡1"
+          tone: "emerald"
+          when:
+            variables:
+              hand_card_5: "控制变量"
+        - text: "⑤ 精密测量 · ⚔5 ⚡1"
+          tone: "red"
+          when:
+            variables:
+              hand_card_5: "精密测量"
+        - text: "⑤ 双倍校验 · ⚔0 ⚡2"
+          tone: "emerald"
+          when:
+            variables:
+              hand_card_5: "双倍校验"
+        - text: "⑤ 反证法 · ⚔12 ⚡2"
+          tone: "red"
+          when:
+            variables:
+              hand_card_5: "反证法"
+        - text: "⑤ 证伪重击 · ⚔7 ⚡1"
+          tone: "red"
+          when:
+            variables:
+              hand_card_5: "证伪重击"
+        - text: "⑤ 严密公理 · ⚔0 ⚡1"
+          tone: "emerald"
+          when:
+            variables:
+              hand_card_5: "严密公理"
+        - text: "⑤ 奥卡姆剃刀 · ⚔9 ⚡2"
+          tone: "red"
+          when:
+            variables:
+              hand_card_5: "奥卡姆剃刀"
+      footer: "剩余能量 {variables.energy}/5 · 归纳加成 +{variables.induction_bonus}"

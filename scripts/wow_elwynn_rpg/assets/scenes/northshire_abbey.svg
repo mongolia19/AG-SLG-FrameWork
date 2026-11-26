@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8fd0e9"/>
+      <stop offset=".65" stop-color="#e7f0cf"/>
+      <stop offset="1" stop-color="#f7ecc4"/>
+    </linearGradient>
+    <linearGradient id="stone" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d9d2bd"/>
+      <stop offset="1" stop-color="#a79978"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#sky)"/>
+  <circle cx="1210" cy="140" r="105" fill="#fff6cf" opacity=".75"/>
+  <circle cx="1210" cy="140" r="170" fill="#fff" opacity=".18"/>
+  <path d="M0 690c150-85 300-45 460-20s300 35 460 5 310-65 680-25v250H0z" fill="#6f8f55"/>
+  <path d="M0 750c180-55 350-35 540-8s390 45 570 5 320-55 490-15v168H0z" fill="#557840"/>
+  <path d="M250 660V360l180-135 180 135v300z" fill="url(#stone)"/>
+  <path d="M250 360l180-135 180 135-180 25z" fill="#7c6f57"/>
+  <rect x="355" y="200" width="60" height="125" fill="#c6bc9e"/>
+  <path d="M300 760v-230c0-80 60-130 130-130s130 50 130 130v230z" fill="#b3a888"/>
+  <path d="M370 760V585c0-35 30-60 60-60s60 25 60 60v175z" fill="#5a4a34"/>
+  <path d="M120 760h140l-20-125H160zm1180 0h160l-20-125h-120z" fill="#c0b594"/>
+  <rect x="0" y="750" width="1600" height="150" fill="#cfc5a2"/>
+  <path d="M0 810h1600M0 850h1600" stroke="#ab9f7e" stroke-width="5" opacity=".5"/>
+  <g transform="translate(760 505)" fill="#315a80">
+    <rect x="0" y="0" width="90" height="255" fill="#5b4632"/>
+    <rect x="10" y="16" width="70" height="35" fill="#d7b758"/>
+    <circle cx="45" cy="0" r="28" fill="#315a80"/>
+  </g>
+  <g stroke="#51713f" stroke-width="7" fill="none" opacity=".65">
+    <path d="M80 730c45-45 105-55 160-35"/>
+    <path d="M1350 720c55-40 125-45 185-20"/>
+  </g>
+</svg>

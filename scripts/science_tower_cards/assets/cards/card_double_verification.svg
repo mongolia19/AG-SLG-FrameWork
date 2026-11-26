@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="240" viewBox="0 0 320 240">
+  <defs>
+    <linearGradient id="bgDver" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#05201e"/>
+      <stop offset="1" stop-color="#0b3b36"/>
+    </linearGradient>
+  </defs>
+  <rect width="320" height="240" rx="14" fill="url(#bgDver)"/>
+  <rect x="6" y="6" width="308" height="228" rx="11" fill="none" stroke="#34d399" stroke-opacity="0.55" stroke-width="2"/>
+  <rect x="14" y="14" width="84" height="32" rx="16" fill="#451a03" stroke="#f59e0b" stroke-width="2"/>
+  <text x="56" y="35" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#fcd34d">⚡ 2 能量</text>
+  <rect x="218" y="14" width="88" height="32" rx="16" fill="#1e293b" stroke="#64748b" stroke-width="2"/>
+  <text x="262" y="35" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#cbd5e1">⚔ 0 伤害</text>
+  <path d="M148 70 L180 83 L180 109 C180 128 164 139 148 145 C132 139 116 128 116 109 L116 83 Z" fill="#064e3b" stroke="#6ee7b7" stroke-width="2.5"/>
+  <path d="M172 74 L204 87 L204 113 C204 132 188 143 172 149 C156 143 140 132 140 113 L140 87 Z" fill="#065f46" fill-opacity="0.85" stroke="#a7f3d0" stroke-width="2.5"/>
+  <text x="160" y="170" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="800" fill="#f8fafc">双倍校验</text>
+  <text x="160" y="190" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#a7f3d0">护盾 +10 · 下次校验 +3</text>
+</svg>

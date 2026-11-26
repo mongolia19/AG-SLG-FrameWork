@@ -1,8 +1,8 @@
 id: "fargodeep_entrance"
 title: "矿洞前哨 · 法戈第外围坑道"
-background: "【场景全景】法戈第矿洞外围幽暗坑道，锈蚀矿车与摇曳火把间潜伏着狗头人矿工与护卫蛛群"
+background: "/assets/scenes/fargodeep_entrance.svg"
 foreground: ""
-hero_image: "【前哨战局】拦在蜘蛛领主巢穴前的狗头人矿工小队与精英护卫蛛群"
+hero_image: "/assets/illustrations/fargodeep_entrance_hero.svg"
 music: "/assets/bgm/elwynn_forest.mp3"
 
 description: |
@@ -11,9 +11,9 @@ description: |
   若想直面最深处的【蜘蛛领主·阿拉克诺斯】，必须先用职业技能击溃这两波守卫矿道的小怪！
 
 visuals:
-  background: "【场景全景】法戈第矿洞外围幽暗坑道，锈蚀矿车与摇曳火把间潜伏着狗头人矿工与护卫蛛群"
+  background: "/assets/scenes/fargodeep_entrance.svg"
   foreground: ""
-  hero_image: "【前哨战局】拦在蜘蛛领主巢穴前的狗头人矿工小队与精英护卫蛛群"
+  hero_image: "/assets/illustrations/fargodeep_entrance_hero.svg"
   atmosphere: "矿道回响、火把摇曳、伏兵拦路"
   decorations:
     - id: "npc_elena_entrance_companion_full"
@@ -145,7 +145,7 @@ visuals:
             lt: 130
     - id: "entrance_ore_rocks"
       name: "崩裂矿石堆"
-      image: "/assets/props/rocks.png"
+      image: "/assets/props/rocks.svg"
       side: "right"
       category: "env"
       tag: "掩体地形"
@@ -476,9 +476,9 @@ actions:
         combat_round: 1
         boss_casting: "【阶段一】甲壳硬化（减伤45%）· 伺机蛛网茧缚（30MP）"
       visuals:
-        background: "【场景全景】阴暗潮湿的废弃矿洞深处，巨型蛛网悬垂于朽坏矿柱之间，幽绿毒雾在洞窟底部翻涌"
+        background: "/assets/scenes/fargodeep_cave.svg"
         foreground: ""
-        hero_image: "【Boss 特写】法戈第蜘蛛领主·阿拉克诺斯 · 360HP/180MP 三阶段巨型蛛王"
+        hero_image: "/assets/illustrations/fargodeep_cave_hero.svg"
         atmosphere: "幽暗阴寒、蛛丝密布、杀机四伏"
       remove_hud_widgets:
         - "fargodeep_vanguard"
@@ -563,7 +563,7 @@ actions:
         - "vanguard_enemies_panel"
         - "arachnos_boss_panel"
       visuals:
-        background: "【场景全景】阴暗潮湿的废弃矿洞深处，巨型蛛网悬垂于朽坏矿柱之间，幽绿毒雾在洞窟底部翻涌"
+        background: "/assets/scenes/fargodeep_cave.svg"
         foreground: ""
         hero_image: "【战后余晖】蜘蛛领主已伏诛，矿洞深处恢复宁静"
         atmosphere: "幽暗阴寒、战后余烟"

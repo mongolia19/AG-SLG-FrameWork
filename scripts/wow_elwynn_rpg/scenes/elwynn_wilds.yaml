@@ -1,8 +1,8 @@
 id: "elwynn_wilds"
 title: "野外 · 艾尔文密林与哨岗"
-background: "【场景全景】阳光斑驳的艾尔文古老森林，高大橡树阴影间潜伏着灰狼与迪菲亚游荡盗贼，前方哨岗旁立着精灵斥候"
+background: "/assets/scenes/elwynn_wilds.svg"
 foreground: ""
-hero_image: "【焦点插画】艾尔文森林岔路口与法戈第矿洞警示木牌"
+hero_image: "/assets/illustrations/elwynn_wilds_hero.svg"
 music: "/assets/bgm/elwynn_forest.mp3"
 
 description: |
@@ -11,9 +11,9 @@ description: |
   路旁一处隐蔽的木制哨岗下，巡林者艾莲娜·迅箭正蹲身检查地面残留的黑色蛛丝与腐蚀毒液。前方山坡下便是被狗头人与护卫蛛占领的【法戈第矿洞外围坑道】，必须清剿林间威胁、突破 Lv.3 并调配抗毒合剂，才能从容迎战洞窟深处的强敌！
 
 visuals:
-  background: "【场景全景】阳光斑驳的艾尔文古老森林，高大橡树阴影间潜伏着灰狼与迪菲亚游荡盗贼，前方哨岗旁立着精灵斥候"
+  background: "/assets/scenes/elwynn_wilds.svg"
   foreground: ""
-  hero_image: "【焦点插画】艾尔文森林岔路口与法戈第矿洞警示木牌"
+  hero_image: "/assets/illustrations/elwynn_wilds_hero.svg"
   atmosphere: "林涛沙沙、危机暗伏、战意升腾"
   decorations:
     - id: "npc_elena_wilds_waiting"
@@ -83,7 +83,7 @@ visuals:
             lte: 0
     - id: "elwynn_ancient_vines"
       name: "艾尔文古藤"
-      image: "/assets/props/vines.png"
+      image: "/assets/props/vines.svg"
       side: "left"
       category: "env"
       tag: "荒野植被"

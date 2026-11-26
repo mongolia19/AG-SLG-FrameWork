@@ -1,8 +1,8 @@
 id: "northshire_abbey"
 title: "新手村 · 北郡修道院"
-background: "【场景全景】艾尔文森林·北郡修道院晨光广场，石砌钟楼与圣光旗帜矗立在绿茵山谷之中"
+background: "/assets/scenes/northshire_abbey.svg"
 foreground: ""
-hero_image: "【焦点插画】北郡修道院圣光祭坛与暴风城新兵征召榜"
+hero_image: "/assets/illustrations/northshire_abbey_hero.svg"
 music: "/assets/bgm/northshire_dawn.mp3"
 
 description: |
@@ -11,9 +11,9 @@ description: |
   修道院大门前，治安官麦格布莱德双臂抱胸站在征召榜旁。南方的法戈第矿洞近日不仅盘踞着狂暴狗头人矿工与护卫蛛群，深处更潜伏着拥有三阶段毒潮魔力的【蜘蛛领主·阿拉克诺斯】——在你踏上征程之前，必须先觉醒职业、积蓄血量与魔法（HP/MP）并做好战备！
 
 visuals:
-  background: "【场景全景】艾尔文森林·北郡修道院晨光广场，石砌钟楼与圣光旗帜矗立在绿茵山谷之中"
+  background: "/assets/scenes/northshire_abbey.svg"
   foreground: ""
-  hero_image: "【焦点插画】北郡修道院圣光祭坛与暴风城新兵征召榜"
+  hero_image: "/assets/illustrations/northshire_abbey_hero.svg"
   atmosphere: "晨光熹微、庄严肃穆、号角蓄势"
   decorations:
     - id: "npc_marshal_mcbride_abbey"

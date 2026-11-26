@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f6f2e8"/>
+      <stop offset="1" stop-color="#e4ded0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <g opacity="0.9">
+    <rect x="220" y="260" width="220" height="140" rx="10" fill="#ffffff" stroke="#8a7c5f" stroke-width="5"/>
+    <rect x="500" y="300" width="220" height="140" rx="10" fill="#ffffff" stroke="#8a7c5f" stroke-width="5"/>
+    <rect x="800" y="260" width="220" height="140" rx="10" fill="#ffffff" stroke="#8a7c5f" stroke-width="5"/>
+    <rect x="1080" y="300" width="220" height="140" rx="10" fill="#ffffff" stroke="#8a7c5f" stroke-width="5"/>
+  </g>
+  <g opacity="0.8">
+    <path d="M180 520 L420 560 L180 600 Z" fill="#8a7c5f"/>
+    <path d="M1180 520 L1420 560 L1180 600 Z" fill="#8a7c5f"/>
+  </g>
+  <path d="M0 700 L1600 640 L1600 900 L0 900 Z" fill="#d9d2c2"/>
+  <path d="M0 700 L1600 640" stroke="#ffffff" stroke-width="5" opacity="0.6" fill="none"/>
+  <g opacity="0.75">
+    <path d="M720 420 L880 420" stroke="#5f523d" stroke-width="6"/>
+    <path d="M720 470 L880 470" stroke="#5f523d" stroke-width="6"/>
+  </g>
+</svg>

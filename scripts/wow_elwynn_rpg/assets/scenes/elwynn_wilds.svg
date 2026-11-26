@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="glade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#b7dded"/>
+      <stop offset=".55" stop-color="#c8e3b2"/>
+      <stop offset="1" stop-color="#476b39"/>
+    </linearGradient>
+    <radialGradient id="sunpatch" cx=".34" cy=".21" r=".45">
+      <stop offset="0" stop-color="#fff7c2" stop-opacity=".95"/>
+      <stop offset="1" stop-color="#fff7c2" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#glade)"/>
+  <rect width="1600" height="900" fill="url(#sunpatch)"/>
+  <path d="M0 640c240-130 490-155 760-80s550 85 840-20v360H0z" fill="#5f8248"/>
+  <path d="M0 735c210-75 480-70 730-18s600 52 870-35v218H0z" fill="#436531"/>
+  <path d="M105 650V430M145 650V400M185 650V445" stroke="#644a2f" stroke-width="28"/>
+  <ellipse cx="145" cy="360" rx="260" ry="165" fill="#3f7040"/>
+  <ellipse cx="60" cy="430" rx="180" ry="105" fill="#528149"/>
+  <ellipse cx="250" cy="430" rx="180" ry="95" fill="#588a4f"/>
+  <path d="M1315 650V400M1355 650V360M1395 650V430" stroke="#644a2f" stroke-width="30"/>
+  <ellipse cx="1355" cy="300" rx="275" ry="170" fill="#37653a"/>
+  <ellipse cx="1215" cy="400" rx="185" ry="110" fill="#4a7a43"/>
+  <ellipse cx="1500" cy="410" rx="180" ry="100" fill="#528149"/>
+  <path d="M390 745c105-65 245-70 350-8 60-135 205-205 320-130 95-100 255-90 335 15 105-30 180 15 210 80 65 5 115 30 135 68H370z" fill="#6b4b30"/>
+  <path d="M410 745c105-55 235-60 335-2 60-125 195-190 305-120 90-92 240-85 318 12 100-28 170 15 200 75 60 5 105 28 125 62H390z" fill="#7f5a3a"/>
+  <g transform="translate(730 560)">
+    <rect x="0" y="75" width="290" height="145" fill="#5a4430"/>
+    <path d="M-25 78L145 0l170 78z" fill="#7f5d3a"/>
+    <rect x="115" y="140" width="60" height="80" fill="#33251a"/>
+    <rect x="25" y="115" width="45" height="35" fill="#f2dc9b" opacity=".7"/>
+    <rect x="220" y="115" width="45" height="35" fill="#f2dc9b" opacity=".7"/>
+  </g>
+  <g transform="translate(1160 635)">
+    <ellipse cx="60" cy="100" rx="125" ry="42" fill="#242c1a" opacity=".45"/>
+    <path d="M0 95c15-70 45-105 105-100 55 5 85 45 80 100z" fill="#8b8f79"/>
+    <circle cx="105" cy="8" r="32" fill="#a3a78d"/>
+  </g>
+  <g stroke="#263b1d" stroke-width="4" fill="none" opacity=".35">
+    <path d="M240 790c45-40 105-45 150-12"/>
+    <path d="M1100 810c50-38 115-40 165-8"/>
+  </g>
+</svg>

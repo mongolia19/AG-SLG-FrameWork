@@ -1,0 +1,303 @@
+id: "tower_entry"
+title: "实验塔 · 首层门厅"
+background: "/assets/scenes/tower_entry.svg"
+foreground: ""
+hero_image: "/assets/illustrations/tower_entry_hero.svg"
+music: "/assets/bgm/tower_entry.mp3"
+
+description: |
+  乳白色的荧光导管在环形阶梯之间缓缓流转，像一条被驯服的电流。
+  你面前的悬浮检台陈列着八张写满公式的实验卡，空气里浮着冷却金属与干燥纸页的味道。
+  每一步向下，塔层都会向你确认一次逻辑是否足够坚实。
+
+visuals:
+  background: "/assets/scenes/tower_entry.svg"
+  foreground: ""
+  hero_image: "/assets/illustrations/tower_entry_hero.svg"
+  atmosphere: "冷光悬浮、洁净沉静、实验尚未开始"
+  decorations:
+    - id: "ally_card_physics"
+      name: "物理学家"
+      image: "/assets/characters/physics_player.svg"
+      side: "left"
+      category: "structure"
+      tag: "逻辑方阵"
+      caption: "以公式构筑防御"
+      tooltip: "你的角色卡：HP 72，能量上限 5，八张初始卡。"
+    - id: "entry_rulebook"
+      name: "塔规检台"
+      image: "/assets/props/rulebook.svg"
+      side: "left"
+      category: "structure"
+      tag: "规则"
+      caption: "实验塔 · 初始卡规"
+      tooltip: "记录着能量、抽牌、出牌与反击顺序的塔规检台。"
+    - id: "entry_pathway"
+      name: "首层下行道"
+      image: "/assets/props/pathway.svg"
+      side: "right"
+      category: "env"
+      tag: "未探测"
+      caption: "通往未知的黑暗"
+      tooltip: "首层下行道尚未开启，敌人会在深处等待检验。"
+    - id: "hand_1_experiment"
+      name: "手牌1 · 实验"
+      image: "/assets/cards/card_experiment.svg"
+      side: "left"
+      category: "env"
+      tag: "⚔6 ⚡1"
+      caption: "攻击6 · 耗能1"
+      tooltip: "第 1 张手牌【实验】：消耗 1 点能量，造成 6 点实验伤害；若存在归纳增益，追加伤害并清空增益。"
+      condition:
+        variables:
+          hand_card_1: "实验"
+    - id: "hand_1_verification"
+      name: "手牌1 · 校验"
+      image: "/assets/cards/card_verification.svg"
+      side: "left"
+      category: "env"
+      tag: "⚔0 ⚡1"
+      caption: "攻击0 · 耗能1"
+      tooltip: "第 1 张手牌【校验】：消耗 1 点能量，攻击伤害 0，获得 5 点护盾。"
+      condition:
+        variables:
+          hand_card_1: "校验"
+    - id: "hand_1_induction"
+      name: "手牌1 · 归纳法"
+      image: "/assets/cards/card_induction.svg"
+      side: "left"
+      category: "env"
+      tag: "⚔0 ⚡2"
+      caption: "攻击0 · 耗能2"
+      tooltip: "第 1 张手牌【归纳法】：消耗 2 点能量，攻击伤害 0，令下一次「实验」伤害 +4（最高 +12）。"
+      condition:
+        variables:
+          hand_card_1: "归纳法"
+    - id: "hand_1_critical"
+      name: "手牌1 · 批判思维"
+      image: "/assets/cards/card_critical_thinking.svg"
+      side: "left"
+      category: "env"
+      tag: "⚔0 ⚡1"
+      caption: "攻击0 · 耗能1"
+      tooltip: "第 1 张手牌【批判思维】：消耗 1 点能量，攻击伤害 0，抽 3 张牌保留 1 张，其余 2 张进弃牌堆。"
+      condition:
+        variables:
+          hand_card_1: "批判思维"
+    - id: "hand_2_experiment"
+      name: "手牌2 · 实验"
+      image: "/assets/cards/card_experiment.svg"
+      side: "left"
+      category: "env"
+      tag: "⚔6 ⚡1"
+      caption: "攻击6 · 耗能1"
+      tooltip: "第 2 张手牌【实验】：消耗 1 点能量，造成 6 点实验伤害；若存在归纳增益，追加伤害并清空增益。"
+      condition:
+        variables:
+          hand_card_2: "实验"
+    - id: "hand_2_verification"
+      name: "手牌2 · 校验"
+      image: "/assets/cards/card_verification.svg"
+      side: "left"
+      category: "env"
+      tag: "⚔0 ⚡1"
+      caption: "攻击0 · 耗能1"
+      tooltip: "第 2 张手牌【校验】：消耗 1 点能量，攻击伤害 0，获得 5 点护盾。"
+      condition:
+        variables:
+          hand_card_2: "校验"
+    - id: "hand_2_induction"
+      name: "手牌2 · 归纳法"
+      image: "/assets/cards/card_induction.svg"
+      side: "left"
+      category: "env"
+      tag: "⚔0 ⚡2"
+      caption: "攻击0 · 耗能2"
+      tooltip: "第 2 张手牌【归纳法】：消耗 2 点能量，攻击伤害 0，令下一次「实验」伤害 +4（最高 +12）。"
+      condition:
+        variables:
+          hand_card_2: "归纳法"
+    - id: "hand_2_critical"
+      name: "手牌2 · 批判思维"
+      image: "/assets/cards/card_critical_thinking.svg"
+      side: "left"
+      category: "env"
+      tag: "⚔0 ⚡1"
+      caption: "攻击0 · 耗能1"
+      tooltip: "第 2 张手牌【批判思维】：消耗 1 点能量，攻击伤害 0，抽 3 张牌保留 1 张，其余 2 张进弃牌堆。"
+      condition:
+        variables:
+          hand_card_2: "批判思维"
+    - id: "hand_3_experiment"
+      name: "手牌3 · 实验"
+      image: "/assets/cards/card_experiment.svg"
+      side: "left"
+      category: "env"
+      tag: "⚔6 ⚡1"
+      caption: "攻击6 · 耗能1"
+      tooltip: "第 3 张手牌【实验】：消耗 1 点能量，造成 6 点实验伤害；若存在归纳增益，追加伤害并清空增益。"
+      condition:
+        variables:
+          hand_card_3: "实验"
+    - id: "hand_3_verification"
+      name: "手牌3 · 校验"
+      image: "/assets/cards/card_verification.svg"
+      side: "left"
+      category: "env"
+      tag: "⚔0 ⚡1"
+      caption: "攻击0 · 耗能1"
+      tooltip: "第 3 张手牌【校验】：消耗 1 点能量，攻击伤害 0，获得 5 点护盾。"
+      condition:
+        variables:
+          hand_card_3: "校验"
+    - id: "hand_3_induction"
+      name: "手牌3 · 归纳法"
+      image: "/assets/cards/card_induction.svg"
+      side: "left"
+      category: "env"
+      tag: "⚔0 ⚡2"
+      caption: "攻击0 · 耗能2"
+      tooltip: "第 3 张手牌【归纳法】：消耗 2 点能量，攻击伤害 0，令下一次「实验」伤害 +4（最高 +12）。"
+      condition:
+        variables:
+          hand_card_3: "归纳法"
+    - id: "hand_3_critical"
+      name: "手牌3 · 批判思维"
+      image: "/assets/cards/card_critical_thinking.svg"
+      side: "left"
+      category: "env"
+      tag: "⚔0 ⚡1"
+      caption: "攻击0 · 耗能1"
+      tooltip: "第 3 张手牌【批判思维】：消耗 1 点能量，攻击伤害 0，抽 3 张牌保留 1 张，其余 2 张进弃牌堆。"
+      condition:
+        variables:
+          hand_card_3: "批判思维"
+    - id: "hand_4_experiment"
+      name: "手牌4 · 实验"
+      image: "/assets/cards/card_experiment.svg"
+      side: "left"
+      category: "env"
+      tag: "⚔6 ⚡1"
+      caption: "攻击6 · 耗能1"
+      tooltip: "第 4 张手牌【实验】：消耗 1 点能量，造成 6 点实验伤害；若存在归纳增益，追加伤害并清空增益。"
+      condition:
+        variables:
+          hand_card_4: "实验"
+    - id: "hand_4_verification"
+      name: "手牌4 · 校验"
+      image: "/assets/cards/card_verification.svg"
+      side: "left"
+      category: "env"
+      tag: "⚔0 ⚡1"
+      caption: "攻击0 · 耗能1"
+      tooltip: "第 4 张手牌【校验】：消耗 1 点能量，攻击伤害 0，获得 5 点护盾。"
+      condition:
+        variables:
+          hand_card_4: "校验"
+    - id: "hand_4_induction"
+      name: "手牌4 · 归纳法"
+      image: "/assets/cards/card_induction.svg"
+      side: "left"
+      category: "env"
+      tag: "⚔0 ⚡2"
+      caption: "攻击0 · 耗能2"
+      tooltip: "第 4 张手牌【归纳法】：消耗 2 点能量，攻击伤害 0，令下一次「实验」伤害 +4（最高 +12）。"
+      condition:
+        variables:
+          hand_card_4: "归纳法"
+    - id: "hand_4_critical"
+      name: "手牌4 · 批判思维"
+      image: "/assets/cards/card_critical_thinking.svg"
+      side: "left"
+      category: "env"
+      tag: "⚔0 ⚡1"
+      caption: "攻击0 · 耗能1"
+      tooltip: "第 4 张手牌【批判思维】：消耗 1 点能量，攻击伤害 0，抽 3 张牌保留 1 张，其余 2 张进弃牌堆。"
+      condition:
+        variables:
+          hand_card_4: "批判思维"
+    - id: "hand_5_experiment"
+      name: "手牌5 · 实验"
+      image: "/assets/cards/card_experiment.svg"
+      side: "left"
+      category: "env"
+      tag: "⚔6 ⚡1"
+      caption: "攻击6 · 耗能1"
+      tooltip: "第 5 张手牌【实验】：消耗 1 点能量，造成 6 点实验伤害；若存在归纳增益，追加伤害并清空增益。"
+      condition:
+        variables:
+          hand_card_5: "实验"
+    - id: "hand_5_verification"
+      name: "手牌5 · 校验"
+      image: "/assets/cards/card_verification.svg"
+      side: "left"
+      category: "env"
+      tag: "⚔0 ⚡1"
+      caption: "攻击0 · 耗能1"
+      tooltip: "第 5 张手牌【校验】：消耗 1 点能量，攻击伤害 0，获得 5 点护盾。"
+      condition:
+        variables:
+          hand_card_5: "校验"
+    - id: "hand_5_induction"
+      name: "手牌5 · 归纳法"
+      image: "/assets/cards/card_induction.svg"
+      side: "left"
+      category: "env"
+      tag: "⚔0 ⚡2"
+      caption: "攻击0 · 耗能2"
+      tooltip: "第 5 张手牌【归纳法】：消耗 2 点能量，攻击伤害 0，令下一次「实验」伤害 +4（最高 +12）。"
+      condition:
+        variables:
+          hand_card_5: "归纳法"
+    - id: "hand_5_critical"
+      name: "手牌5 · 批判思维"
+      image: "/assets/cards/card_critical_thinking.svg"
+      side: "left"
+      category: "env"
+      tag: "⚔0 ⚡1"
+      caption: "攻击0 · 耗能1"
+      tooltip: "第 5 张手牌【批判思维】：消耗 1 点能量，攻击伤害 0，抽 3 张牌保留 1 张，其余 2 张进弃牌堆。"
+      condition:
+        variables:
+          hand_card_5: "批判思维"
+
+npcs: []
+
+actions:
+  - id: "inspect_rulebook"
+    label: "【检视】阅读塔规与初始卡组"
+    type: "interact"
+    on_success:
+      visuals:
+        foreground: ""
+        hero_image: "/assets/illustrations/tower_entry_hero.svg"
+      message: |
+        塔规检台亮起：
+        1. 每回合能量重置为 5，并抽至 5 张手牌。
+        2. 出牌立即结算，耗尽能量即停止。
+        3. 出牌结束后，若敌人仍存活，敌人反击一次。
+        4. 初始卡组为 3×实验、3×校验、1×归纳法、1×批判思维。
+  - id: "enter_first_encounter"
+    label: "【开局】进入首层遭遇：未知"
+    type: "transition"
+    target_scene: "encounter_unknown"
+    on_success:
+      transition_scene: "encounter_unknown"
+      variables:
+        tower_stage: "layer1"
+        current_encounter: "encounter_unknown"
+        enemy_name: "未知"
+        enemy_hp: 36
+        enemy_max_hp: 36
+        enemy_armor: 0
+        enemy_alive: true
+        turn_count: 0
+        energy: 5
+        shield: 0
+        induction_bonus: 0
+      visuals:
+        foreground: ""
+        hero_image: ""
+      message: |
+        下行道在冷光中开启。第一个身影在通道尽头成形，它的轮廓尚未被任何实验定义。
+        你握紧八张初始卡牌，走向首层遭遇【未知】。

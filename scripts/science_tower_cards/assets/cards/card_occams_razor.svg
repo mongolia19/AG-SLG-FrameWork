@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="240" viewBox="0 0 320 240">
+  <defs>
+    <linearGradient id="bgOcc" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#19132e"/>
+      <stop offset="1" stop-color="#2e1d52"/>
+    </linearGradient>
+  </defs>
+  <rect width="320" height="240" rx="14" fill="url(#bgOcc)"/>
+  <rect x="6" y="6" width="308" height="228" rx="11" fill="none" stroke="#c084fc" stroke-opacity="0.55" stroke-width="2"/>
+  <rect x="14" y="14" width="84" height="32" rx="16" fill="#451a03" stroke="#f59e0b" stroke-width="2"/>
+  <text x="56" y="35" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#fcd34d">⚡ 2 能量</text>
+  <rect x="218" y="14" width="88" height="32" rx="16" fill="#4c0519" stroke="#fb7185" stroke-width="2"/>
+  <text x="262" y="35" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#fda4af">⚔ 9 伤害</text>
+  <path d="M112 132 L188 72 L204 88 L128 144 Z" fill="#e9d5ff" stroke="#a855f7" stroke-width="2.5"/>
+  <line x1="108" y1="108" x2="212" y2="108" stroke="#fb7185" stroke-width="2" stroke-dasharray="5 5"/>
+  <text x="160" y="170" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="800" fill="#f8fafc">奥卡姆剃刀</text>
+  <text x="160" y="190" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="12" fill="#e9d5ff">造成 9 点伤害 · 抽 1 张牌</text>
+</svg>

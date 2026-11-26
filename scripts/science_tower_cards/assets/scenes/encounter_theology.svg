@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="bgTh" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#190712"/>
+      <stop offset="0.5" stop-color="#340e1f"/>
+      <stop offset="1" stop-color="#1e0b16"/>
+    </linearGradient>
+    <radialGradient id="sanctumGlow" cx="50%" cy="45%" r="45%">
+      <stop offset="0" stop-color="#f59e0b" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#9f1239" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bgTh)"/>
+  <circle cx="800" cy="400" r="460" fill="url(#sanctumGlow)"/>
+  <!-- Cathedral Pillars -->
+  <rect x="240" y="80" width="70" height="620" fill="#14060e" stroke="#f59e0b" stroke-opacity="0.35" stroke-width="3"/>
+  <rect x="1290" y="80" width="70" height="620" fill="#14060e" stroke="#f59e0b" stroke-opacity="0.35" stroke-width="3"/>
+  <!-- Thorny Halo Crest -->
+  <circle cx="800" cy="400" r="190" fill="none" stroke="#f59e0b" stroke-width="5" opacity="0.8"/>
+  <circle cx="800" cy="400" r="145" fill="#260916" stroke="#fb7185" stroke-width="5"/>
+  <g fill="#fb7185" stroke="#fde047" stroke-width="2">
+    <polygon points="800,165 820,230 780,230"/>
+    <polygon points="800,635 820,570 780,570"/>
+    <polygon points="565,400 630,380 630,420"/>
+    <polygon points="1035,400 970,380 970,420"/>
+  </g>
+  <path d="M0 740 L1600 700 L1600 900 L0 900 Z" fill="#090308"/>
+  <path d="M0 740 L1600 700" stroke="#fbbf24" stroke-width="4" opacity="0.5" fill="none"/>
+</svg>

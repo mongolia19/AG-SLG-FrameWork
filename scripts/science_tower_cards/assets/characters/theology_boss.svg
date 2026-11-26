@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640">
+  <defs>
+    <linearGradient id="bgTheo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1c0814"/>
+      <stop offset="1" stop-color="#451525"/>
+    </linearGradient>
+    <radialGradient id="haloTheo" cx="50%" cy="46%" r="45%">
+      <stop offset="0" stop-color="#fbbf24" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#be123c" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="640" height="640" fill="url(#bgTheo)"/>
+  <circle cx="320" cy="290" r="240" fill="url(#haloTheo)"/>
+  <!-- Spiked Shell Radiating Thorns -->
+  <g fill="#fb7185" stroke="#fde047" stroke-width="3">
+    <polygon points="320,60 338,140 302,140"/>
+    <polygon points="320,520 338,440 302,440"/>
+    <polygon points="90,290 170,272 170,308"/>
+    <polygon points="550,290 470,272 470,308"/>
+    <polygon points="158,128 224,174 200,198"/>
+    <polygon points="482,128 440,198 416,174"/>
+    <polygon points="158,452 200,382 224,406"/>
+    <polygon points="482,452 416,406 440,382"/>
+  </g>
+  <!-- Cathedral Core & Golden Ring -->
+  <circle cx="320" cy="290" r="142" fill="#230b1a" stroke="#f59e0b" stroke-width="8"/>
+  <circle cx="320" cy="290" r="110" fill="none" stroke="#fb7185" stroke-width="5" stroke-dasharray="14 8"/>
+  <polygon points="320,175 375,290 320,405 265,290" fill="#4c0519" stroke="#fcd34d" stroke-width="5"/>
+  <circle cx="320" cy="290" r="26" fill="#fef08a"/>
+  <path d="M120 530 L520 530" stroke="#f59e0b" stroke-width="8" opacity="0.45" fill="none"/>
+</svg>

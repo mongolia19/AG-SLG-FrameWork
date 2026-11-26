@@ -1,0 +1,56 @@
+id: "tower_victory"
+title: "塔心 · 冷光回廊"
+background: "/assets/scenes/tower_victory.svg"
+foreground: ""
+hero_image: "/assets/illustrations/tower_victory_hero.svg"
+music: "/assets/bgm/tower_victory.mp3"
+
+description: |
+  神学的尖刺圣环在逻辑的光束中崩解，冷光不再被任何教条扰动。
+  塔心是一枚完美的几何体，每一面都映出你走过的实验、校验、测量与反证。
+  它不说话，只是在等待你把自己的结论写进最后一页。
+
+visuals:
+  background: "/assets/scenes/tower_victory.svg"
+  foreground: ""
+  hero_image: "/assets/illustrations/tower_victory_hero.svg"
+  atmosphere: "几何澄澈、静谧抵达、结论成形"
+  decorations:
+    - id: "victory_geom"
+      name: "塔心几何"
+      image: "/assets/props/tower_core.svg"
+      side: "left"
+      category: "structure"
+      tag: "完成"
+      caption: "实验塔 · 核心结构"
+      tooltip: "所有已被检验的假设在此凝聚成一枚完整几何体。"
+    - id: "victory_pathway"
+      name: "归程阶梯"
+      image: "/assets/props/pathway.svg"
+      side: "right"
+      category: "env"
+      tag: "开放"
+      caption: "把结论带回"
+      tooltip: "塔心回廊尽头的归程阶梯已经开启。"
+
+npcs: []
+
+actions:
+  - id: "complete_run"
+    label: "【完结】记录实验塔结论"
+    type: "interact"
+    condition:
+      variables:
+        tower_stage: "victory"
+    on_success:
+      variables:
+        tower_stage: "victory"
+      visuals:
+        hero_image: "/assets/illustrations/tower_victory_hero.svg"
+        foreground: ""
+      message: |
+        你在塔心写下结论：
+        未知需要被命名，无知需要被测量；
+        盲从需要被反证，谬证需要被剔除；
+        哪怕面对布满尖刺外壳的神学，严谨的校验与逻辑也能穿刺教条。
+        实验之塔的通关完成！

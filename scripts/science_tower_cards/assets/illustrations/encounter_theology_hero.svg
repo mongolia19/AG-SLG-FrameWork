@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="hTh" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1e0713"/>
+      <stop offset="1" stop-color="#481122"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#hTh)"/>
+  <g fill="#fb7185" stroke="#fde047" stroke-width="4">
+    <polygon points="512,140 542,265 482,265"/>
+    <polygon points="512,820 542,695 482,695"/>
+    <polygon points="172,480 297,450 297,510"/>
+    <polygon points="852,480 727,450 727,510"/>
+    <polygon points="270,240 368,312 332,348"/>
+    <polygon points="754,240 692,348 656,312"/>
+    <polygon points="270,720 332,612 368,648"/>
+    <polygon points="754,720 656,648 692,612"/>
+  </g>
+  <circle cx="512" cy="480" r="205" fill="#230917" stroke="#f59e0b" stroke-width="10"/>
+  <circle cx="512" cy="480" r="155" fill="none" stroke="#fb7185" stroke-width="6" stroke-dasharray="18 10"/>
+  <polygon points="512,320 595,480 512,640 429,480" fill="#4c0519" stroke="#fcd34d" stroke-width="6"/>
+  <circle cx="512" cy="480" r="36" fill="#fef08a"/>
+</svg>

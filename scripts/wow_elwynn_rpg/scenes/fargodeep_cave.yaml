@@ -1,8 +1,8 @@
 id: "fargodeep_cave"
 title: "洞穴 · 法戈第蛛网矿洞（Boss巢穴）"
-background: "【场景全景】阴暗潮湿的废弃矿洞深处，巨型蛛网悬垂于朽坏矿柱之间，幽绿毒雾在洞窟底部翻涌"
+background: "/assets/scenes/fargodeep_cave.svg"
 foreground: ""
-hero_image: "【Boss 特写】法戈第蜘蛛领主·阿拉克诺斯 · 覆满紫黑甲壳与毒腺的巨型蛛王"
+hero_image: "/assets/illustrations/fargodeep_cave_hero.svg"
 music: "/assets/bgm/fargodeep_boss.mp3"
 
 description: |
@@ -14,9 +14,9 @@ description: |
   合理统筹你与巡林者艾莲娜的血量、魔力/集中值、猎人印记、破甲与打断时机，方能斩杀蛛王！
 
 visuals:
-  background: "【场景全景】阴暗潮湿的废弃矿洞深处，巨型蛛网悬垂于朽坏矿柱之间，幽绿毒雾在洞窟底部翻涌"
+  background: "/assets/scenes/fargodeep_cave.svg"
   foreground: ""
-  hero_image: "【Boss 特写】法戈第蜘蛛领主·阿拉克诺斯 · 覆满紫黑甲壳与毒腺的巨型蛛王"
+  hero_image: "/assets/illustrations/fargodeep_cave_hero.svg"
   atmosphere: "幽暗阴寒、蛛丝密布、杀机四伏"
   decorations:
     - id: "npc_elena_cave_companion_full"
@@ -86,7 +86,7 @@ visuals:
           ally_recruited: false
     - id: "fargodeep_ore_rocks"
       name: "矿洞玄武岩壁"
-      image: "/assets/props/rocks.png"
+      image: "/assets/props/rocks.svg"
       side: "left"
       category: "env"
       tag: "矿洞地形"
@@ -1004,7 +1004,7 @@ actions:
       remove_hud_widgets:
         - "arachnos_boss_panel"
       visuals:
-        background: "【场景全景】艾尔文森林·北郡修道院晨光广场，石砌钟楼与圣光旗帜矗立在绿茵山谷之中"
+        background: "/assets/scenes/northshire_abbey.svg"
         foreground: ""
         hero_image: "【炉石脱险】蓝白传送符文将重伤的你拉回北郡圣光祭坛"
         atmosphere: "晨光熹微、重整旗鼓"

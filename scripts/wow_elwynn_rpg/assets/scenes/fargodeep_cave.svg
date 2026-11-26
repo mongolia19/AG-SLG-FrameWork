@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900">
+  <defs>
+    <radialGradient id="lair" cx=".5" cy=".62" r=".78">
+      <stop offset="0" stop-color="#412b46"/>
+      <stop offset=".55" stop-color="#221a2c"/>
+      <stop offset="1" stop-color="#0b0812"/>
+    </radialGradient>
+    <radialGradient id="venom" cx=".5" cy=".76" r=".36">
+      <stop offset="0" stop-color="#78ffbd" stop-opacity=".62"/>
+      <stop offset="1" stop-color="#78ffbd" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#lair)"/>
+  <rect width="1600" height="900" fill="url(#venom)"/>
+  <path d="M0 900V315c260-180 520-250 800-250s540 70 800 250v585z" fill="#150f1d"/>
+  <path d="M190 900V475c175-145 390-215 610-215s435 70 610 215v425z" fill="#0d0914"/>
+  <path d="M410 900V630c105-95 235-145 390-145s285 50 390 145v270z" fill="#050308"/>
+  <g stroke="#755b8f" stroke-width="5" opacity=".35">
+    <path d="M260 0c85 120 65 240-25 330M1350 0c-90 120-70 240 20 330M825 20c55 125 35 245-45 340"/>
+  </g>
+  <g stroke="#d8e4e8" stroke-width="7" fill="none" opacity=".22">
+    <path d="M0 150c230 55 420 125 610 195M1600 135c-245 60-435 135-635 210"/>
+    <path d="M0 310c180 35 310 85 430 150M1600 300c-185 40-320 90-450 155"/>
+  </g>
+  <g transform="translate(700 480)">
+    <ellipse cx="100" cy="280" rx="270" ry="45" fill="#000" opacity=".55"/>
+    <path d="M95 75C55 115 20 180 5 270c70 35 165 35 230-5-10-85-45-150-90-190z" fill="#3d2347"/>
+    <path d="M105 80C70 125 42 185 30 260c60 28 130 28 180-5-10-75-40-135-65-175z" fill="#61356f"/>
+    <ellipse cx="105" cy="45" rx="88" ry="70" fill="#48274f"/>
+    <ellipse cx="100" cy="35" rx="58" ry="38" fill="#7b3f84"/>
+    <circle cx="78" cy="20" r="11" fill="#a5ffcc"/><circle cx="125" cy="20" r="11" fill="#a5ffcc"/>
+    <circle cx="78" cy="20" r="4" fill="#01120c"/><circle cx="125" cy="20" r="4" fill="#01120c"/>
+    <path d="M72 42c20 15 42 15 62 0" stroke="#220e22" stroke-width="7" fill="none"/>
+    <path d="M8 110c-50-30-90-55-120-100M28 120c-60-12-110-20-165-45M192 110c50-30 90-55 120-100M172 120c60-12 110-20 165-45" stroke="#2d1834" stroke-width="15" fill="none" stroke-linecap="round"/>
+  </g>
+  <g fill="#9dffc4" opacity=".7">
+    <ellipse cx="565" cy="745" rx="70" ry="12"/><ellipse cx="760" cy="795" rx="90" ry="15"/><ellipse cx="1010" cy="750" rx="60" ry="11"/>
+  </g>
+  <g fill="#68ffb0" opacity=".45">
+    <circle cx="590" cy="655" r="8"/><circle cx="660" cy="700" r="6"/><circle cx="905" cy="660" r="7"/><circle cx="1040" cy="700" r="6"/>
+  </g>
+</svg>

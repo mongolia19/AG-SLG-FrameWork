@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 300">
+  <path d="M25 245c0-65 45-125 110-125 50 0 75 30 105 25s75-30 115 10 60 90 55 90z" fill="#565a5d"/>
+  <path d="M40 235c5-50 40-95 90-95 40 0 65 25 90 20s65-25 100 10 45 65 45 65z" fill="#6e7376"/>
+  <path d="M105 250c15-65 55-100 110-95 45 5 75 40 95 95z" fill="#3a3f42"/>
+  <path d="M60 120l45 55M145 90l35 70M245 100l30 60M325 130l35 55" stroke="#8b9093" stroke-width="10" opacity=".45"/>
+  <path d="M95 255c20-25 55-30 80-12M220 255c20-25 55-30 80-12" stroke="#46e2a1" stroke-width="10" opacity=".5" fill="none"/>
+</svg>

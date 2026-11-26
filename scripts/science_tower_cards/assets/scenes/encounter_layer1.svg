@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="bgL1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#140d2b"/>
+      <stop offset="0.5" stop-color="#22193d"/>
+      <stop offset="1" stop-color="#222a38"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bgL1)"/>
+  <ellipse cx="800" cy="650" rx="740" ry="230" fill="#0d081c" opacity="0.7"/>
+  <!-- Left Aura: Unknown (Violet) -->
+  <circle cx="540" cy="430" r="145" fill="#2b1a43" stroke="#8e6bff" stroke-width="5" opacity="0.85"/>
+  <ellipse cx="540" cy="430" rx="95" ry="125" fill="#180d29" stroke="#a78bfa" stroke-width="3"/>
+  <!-- Right Aura: Ignorance (Lead Slate) -->
+  <rect x="940" y="300" width="240" height="260" rx="18" fill="#1e293b" stroke="#64748b" stroke-width="6" opacity="0.9"/>
+  <rect x="975" y="335" width="170" height="190" rx="10" fill="#0f172a" stroke="#94a3b8" stroke-width="2" opacity="0.7"/>
+  <!-- Connecting Interference Wave -->
+  <path d="M685 430 Q810 370 940 430" fill="none" stroke="#94a3b8" stroke-width="4" stroke-dasharray="10 8" opacity="0.6"/>
+  <path d="M0 720 L1600 670 L1600 900 L0 900 Z" fill="#090714"/>
+  <path d="M0 720 L1600 670" stroke="#7c3aed" stroke-width="4" opacity="0.45" fill="none"/>
+</svg>

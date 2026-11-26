@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="tunnel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#181412"/>
+      <stop offset=".58" stop-color="#302521"/>
+      <stop offset="1" stop-color="#533d2d"/>
+    </linearGradient>
+    <radialGradient id="torchglow" cx=".72" cy=".51" r=".42">
+      <stop offset="0" stop-color="#ffab3c" stop-opacity=".88"/>
+      <stop offset="1" stop-color="#ffab3c" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#tunnel)"/>
+  <rect width="1600" height="900" fill="url(#torchglow)"/>
+  <path d="M180 900V430c220-205 470-300 625-300s400 95 615 300v470z" fill="#211a16"/>
+  <path d="M330 900V500c150-140 320-210 480-210s310 70 460 210v400z" fill="#2c221c"/>
+  <path d="M500 900V570c95-90 210-140 300-140s205 50 300 140v330z" fill="#120d0a"/>
+  <g stroke="#3f3128" stroke-width="12" opacity=".75">
+    <path d="M0 765h1600M0 805h1600"/>
+  </g>
+  <g transform="translate(430 655)">
+    <rect x="0" y="55" width="320" height="105" rx="12" fill="#6b4f33"/>
+    <rect x="18" y="70" width="284" height="72" rx="8" fill="#3c2b1d"/>
+    <path d="M-35 95h35l-8 50h-27zM355 95h35l-8 50h-27z" fill="#4c413a"/>
+    <circle cx="15" cy="110" r="18" fill="#4b5158"/>
+    <circle cx="305" cy="110" r="18" fill="#4b5158"/>
+  </g>
+  <path d="M1075 470h58l-10 130h-38z" fill="#4a3a2d"/>
+  <ellipse cx="1104" cy="425" rx="45" ry="55" fill="#ffb13c"/>
+  <ellipse cx="1104" cy="430" rx="24" ry="35" fill="#fff3b0"/>
+  <g stroke="#5a452f" stroke-width="14" opacity=".5">
+    <path d="M195 430l95 55M245 390l75 90M1390 430l-105 55M1345 390l-75 90"/>
+  </g>
+  <g fill="#7d6d5a" opacity=".7">
+    <circle cx="240" cy="235" r="4"/><circle cx="360" cy="320" r="3"/><circle cx="490" cy="270" r="4"/>
+    <circle cx="1300" cy="280" r="4"/><circle cx="1230" cy="350" r="3"/><circle cx="1420" cy="330" r="3"/>
+  </g>
+  <g transform="translate(690 585)">
+    <path d="M0 150c15-100 70-160 150-160s135 60 150 160z" fill="#3b3128"/>
+    <circle cx="145" cy="-8" r="65" fill="#4c4034"/>
+    <circle cx="125" cy="-18" r="9" fill="#ffce52"/><circle cx="168" cy="-18" r="9" fill="#ffce52"/>
+  </g>
+  <g transform="translate(925 620)">
+    <path d="M0 115c18-72 55-108 110-108s92 36 110 108z" fill="#443a30"/>
+    <circle cx="110" cy="4" r="48" fill="#544738"/>
+    <circle cx="95" cy="-2" r="7" fill="#ffce52"/><circle cx="128" cy="-2" r="7" fill="#ffce52"/>
+  </g>
+</svg>

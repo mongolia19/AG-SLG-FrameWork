@@ -173,6 +173,15 @@ export default function AuthoringChat({
   const runPrompt = async (prompt: string, baseMessages?: AuthoringMessage[]) => {
     if (isStreaming) return;
 
+    const priorMessages = baseMessages ?? messages;
+    const recentHistory = priorMessages
+      .filter((m) => m.id !== 'welcome' && !m.id.startsWith('err-'))
+      .slice(-8)
+      .map((m) => ({
+        role: m.sender === 'user' ? 'user' : 'agent',
+        content: m.content.slice(0, 1200),
+      }));
+
     const userMsg: AuthoringMessage = {
       id: `user-${Date.now()}`,
       sender: 'user',
@@ -181,8 +190,8 @@ export default function AuthoringChat({
     };
 
     // 立即保存用户发送的消息（编辑/重新生成时基于回滚后的列表）
-    setMessages((prev) => {
-      const next = [...(baseMessages ?? prev), userMsg];
+    setMessages(() => {
+      const next = [...priorMessages, userMsg];
       try {
         localStorage.setItem(`ag_slg_studio_chat_${scenarioId}`, JSON.stringify(next));
       } catch {}
@@ -205,7 +214,11 @@ export default function AuthoringChat({
             content: [{ type: 'text', text: prompt }],
           },
         ],
-        forwarded_props: { scenario_id: scenarioId },
+        forwarded_props: {
+          scenario_id: scenarioId,
+          recent_history: recentHistory,
+          ...(baseMessages ? { regenerate: true } : {}),
+        },
       };
 
       const res = await fetch('/api/studio/run', {

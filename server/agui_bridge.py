@@ -792,6 +792,64 @@ class AGUIBridge:
         self.sessions: Dict[str, GameSession] = {}
         self.studio_conversations: Dict[str, str] = {}
 
+    def _studio_sessions_file(self) -> Path:
+        return self.scenario_mgr.base_dir.parent / "saves" / "_studio_sessions.json"
+
+    def _read_studio_store(self) -> Dict[str, Any]:
+        path = self._studio_sessions_file()
+        try:
+            if path.is_file():
+                data = json.loads(path.read_text(encoding="utf-8"))
+                if isinstance(data, dict):
+                    return data
+        except Exception:
+            pass
+        return {}
+
+    def _write_studio_store(self, data: Dict[str, Any]) -> None:
+        path = self._studio_sessions_file()
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        except Exception:
+            pass
+
+    def _get_persisted_studio_conv(self, thread_id: str) -> Optional[str]:
+        if thread_id in self.studio_conversations:
+            return self.studio_conversations[thread_id]
+        key = f"{type(self.driver).__name__}:{thread_id}"
+        conv = (self._read_studio_store().get("convs") or {}).get(key)
+        if isinstance(conv, str) and conv:
+            self.studio_conversations[thread_id] = conv
+            return conv
+        return None
+
+    def _set_persisted_studio_conv(self, thread_id: str, conv_id: Optional[str]) -> None:
+        key = f"{type(self.driver).__name__}:{thread_id}"
+        store = self._read_studio_store()
+        convs = store.setdefault("convs", {})
+        if conv_id:
+            self.studio_conversations[thread_id] = conv_id
+            convs[key] = conv_id
+        else:
+            self.studio_conversations.pop(thread_id, None)
+            convs.pop(key, None)
+        self._write_studio_store(store)
+
+    def _get_persisted_studio_history(self, thread_id: str) -> List[Dict[str, str]]:
+        hist = (self._read_studio_store().get("histories") or {}).get(thread_id)
+        if isinstance(hist, list):
+            return [h for h in hist if isinstance(h, dict) and "role" in h and "content" in h]
+        return []
+
+    def _save_persisted_studio_history(
+        self, thread_id: str, history: List[Dict[str, str]]
+    ) -> None:
+        store = self._read_studio_store()
+        histories = store.setdefault("histories", {})
+        histories[thread_id] = history[-12:]
+        self._write_studio_store(store)
+
     def set_driver(self, driver: BaseAgentDriver) -> BaseAgentDriver:
         """Hot-swap the agent backend; returns the previous driver so the caller can close it.
 
@@ -812,6 +870,40 @@ class AGUIBridge:
             return self.scenario_mgr.load_scenario(scenario_id).world
         except Exception:
             return None
+
+    def _format_scenario_skill_block(
+        self, scenario_id: str, include_assets: bool = False
+    ) -> str:
+        """Format optional SKILL.md, helper scripts/, and references/ into agent prompt context."""
+        bundle = self.scenario_mgr.get_skill_bundle(scenario_id)
+        has_tools = bool(bundle["skill_md"] or bundle["scripts"] or bundle["references"])
+        if not has_tools and not (include_assets and bundle["assets_dirs"]):
+            return ""
+
+        lines: List[str] = [
+            f"\n【剧本专属 Skill 与程序脚本 (Scenario Skill & Scripts — scripts/{scenario_id}/)】：",
+        ]
+        if bundle["scripts"]:
+            lines.append(
+                "- 可执行辅助脚本（涉及复杂战斗结算、随机掉落、数值演算或状态校验时，请优先通过终端工具运行对应脚本获取精确结果，再据此生成叙事与 state_delta）："
+            )
+            for sc in bundle["scripts"]:
+                desc = f" — {sc['summary']}" if sc.get("summary") else ""
+                lines.append(f"  * `{sc['path']}`{desc}")
+        if bundle["references"]:
+            lines.append("- 剧本参考资料（按需读取）：")
+            for ref in bundle["references"]:
+                lines.append(f"  * `{ref['path']}`")
+        if include_assets and bundle["assets_dirs"]:
+            dirs_txt = ", ".join(f"`scripts/{scenario_id}/assets/{d}/`" for d in bundle["assets_dirs"])
+            lines.append(f"- 已有美术资源目录：{dirs_txt}")
+        if bundle["skill_md"]:
+            lines.append(f"- 剧本 Skill 说明（`scripts/{scenario_id}/SKILL.md`）：")
+            lines.append(bundle["skill_md"])
+            if bundle.get("skill_md_truncated"):
+                lines.append(f"（已截断，完整内容请直接读取 `scripts/{scenario_id}/SKILL.md`）")
+        lines.append("")
+        return "\n".join(lines)
 
     @staticmethod
     def _sync_player_state(
@@ -999,6 +1091,8 @@ class AGUIBridge:
         if scenario.world.dm_rules and scenario.world.dm_rules.strip():
             dm_rules_block = f"\n【剧本专属规则与数值体系 (World Rules)】：\n{scenario.world.dm_rules.strip()}\n"
 
+        skill_block = self._format_scenario_skill_block(session.scenario_id)
+
         prompt = f"""你是一款高沉浸感文字跑团（TRPG / SLG）的地下城主（DM / Game Master）兼视觉导演（遵循 ag-slg-director 规范）。
 当前世界观：{scenario.world.title} (ID: {scenario.world.id})
 玩家当前状态：
@@ -1011,7 +1105,7 @@ class AGUIBridge:
 - 剧本变量：{session.player_state.variables}
 - 已挂载 AG-UI 专属界面组件 (hud_widgets)：{widgets_desc or '无'}
 - 当前气象与环境基调：{cur_weather or '未设定'}（氛围：{scene_atmo}）
-- 当前所在场景：{curr_scene.title if curr_scene else curr_scene_id} ({curr_scene_id}){dm_rules_block}
+- 当前所在场景：{curr_scene.title if curr_scene else curr_scene_id} ({curr_scene_id}){dm_rules_block}{skill_block}
 
 当前场景预设视觉资源：
 - 场景底图 (Background): {scene_bg or '默认空间背景'}
@@ -1938,21 +2032,57 @@ class AGUIBridge:
 
         full_studio_response = ""
         scenario_id = "black_crow_manor"
+        client_history: Optional[List[Dict[str, str]]] = None
+        regenerate = False
         if input_data.forwarded_props and isinstance(input_data.forwarded_props, dict):
             scenario_id = input_data.forwarded_props.get("scenario_id", scenario_id)
+            raw_hist = input_data.forwarded_props.get("recent_history")
+            if isinstance(raw_hist, list):
+                client_history = [
+                    {
+                        "role": str(h.get("role", "user")),
+                        "content": str(h.get("content", ""))[:1200],
+                    }
+                    for h in raw_hist
+                    if isinstance(h, dict) and h.get("content")
+                ][-10:]
+            regenerate = bool(input_data.forwarded_props.get("regenerate"))
 
-        prompt = f"""你是一名专业的游戏剧本设计与视觉导演协作者（AG-SLG Studio Co-pilot，遵循 ag-slg-director 视觉分层规范）。
+        if regenerate:
+            # Regenerating or editing the previous turn: discard old ACP session so abandoned turn isn't kept.
+            self._set_persisted_studio_conv(thread_id, None)
+            studio_conv_id = None
+        else:
+            studio_conv_id = self._get_persisted_studio_conv(thread_id)
+
+        effective_history = (
+            client_history if client_history is not None else self._get_persisted_studio_history(thread_id)
+        )
+        studio_history_block = ""
+        if not studio_conv_id and effective_history:
+            hist_lines = [
+                f"- {'创作者' if h['role'] == 'user' else 'Co-pilot'}: {h['content']}"
+                for h in effective_history[-8:]
+            ]
+            studio_history_block = "\n近期创作协作对话回溯（服务重启或切换后端后的上下文恢复）：\n" + "\n".join(hist_lines) + "\n"
+
+        studio_skill_block = self._format_scenario_skill_block(scenario_id, include_assets=True)
+
+        prompt = f"""你是一名专业的游戏剧本设计与视觉导演协作者（AG-SLG Studio Co-pilot，遵循工作区 `skills/ag-slg-director/SKILL.md` 规范）。
 当前剧本资产目录位于当前工作区的 scripts/{scenario_id}/ 下。
+如需编写 `hud_widgets`（`metrics` / `tracker` / `panel`）、`world.yaml` 声明式规则、`condition` 条件或 `state_delta` 案例，请直接查阅工作区参考文档：`skills/ag-slg-director/SKILL.md` 与 `skills/ag-slg-director/references/agui-contract-and-examples.md`（包含完整字段契约与可复用 YAML/JSON 示例）。{studio_history_block}
 用户创作需求：{user_text}
 
 【核心红线约束 — 严禁修改框架代码】：
-1. 你的写入范围**仅限** `scripts/` 目录下的剧本配置与静态美术资源：
-   - 修改或扩写当前正在编辑的剧本时，操作 `scripts/{scenario_id}/`（包括 `world.yaml`、`scenes/*.yaml`、`assets/`）；
-   - **当用户要求创建全新剧本时**，请在 `scripts/<new_scenario_id>/` 下新建独立目录（包含 `world.yaml`、`scenes/*.yaml` 与 `assets/`），**不要覆盖或破坏其他现有剧本**（新建独立剧本请直接写盘到新目录，不要在回复中输出会落盘到当前 `{scenario_id}` 的 `scene_yaml:` 代码块）。
+1. 你的写入范围**仅限** `scripts/` 目录下的剧本配置、Skill 脚本、参考资料与静态美术资源：
+   - 修改或扩写当前正在编辑的剧本时，操作 `scripts/{scenario_id}/`（包括 `world.yaml`、`scenes/*.yaml`、`assets/`、`SKILL.md`、`scripts/`、`references/`）；
+   - **当用户要求创建全新剧本时**，请在 `scripts/<new_scenario_id>/` 下新建独立目录（包含 `world.yaml`、`scenes/*.yaml`、`assets/`，以及按需配置的 `SKILL.md`、`scripts/`、`references/`），**不要覆盖或破坏其他现有剧本**（新建独立剧本请直接写盘到新目录，不要在回复中输出会落盘到当前 `{scenario_id}` 的 `scene_yaml:` 代码块）。
 2. **绝对禁止**修改、覆盖或重构任何框架引擎代码（包括但不限于 `server/`、`web/`、`tests/`、`run_services.py`、`pyproject.toml`），除非用户在本次对话中明确要求你排查并修复框架本身的 Bug！
 3. 如果剧本需要专属状态栏、Boss/遭遇面板、阶段追踪器、专属数值上下限、战斗公式、检定修正或物品目录：
    - 请通过对应剧本 `world.yaml` 的声明式字段（`dm_rules`、`item_catalog`、`attribute_bounds`、`variable_bounds`、`adjudication_rules`、`initial_player_state.hud_widgets`）配置，或直接在场景动作 `on_success`/`on_failure` 中配置 `hud_widgets` / `remove_hud_widgets`；
    - 或在游玩期引导 DM Agent 通过 AG-UI ```state_delta``` 的 `hud_widgets`（支持 `metrics` / `tracker` / `panel`）与 `remove_hud_widgets` 动态渲染与撤除界面，绝不要为了迎合单个剧本而改动引擎源码。
+4. 剧本程序脚本与 Skill 规范：当剧本包含复杂数值/战斗公式、随机表、事件状态机或批量素材生成需求时，推荐采用 Agent Skill 目录结构在剧本目录下创建 `SKILL.md` 与 `scripts/*.py`（仅用标准库、支持命令行 JSON/参数调用），方便 DM Agent 在游玩主持时直接运行脚本保证推演效率和准确度。
+{studio_skill_block}
 
 你可以直接输出剧本构思与建议。如果你构思了一个完整的场景节点或更新了场景，请在回复中包含如下格式的代码块，以便系统自动将其写盘生效。请务必配置完整的多图层视觉资源（background, foreground, hero_image, visuals.atmosphere）：
 ```scene_yaml:场景ID
@@ -1999,8 +2129,6 @@ actions:
 
         event_queue: asyncio.Queue[Optional[AgentEvent]] = asyncio.Queue()
 
-        studio_conv_id = self.studio_conversations.get(thread_id)
-
         async def _pump_driver() -> None:
             try:
                 async for ev in self.driver.run_stream(
@@ -2029,7 +2157,7 @@ actions:
                     break
 
                 if event.data.get("conversation_id"):
-                    self.studio_conversations[thread_id] = event.data["conversation_id"]
+                    self._set_persisted_studio_conv(thread_id, event.data["conversation_id"])
 
                 if event.event_type == "text_delta":
                     delta = event.data.get("text", "")
@@ -2116,6 +2244,14 @@ actions:
                 self.scenario_mgr.save_scene(scenario_id, node)
             except Exception:
                 pass
+
+        if user_text or full_studio_response.strip():
+            updated_hist = list(effective_history)
+            if user_text:
+                updated_hist.append({"role": "user", "content": user_text[:1200]})
+            if full_studio_response.strip():
+                updated_hist.append({"role": "agent", "content": full_studio_response.strip()[:1200]})
+            self._save_persisted_studio_history(thread_id, updated_hist)
 
         yield self.encoder.encode(RunFinishedEvent(run_id=run_id, thread_id=thread_id))
 

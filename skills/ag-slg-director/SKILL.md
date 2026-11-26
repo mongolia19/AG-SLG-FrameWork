@@ -85,13 +85,18 @@ When a turn alters player attributes, inventory, current scene, or stage visuals
 
 ### 3.3 State Delta Field Semantics
 
+Core fields supported in ````state_delta` (full schema & copyable examples in [references/agui-contract-and-examples.md](references/agui-contract-and-examples.md)):
+
 - `current_scene` (string, optional): Target scene ID if the player changes location.
-- `hp_delta` / `san_delta` / `gold` (int, optional): Numeric modifications to player vitals.
-- `add_inventory` (list of objects, optional): Items discovered in this turn.
-- `variables` (dict, optional): Story flags and world progression keys.
-- `hud_widgets` (list of objects, optional): Declarative AG-UI HUD widgets upserted by `id` (`metrics` | `tracker` | `panel`). Supports `value_ref` / `max_ref` (e.g. `"attributes.stamina"`, `"variables.boss_hp"`) and conditional `when` blocks.
-- `remove_hud_widgets` (list of strings, optional): Widget IDs to unmount when an encounter or phase ends.
-- `visuals` (dict, optional):
+- `hp_delta` / `mp_delta` / `max_hp_delta` / `max_mp_delta` / `san_delta` / `gold` / `attributes_delta` / `time_cost`: Numeric updates to player vitals, attributes, and world clock.
+- `add_inventory` / `remove_inventory`: Items discovered or consumed in this turn.
+- `outfit` / `unequip_outfit`: Equip or clear clothing/accessory slots (`head`, `outer`, `top`, `bottom`, `shoes`, `accessory`, `wrist`, `neck`).
+- `skills` / `learn_skills` / `remove_skills`: Grant, upgrade, or remove skill bar entries.
+- `variables` / `variables_delta`: Story flags, encounter variables, and incremental numeric deltas.
+- `add_structures`: Mount dynamic side-margin props or ally/enemy cards bound to `scene_id` (`side: "left" | "right"`).
+- `hud_widgets` / `replace_hud_widgets` / `remove_hud_widgets`: Declarative AG-UI HUD widgets (`metrics` | `tracker` | `panel`) upserted by `id`, supporting `value_ref` / `max_ref`, `{state.path}` interpolation, and `when` conditions.
+- `available_actions` / `check_result`: Turn-derived dynamic action buttons and D20 check adjudication metadata.
+- `visuals`:
   - `background`: Path to ambient room background.
   - `foreground`: Path to active character portrait/avatar. Set to `""` to dismiss current NPC.
   - `hero_image`: Path or semantic descriptive tag for focal inspection card.
@@ -158,9 +163,9 @@ The AG-SLG UI will render an aesthetic placeholder badge with ambient icon, read
 ## 5. Studio Mode Authoring Guide & Engine Boundary
 
 > [!CAUTION]
-> **STRICT ENGINE ISOLATION RULE**: When authoring or modifying scenarios in Studio Mode, **NEVER edit framework engine code** (`server/`, `web/`, `tests/`, `run_services.py`, `pyproject.toml`) unless the user explicitly asks to debug an engine bug. All scenario UI, rules, formulas, items, and Boss/tracker panels MUST live in `scripts/<scenario_id>/` (`world.yaml` + `scenes/*.yaml`) or be emitted dynamically via AG-UI `state_delta.hud_widgets`.
+> **STRICT ENGINE ISOLATION RULE**: When authoring or modifying scenarios in Studio Mode, **NEVER edit framework engine code** (`server/`, `web/`, `tests/`, `run_services.py`, `pyproject.toml`) unless the user explicitly asks to debug an engine bug. Your write scope is strictly limited to `scripts/` (editing `scripts/<scenario_id>/`, or creating a brand-new `scripts/<new_scenario_id>/` without overwriting unrelated scenarios). All custom scenario UI, rules, formulas, items, and Boss/tracker panels MUST live in `world.yaml`, `scenes/*.yaml`, optional scenario `SKILL.md` + `scripts/`, or be emitted dynamically via AG-UI `state_delta.hud_widgets`.
 
-When collaborating in **Studio Mode** (`stream_studio`), write complete, lint-clean scenario nodes using ````scene_yaml:<id>` blocks, and put scenario-wide rules (`dm_rules`, `item_catalog`, `attribute_bounds`, `variable_bounds`, `adjudication_rules`, `initial_player_state.hud_widgets`) in `scripts/<scenario_id>/world.yaml`:
+When collaborating in **Studio Mode** (`stream_studio`), see [references/agui-contract-and-examples.md](references/agui-contract-and-examples.md) for complete copyable examples of `hud_widgets`, `world.yaml` rules, `condition` operators, and `SKILL.md` + `scripts/*.py` scenario packages. Write scene updates to the current scenario using ````scene_yaml:<id>` blocks (when creating a brand-new scenario under `scripts/<new_scenario_id>/`, write files directly instead of ````scene_yaml:`), and put scenario-wide rules (`dm_rules`, `item_catalog`, `attribute_bounds`, `variable_bounds`, `adjudication_rules`, `initial_player_state.hud_widgets`) in `world.yaml`:
 
 ````yaml
 ```scene_yaml:secret_library

@@ -533,11 +533,120 @@ class ScenarioManager:
 
         with zipfile.ZipFile(target_zip, "w", compression=zipfile.ZIP_DEFLATED) as zf:
             for file_path in scenario_dir.rglob("*"):
-                if file_path.is_file() and not file_path.name.startswith("."):
-                    rel_path = file_path.relative_to(scenario_dir)
-                    zf.write(file_path, arcname=rel_path.as_posix())
+                if not file_path.is_file():
+                    continue
+                rel_path = file_path.relative_to(scenario_dir)
+                if any(part.startswith(".") or part in ("__pycache__", "node_modules") for part in rel_path.parts):
+                    continue
+                if file_path.suffix in (".pyc", ".pyo"):
+                    continue
+                zf.write(file_path, arcname=rel_path.as_posix())
 
         return target_zip
+
+    @staticmethod
+    def _extract_script_summary(script_path: Path) -> str:
+        """Read first docstring or comment line from a helper script without loading large files."""
+        try:
+            with open(script_path, "r", encoding="utf-8", errors="replace") as f:
+                lines = [f.readline() for _ in range(18)]
+        except OSError:
+            return ""
+        for raw in lines:
+            s = raw.strip()
+            if not s or s.startswith("#!") or s.startswith("# -*-"):
+                continue
+            if s.startswith(('"""', "'''")):
+                doc = s[3:].strip()
+                if doc.endswith(('"""', "'''")):
+                    doc = doc[:-3].strip()
+                if doc:
+                    return doc[:120]
+                continue
+            if s.startswith("#"):
+                txt = s.lstrip("#").strip()
+                if txt:
+                    return txt[:120]
+            if s.startswith("//"):
+                txt = s[2:].strip()
+                if txt:
+                    return txt[:120]
+            # Stop on first code statement unless it opened an unclosed docstring above
+            if not s.startswith(('"', "'")):
+                break
+        return ""
+
+    def get_skill_bundle(self, scenario_id: str, max_skill_chars: int = 6000) -> Dict[str, Any]:
+        """Discover optional Agent Skill guide (SKILL.md), helper scripts/, references/, and assets/."""
+        scenario_dir = self.base_dir / scenario_id
+        bundle: Dict[str, Any] = {
+            "skill_md": "",
+            "skill_md_truncated": False,
+            "scripts": [],
+            "references": [],
+            "assets_dirs": [],
+        }
+        if not scenario_dir.exists():
+            return bundle
+
+        skill_file = scenario_dir / "SKILL.md"
+        if skill_file.is_file():
+            try:
+                raw_skill = skill_file.read_text(encoding="utf-8", errors="replace").strip()
+                if len(raw_skill) > max_skill_chars:
+                    bundle["skill_md"] = raw_skill[:max_skill_chars].rstrip()
+                    bundle["skill_md_truncated"] = True
+                else:
+                    bundle["skill_md"] = raw_skill
+            except OSError:
+                pass
+
+        scripts_dir = scenario_dir / "scripts"
+        if scripts_dir.is_dir():
+            scripts_list: List[Dict[str, str]] = []
+            for p in sorted(scripts_dir.rglob("*")):
+                if not p.is_file():
+                    continue
+                rel = p.relative_to(scripts_dir)
+                if any(part.startswith(".") or part in ("__pycache__", "node_modules") for part in rel.parts):
+                    continue
+                if p.suffix in (".pyc", ".pyo"):
+                    continue
+                rel_posix = rel.as_posix()
+                scripts_list.append(
+                    {
+                        "name": rel_posix,
+                        "path": f"scripts/{scenario_id}/scripts/{rel_posix}",
+                        "summary": self._extract_script_summary(p),
+                    }
+                )
+            bundle["scripts"] = scripts_list
+
+        refs_dir = scenario_dir / "references"
+        if refs_dir.is_dir():
+            refs_list: List[Dict[str, str]] = []
+            for p in sorted(refs_dir.rglob("*")):
+                if not p.is_file():
+                    continue
+                rel = p.relative_to(refs_dir)
+                if any(part.startswith(".") for part in rel.parts):
+                    continue
+                rel_posix = rel.as_posix()
+                refs_list.append(
+                    {
+                        "name": rel_posix,
+                        "path": f"scripts/{scenario_id}/references/{rel_posix}",
+                    }
+                )
+            bundle["references"] = refs_list
+
+        assets_dir = scenario_dir / "assets"
+        if assets_dir.is_dir():
+            bundle["assets_dirs"] = sorted(
+                d.name for d in assets_dir.iterdir() if d.is_dir() and not d.name.startswith(".")
+            )
+
+        return bundle
 
     def import_scenario_bundle(self, zip_path: Path, scenario_id: Optional[str] = None) -> str:
         """Import a scenario .zip bundle into self.base_dir / scenario_id."""

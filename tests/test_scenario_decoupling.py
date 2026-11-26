@@ -184,6 +184,9 @@ async def test_synthetic_scenario_runs_without_engine_changes(tmp_path):
     assert "严禁修改框架代码" in studio_prompt
     assert "server/" in studio_prompt
     assert "web/" in studio_prompt
+    assert "仅限** `scripts/`" in studio_prompt
+    assert "scripts/<new_scenario_id>/" in studio_prompt
+    assert "仅限**当前剧本目录" not in studio_prompt
 
     bridge.driver = _EmptyDriver()
 

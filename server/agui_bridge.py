@@ -1946,10 +1946,12 @@ class AGUIBridge:
 用户创作需求：{user_text}
 
 【核心红线约束 — 严禁修改框架代码】：
-1. 你的工作范围**仅限**当前剧本目录 `scripts/{scenario_id}/`（包括 `world.yaml`、`scenes/*.yaml`）及对应静态美术资源。
+1. 你的写入范围**仅限** `scripts/` 目录下的剧本配置与静态美术资源：
+   - 修改或扩写当前正在编辑的剧本时，操作 `scripts/{scenario_id}/`（包括 `world.yaml`、`scenes/*.yaml`、`assets/`）；
+   - **当用户要求创建全新剧本时**，请在 `scripts/<new_scenario_id>/` 下新建独立目录（包含 `world.yaml`、`scenes/*.yaml` 与 `assets/`），**不要覆盖或破坏其他现有剧本**（新建独立剧本请直接写盘到新目录，不要在回复中输出会落盘到当前 `{scenario_id}` 的 `scene_yaml:` 代码块）。
 2. **绝对禁止**修改、覆盖或重构任何框架引擎代码（包括但不限于 `server/`、`web/`、`tests/`、`run_services.py`、`pyproject.toml`），除非用户在本次对话中明确要求你排查并修复框架本身的 Bug！
 3. 如果剧本需要专属状态栏、Boss/遭遇面板、阶段追踪器、专属数值上下限、战斗公式、检定修正或物品目录：
-   - 请通过 `scripts/{scenario_id}/world.yaml` 的声明式字段（`dm_rules`、`item_catalog`、`attribute_bounds`、`variable_bounds`、`adjudication_rules`、`initial_player_state.hud_widgets`）配置，或直接在场景动作 `on_success`/`on_failure` 中配置 `hud_widgets` / `remove_hud_widgets`；
+   - 请通过对应剧本 `world.yaml` 的声明式字段（`dm_rules`、`item_catalog`、`attribute_bounds`、`variable_bounds`、`adjudication_rules`、`initial_player_state.hud_widgets`）配置，或直接在场景动作 `on_success`/`on_failure` 中配置 `hud_widgets` / `remove_hud_widgets`；
    - 或在游玩期引导 DM Agent 通过 AG-UI ```state_delta``` 的 `hud_widgets`（支持 `metrics` / `tracker` / `panel`）与 `remove_hud_widgets` 动态渲染与撤除界面，绝不要为了迎合单个剧本而改动引擎源码。
 
 你可以直接输出剧本构思与建议。如果你构思了一个完整的场景节点或更新了场景，请在回复中包含如下格式的代码块，以便系统自动将其写盘生效。请务必配置完整的多图层视觉资源（background, foreground, hero_image, visuals.atmosphere）：

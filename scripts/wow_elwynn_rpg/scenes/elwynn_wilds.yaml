@@ -1,7 +1,7 @@
 id: "elwynn_wilds"
 title: "野外 · 艾尔文密林与哨岗"
 background: "【场景全景】阳光斑驳的艾尔文古老森林，高大橡树阴影间潜伏着灰狼与迪菲亚游荡盗贼，前方哨岗旁立着精灵斥候"
-foreground: "/assets/characters/elena_swiftarrow.png"
+foreground: ""
 hero_image: "【焦点插画】艾尔文森林岔路口与法戈第矿洞警示木牌"
 music: "/assets/bgm/elwynn_forest.mp3"
 
@@ -12,32 +12,114 @@ description: |
 
 visuals:
   background: "【场景全景】阳光斑驳的艾尔文古老森林，高大橡树阴影间潜伏着灰狼与迪菲亚游荡盗贼，前方哨岗旁立着精灵斥候"
-  foreground: "/assets/characters/elena_swiftarrow.png"
+  foreground: ""
   hero_image: "【焦点插画】艾尔文森林岔路口与法戈第矿洞警示木牌"
   atmosphere: "林涛沙沙、危机暗伏、战意升腾"
   decorations:
+    - id: "npc_elena_wilds_waiting"
+      name: "巡林者艾莲娜·迅箭"
+      image: "/assets/characters/card_elena_swiftarrow.png"
+      side: "left"
+      category: "structure"
+      tag: "HP 110"
+      caption: "精灵斥候 · 可招募入队"
+      tooltip: "【定位】艾尔文哨岗精灵游侠（待招募）｜【血量】110/110 HP ｜【入队收益】解锁随行同伴实时面板与照明信号箭 ｜【技能】迅捷连射 / 猎人印记 / 冰霜震荡箭 / 森林草药急救"
+      condition:
+        variables:
+          ally_recruited: false
+    - id: "npc_elena_wilds_companion_full"
+      name: "巡林者艾莲娜·迅箭"
+      image: "/assets/characters/card_elena_swiftarrow.png"
+      side: "left"
+      category: "structure"
+      tag: "随行·健康"
+      caption: "随行游侠 · 连射/印记/冰箭"
+      tooltip: "【定位】已入队随行同伴 ｜【血量】健康（75%+，精确值见顶栏同伴血条）｜【技能】迅捷连射(15集中) / 猎人印记(20集中,全队检定+2伤×1.15) / 冰霜震荡箭(25集中) / 草药急救(15集中)"
+      condition:
+        variables:
+          ally_recruited: true
+          ally_hp:
+            gte: 75
+    - id: "npc_elena_wilds_companion_hurt"
+      name: "巡林者艾莲娜·迅箭"
+      image: "/assets/characters/card_elena_hurt.png"
+      side: "left"
+      category: "structure"
+      tag: "随行·负伤"
+      caption: "随行游侠负伤 · 可哨岗调息"
+      tooltip: "【定位】已入队随行同伴 ｜【血量】负伤中段（精确值见顶栏同伴血条）｜【提示】可在木哨岗全队调息恢复血量与集中值"
+      condition:
+        variables:
+          ally_recruited: true
+          ally_hp:
+            gt: 35
+            lt: 75
+    - id: "npc_elena_wilds_companion_crit"
+      name: "巡林者艾莲娜·迅箭"
+      image: "/assets/characters/card_elena_critical.png"
+      side: "left"
+      category: "structure"
+      tag: "随行·濒危"
+      caption: "游侠濒危重伤 · 请先休整!"
+      tooltip: "【定位】已入队随行同伴 ｜【血量】濒危红线（≤35 HP）｜【提示】请立即在哨岗休整或回修道院恢复血量"
+      condition:
+        variables:
+          ally_recruited: true
+          ally_hp:
+            gt: 0
+            lte: 35
+    - id: "npc_elena_wilds_companion_down"
+      name: "巡林者艾莲娜·迅箭"
+      image: "/assets/characters/card_elena_down.png"
+      side: "left"
+      category: "structure"
+      tag: "HP 0 力竭"
+      caption: "游侠重伤力竭 · 需休整救援"
+      tooltip: "【定位】已入队随行同伴 ｜【血量】0 HP（重伤力竭）｜【提示】在木哨岗调息即可恢复战力"
+      condition:
+        variables:
+          ally_recruited: true
+          ally_hp:
+            lte: 0
     - id: "elwynn_ancient_vines"
       name: "艾尔文古藤"
       image: "/assets/props/vines.png"
       side: "left"
       category: "env"
       tag: "荒野植被"
-      caption: "古树垂藤"
+      caption: "古树垂藤 · 林间掩体"
       tooltip: "缠绕在百年橡树干上的粗壮森林藤蔓，遮蔽了野兽与盗贼的踪迹"
+    - id: "npc_wilds_wolf_pack"
+      name: "艾尔文森林灰狼群"
+      image: "/assets/characters/elwynn_wolf.svg"
+      side: "right"
+      category: "env"
+      tag: "HP 110"
+      caption: "110HP狼群 · 合扑撕咬16伤"
+      tooltip: "【定位】艾尔文荒野敌对兽群 ｜【血量】110 HP（实时见顶栏野外敌军面板）｜【属性】闪避 DC 11 / 攻击加值 +3 ｜【技能】狼群合扑撕咬（基础 16 伤）｜【掉落】优质狼皮"
+      condition:
+        variables:
+          wilds_wolf_cleared: false
+    - id: "npc_wilds_defias_squad"
+      name: "迪菲亚劫掠者小队"
+      image: "/assets/characters/defias_bandit.svg"
+      side: "right"
+      category: "env"
+      tag: "HP 130"
+      caption: "130HP盗贼 · 飞沙淬毒18伤"
+      tooltip: "【定位】红面罩迪菲亚强盗小队 ｜【血量】130 HP（实时见顶栏野外敌军面板）｜【属性】闪避 DC 11 / 攻击加值 +3 ｜【技能】致盲飞沙与淬毒短匕（基础 18 伤 + 2 毒伤）｜【掉落】银叶解毒草与 35 金币"
+      condition:
+        variables:
+          wilds_defias_cleared: false
 
 decorations: []
 
-npcs:
-  - id: "elena_swiftarrow"
-    name: "巡林者艾莲娜·迅箭"
-    avatar: "/assets/characters/elena_swiftarrow.png"
-    greeting: "嘘……矿洞外围的坑道已被狗头人矿工与护卫蛛群封锁，而最深处的蜘蛛领主拥有甲壳硬化、蛛网茧缚和三阶段毒潮暴走！我们先在这里提升到 Lv.3、备好抗毒合剂，再一起推进坑道！"
+npcs: []
 
 actions:
   - id: "talk_elena_coop"
-    label: "【结伴合作】与巡林者艾莲娜交换矿洞情报并约定协同入洞"
+    label: "【结伴合作】招募巡林者艾莲娜入队（记录同伴属性与 4 项技能，共赴矿洞）"
     type: "interact"
-    target_npc: "elena_swiftarrow"
     condition:
       variables:
         ally_recruited: false
@@ -45,13 +127,84 @@ actions:
       gain_item: "照明信号箭"
       variables:
         ally_recruited: true
+        ally_level: 2
+        ally_hp: 110
+        ally_max_hp: 110
+        ally_mp: 90
+        ally_max_mp: 90
+        ally_agility: 15
+        ally_perception: 14
+        ally_constitution: 12
+        ally_defense: 5
+        ally_status: "协同作战"
+        ally_mark_active: false
+        ally_web_trapped: false
+        ally_last_action: "正式入队 · 赠予【照明信号箭】"
+      hud_widgets:
+        - id: "ally_elena_panel"
+          type: "panel"
+          title: "随行同伴 · 巡林者艾莲娜·迅箭"
+          icon: "🏹"
+          tone: "emerald"
+          when:
+            variables:
+              ally_recruited: true
+          badges:
+            - text_ref: "Lv.{variables.ally_level} 游侠"
+              tone: "emerald"
+            - text_ref: "敏{variables.ally_agility} / 感{variables.ally_perception} / 体{variables.ally_constitution} / 甲-{variables.ally_defense}"
+              tone: "slate"
+            - text_ref: "状态: {variables.ally_status}"
+              tone: "sky"
+            - text: "🎯 猎人印记生效(全队检定+2/伤×1.15)"
+              tone: "amber"
+              when:
+                variables:
+                  ally_mark_active: true
+            - text: "⚠ 蛛网受困(检定-2)"
+              tone: "purple"
+              when:
+                variables:
+                  ally_web_trapped: true
+            - text: "💀 重伤力竭(需救援)"
+              tone: "danger"
+              when:
+                variables:
+                  ally_hp:
+                    lte: 0
+            - text_ref: "最近行动: {variables.ally_last_action}"
+              tone: "slate"
+          bars:
+            - label: "艾莲娜血量"
+              value_ref: "variables.ally_hp"
+              max_ref: "variables.ally_max_hp"
+              color: "emerald"
+            - label: "艾莲娜集中值"
+              value_ref: "variables.ally_mp"
+              max_ref: "variables.ally_max_mp"
+              color: "sky"
+          cards_title: "查看随行NPC技能与规则"
+          cards:
+            - title: "迅捷连射 (15 集中值 · 敏捷判定)"
+              desc: "伤害 = ceil((16 + 敏捷×2.0 + 同伴等级×8) × 破甲 × 印记 × 判定倍率)，稳定压低敌方血线。"
+              tone: "emerald"
+            - title: "猎人印记·照明破绽 (20 集中值 · 感知判定)"
+              desc: "伤害 = ceil((12 + 感知×1.5) × 破甲 × 判定倍率)，削敌 15 MP 并置全队检定 +2、伤害 ×1.15。"
+              tone: "amber"
+            - title: "冰霜震荡箭 (25 集中值 · 感知判定)"
+              desc: "伤害 = ceil((14 + 敏捷×1.8 + 等级×6) × 破甲 × 印记 × 判定倍率)，打断敌方蓄力(-30/-20 MP)或击杀 1 只幼蛛。"
+              tone: "sky"
+            - title: "森林草药急救 / 稳步平射回气 (15 / 0 集中值)"
+              desc: "急救：为伤重队友恢复 25+感知 HP 并解网；集中<15 时强制 0 耗蓝平射(10+敏捷)并回气 +20 集中值。"
+              tone: "purple"
+          footer: "全员互攻规则：每回合须独立判定【主角 → 艾莲娜 → 敌方全员】；艾莲娜回避 DC=10+敏捷修正，承伤减免 ally_defense(圣骑士光环再-2)；HP归零力竭失去协同。"
       visuals:
-        foreground: "/assets/characters/elena_swiftarrow.png"
-        hero_image: "【小队结盟】两位冒险者在森林哨岗击掌立约，共赴法戈第矿洞"
-      message: "艾莲娜凝视着你手中的武器，露出一丝赞许的微笑：‘好，有你这位强力战友，胜算大增！拿着这支【照明信号箭】，进入Boss巢穴后先用它击碎蜘蛛领主的硬化甲壳，我们再分头清理幼蛛与集火本体！’"
+        foreground: ""
+        hero_image: "【小队结盟】巡林者艾莲娜·迅箭正式入队（Lv.2 · 110 HP / 90 集中值），全员技能已登记"
+      message: "艾莲娜检查完弓弦与箭袋，正式与你结伴同行（Lv.2 · 110 HP / 90 集中值 · 敏15/感14/体12/甲-5），并登记随行技能【迅捷连射】【猎人印记·照明破绽】【冰霜震荡箭】【森林草药急救】！她递给你一支【照明信号箭】：‘之后每一场战斗我都会独立判定出手与分担敌火，咱们严格配合！’"
 
   - id: "hunt_elwynn_prowler"
-    label: "【野外战斗】施展职业技能伏击艾尔文森林灰狼群（消耗 20 MP）"
+    label: "【野外战斗 · 全员互攻】清剿艾尔文森林灰狼群（敌 110 HP · 消耗 20 MP）"
     type: "check"
     skill: "agility"
     difficulty: 11
@@ -66,18 +219,28 @@ actions:
       mp_delta: -20
       variables:
         wilds_wolf_cleared: true
+        wilds_wolf_hp: 0
         xp: 220
+        ally_last_action: "迅捷连射(-15集中)协同猎杀头狼"
+      variables_delta:
+        ally_hp: -8
+        ally_mp: -15
       visuals:
         foreground: ""
-        hero_image: "【荒野狩猎】狼群在职业技能的凌厉攻势下溃散"
-      message: "你消耗 20 点魔法能量预判头狼的扑击轨迹，连招瞬发将灰狼群击溃（HP -12，MP -20）！收获【优质狼皮】并获得实战经验（当前 XP 提升至 220）。"
+        hero_image: "【荒野狩猎】主角与同伴协同判定，狼群在连招与箭雨下溃散"
+      message: "战斗按全员回合严格结算：你消耗 20 MP 命中头狼并承受撕咬反击（HP -12，MP -20）；随行艾莲娜同步施放【迅捷连射】消耗 15 集中值补伤并格挡侧袭（艾莲娜 HP -8，集中 -15），彻底击溃 110 HP 森林灰狼群！收获【优质狼皮】，XP 提升至 220。"
     on_failure:
       hp_delta: -20
       mp_delta: -15
-      message: "一头狡猾的成年灰狼从侧后灌木扑出咬伤了你的护腿（HP -20，MP -15），你稳住阵型才逼退了狼群。"
+      variables:
+        ally_last_action: "迅捷连射擦伤并替你掩护侧翼"
+      variables_delta:
+        ally_hp: -12
+        ally_mp: -15
+      message: "先手检定受挫！灰狼群借林影反扑分别扑咬你与侧翼掩护的艾莲娜（你 HP -20、MP -15；艾莲娜 HP -12、集中 -15），双方稳住阵型后可重新迎战。"
 
   - id: "clear_defias_camp"
-    label: "【野外战斗】清剿迪菲亚强盗营地，夺取解毒草药与补给（消耗 25 MP）"
+    label: "【野外战斗 · 全员互攻】清剿迪菲亚强盗小队（敌 130 HP · 消耗 25 MP）"
     type: "check"
     skill: "strength"
     difficulty: 11
@@ -93,25 +256,42 @@ actions:
       mp_delta: -25
       variables:
         wilds_defias_cleared: true
+        wilds_defias_hp: 0
         xp: 320
+        ally_last_action: "猎人印记(-20集中)锁敌破防"
+      variables_delta:
+        ally_hp: -10
+        ally_mp: -20
       visuals:
         foreground: ""
         hero_image: "【战利品特写】迪菲亚营地缴获的银叶解毒草与钱袋"
-      message: "你消耗 25 点魔法能量与艾莲娜的哨箭形成夹击，顺利击溃了迪菲亚盗贼小队（HP -15，MP -25）！搜出【银叶解毒草】与 35 金币（当前 XP 达 320，已满足 Lv.3 突破条件！）。"
+      message: "全员互攻严格结算：你消耗 25 MP 正面突入迪菲亚营地（承受淬毒短匕反击 HP -15，MP -25）；艾莲娜施放【猎人印记】锁定盗贼头目（消耗 20 集中值，承受飞沙流箭 HP -10），协同击溃 130 HP 强盗小队！缴获【银叶解毒草】与 35 金币（XP 达 320，可突破 Lv.3！）。"
     on_failure:
       hp_delta: -22
       mp_delta: -15
-      message: "迪菲亚盗贼掷出致盲飞沙并挥匕反扑（HP -22，MP -15）。整理架势后可再次进攻。"
+      variables:
+        ally_last_action: "掩护撤退并承受飞沙反击"
+      variables_delta:
+        ally_hp: -14
+        ally_mp: -15
+      message: "迪菲亚盗贼反手掷出致盲飞沙并挥匕猛刺，判定命中你与艾莲娜（你 HP -22、MP -15；艾莲娜 HP -14、集中 -15）。整理架势后可再次进攻。"
 
   - id: "wilds_rest_recover"
-    label: "【哨岗调息】在巡林者木哨岗短暂休整恢复体能与魔力（HP +25 / MP +35）"
+    label: "【哨岗全队调息】与随行同伴在木哨岗休整（主角 HP+25/MP+35 · 艾莲娜 HP+25/集中+30）"
     type: "interact"
     condition:
       min_hp: 1
     on_success:
       hp_delta: 25
       mp_delta: 35
-      message: "你在林间哨岗旁背靠古橡树短暂喘息，整理药袋并平复魔力流动（HP +25，MP +35）。"
+      variables:
+        ally_status: "协同作战"
+        ally_web_trapped: false
+        ally_last_action: "哨岗调息包扎与补充箭矢"
+      variables_delta:
+        ally_hp: 25
+        ally_mp: 30
+      message: "你与艾莲娜背靠古橡树在哨岗短暂包扎、调息与清点箭囊（主角 HP +25 / MP +35；艾莲娜 HP +25 / 集中值 +30）。"
 
   - id: "brew_cave_antidote"
     label: "【战前整备】用【银叶解毒草】调配矿洞专用抗毒合剂"
@@ -130,9 +310,8 @@ actions:
       message: "在艾莲娜的草药学指导下，你将银叶草碾碎熬制，封装成一瓶碧绿澄澈的【抗毒合剂】，在Boss战饮用可固定减免每次 6 点毒伤并获得 +1 检定修正。"
 
   - id: "upgrade_to_lv3"
-    label: "【等级突破 Lv.2 → Lv.3】总结荒野实战经验（MaxHP/MaxMP +25，解锁 Lv.3 技能）"
+    label: "【全队等级突破 Lv.2 → Lv.3】总结实战经验（主角与艾莲娜同步晋升 Lv.3）"
     type: "interact"
-    target_npc: "elena_swiftarrow"
     condition:
       variables:
         level: 2
@@ -156,10 +335,21 @@ actions:
         xp_next: 700
         skill_rank: 3
         skills: "核心职业技能全员晋升至 Lv.3（伤害与法力上限大幅成长）"
+        ally_level: 3
+        ally_max_hp: 130
+        ally_hp: 130
+        ally_max_mp: 110
+        ally_mp: 110
+        ally_agility: 17
+        ally_perception: 16
+        ally_constitution: 14
+        ally_defense: 6
+        ally_status: "Lv.3 协同就绪"
+        ally_last_action: "同步突破至 Lv.3（130 HP / 110 集中值）"
       visuals:
-        foreground: "/assets/characters/elena_swiftarrow.png"
-        hero_image: "【等级跃升】星辰与魔力交汇！角色晋升 Lv.3，血量与魔法上限提升，技能迈入 Lv.3"
-      message: "经历艾尔文荒野的连续恶战，你的战技与魔力回路完成蜕变！成功晋升【Lv.3】！MaxHP/MaxMP 各 +25、全属性大幅增长，职业技能全部升级至【Lv.3】，准备进军法戈第矿洞前哨！"
+        foreground: ""
+        hero_image: "【全队等级跃升】主角与巡林者艾莲娜同步突破至 Lv.3，属性与技能威力全面跃升！"
+      message: "经历艾尔文荒野的连续恶战，你与巡林者艾莲娜双双完成蜕变！主角晋升【Lv.3】（MaxHP/MaxMP +25，全属性增长，技能 Lv.3）；随行同伴艾莲娜同步晋升【Lv.3】（130 HP / 110 集中值 / 敏17 / 感16 / 体14 / 防御减伤6）！"
 
   - id: "drink_healing_potion_wilds"
     label: "饮用【初级治疗药水】恢复生命值（HP +45）"
@@ -190,23 +380,28 @@ actions:
     type: "transition"
     target_scene: "fargodeep_entrance"
     on_success:
+      variables:
+        ally_mark_active: false
+        ally_web_trapped: false
+      remove_hud_widgets:
+        - "wilds_enemies_panel"
       hud_widgets:
         - id: "fargodeep_vanguard"
           type: "tracker"
-          title: "Boss 前哨小怪守卫战"
+          title: "Boss 前哨小怪守卫战（全员互攻）"
           icon: "⚔️"
           when:
             variables:
               cave_vanguard_cleared: false
           steps:
-            - label: "① 狗头人矿工与工头 (140 HP)"
+            - label: "① 狗头人矿工与工头 (140 HP / 60 MP)"
               done_when:
                 variables:
                   cave_kobolds_cleared: true
               active_when:
                 variables:
                   cave_kobolds_cleared: false
-            - label: "② 精英护卫蛛群 (90×2 HP)"
+            - label: "② 精英护卫蛛群 (180 HP / 80 MP)"
               done_when:
                 variables:
                   cave_spiders_cleared: true
@@ -218,8 +413,36 @@ actions:
               done_when:
                 variables:
                   cave_vanguard_cleared: true
+        - id: "vanguard_enemies_panel"
+          type: "panel"
+          title: "前哨敌军实时血蓝状态"
+          icon: "🔥"
+          tone: "danger"
+          when:
+            variables:
+              cave_vanguard_cleared: false
+          bars:
+            - label: "狗头人矿工血量"
+              value_ref: "variables.vanguard_kobold_hp"
+              max: 140
+              color: "rose"
+            - label: "狗头人魔法"
+              value_ref: "variables.vanguard_kobold_mp"
+              max: 60
+              color: "amber"
+            - label: "精英护卫蛛血量"
+              value_ref: "variables.vanguard_spider_hp"
+              max: 180
+              color: "emerald"
+            - label: "护卫蛛魔法"
+              value_ref: "variables.vanguard_spider_mp"
+              max: 80
+              color: "violet"
 
   - id: "return_to_northshire"
     label: "沿林间石径返回【新手村 · 北郡修道院】"
     type: "transition"
     target_scene: "northshire_abbey"
+    on_success:
+      remove_hud_widgets:
+        - "wilds_enemies_panel"

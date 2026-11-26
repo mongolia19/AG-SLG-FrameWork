@@ -1,7 +1,7 @@
 id: "northshire_abbey"
 title: "新手村 · 北郡修道院"
 background: "【场景全景】艾尔文森林·北郡修道院晨光广场，石砌钟楼与圣光旗帜矗立在绿茵山谷之中"
-foreground: "/assets/characters/marshal_mcbride.png"
+foreground: ""
 hero_image: "【焦点插画】北郡修道院圣光祭坛与暴风城新兵征召榜"
 music: "/assets/bgm/northshire_dawn.mp3"
 
@@ -12,32 +12,100 @@ description: |
 
 visuals:
   background: "【场景全景】艾尔文森林·北郡修道院晨光广场，石砌钟楼与圣光旗帜矗立在绿茵山谷之中"
-  foreground: "/assets/characters/marshal_mcbride.png"
+  foreground: ""
   hero_image: "【焦点插画】北郡修道院圣光祭坛与暴风城新兵征召榜"
   atmosphere: "晨光熹微、庄严肃穆、号角蓄势"
   decorations:
+    - id: "npc_marshal_mcbride_abbey"
+      name: "治安官麦格布莱德"
+      image: "/assets/characters/card_marshal_mcbride.png"
+      side: "left"
+      category: "structure"
+      tag: "HP 260"
+      caption: "暴风城长官 · 觉醒与军需"
+      tooltip: "【定位】北郡修道院驻守指挥官 ｜【血量】260/260 HP ｜【职责】引导新兵种族职业觉醒、颁布《清剿法戈第蛛灾》军令、发放军饷与 Lv.2 晋升指引 ｜【补给】可购入红蓝药水，凯旋后负责打造英雄披风"
+    - id: "npc_elena_companion_abbey_full"
+      name: "巡林者艾莲娜·迅箭"
+      image: "/assets/characters/card_elena_swiftarrow.png"
+      side: "left"
+      category: "structure"
+      tag: "随行·健康"
+      caption: "游侠同伴 · 连射/印记/急救"
+      tooltip: "【定位】已入队的精灵远程游侠同伴 ｜【血量】健康（75%+，精确值见顶栏同伴血条）｜【核心技能】迅捷连射 / 猎人印记·照明破绽 / 冰霜震荡箭 / 森林草药急救"
+      condition:
+        variables:
+          ally_recruited: true
+          ally_hp:
+            gte: 75
+    - id: "npc_elena_companion_abbey_hurt"
+      name: "巡林者艾莲娜·迅箭"
+      image: "/assets/characters/card_elena_hurt.png"
+      side: "left"
+      category: "structure"
+      tag: "随行·负伤"
+      caption: "游侠负伤 · 建议修道院休整"
+      tooltip: "【定位】已入队的精灵远程游侠同伴 ｜【血量】负伤中段（精确值见顶栏同伴血条）｜【提示】可在圣光祭坛休整同步恢复全队血蓝"
+      condition:
+        variables:
+          ally_recruited: true
+          ally_hp:
+            gt: 35
+            lt: 75
+    - id: "npc_elena_companion_abbey_crit"
+      name: "巡林者艾莲娜·迅箭"
+      image: "/assets/characters/card_elena_critical.png"
+      side: "left"
+      category: "structure"
+      tag: "随行·濒危"
+      caption: "游侠重伤濒危 · 急需休整!"
+      tooltip: "【定位】已入队的精灵远程游侠同伴 ｜【血量】濒危红线（≤35 HP）｜【提示】请立即在圣光祭坛休整恢复血量"
+      condition:
+        variables:
+          ally_recruited: true
+          ally_hp:
+            gt: 0
+            lte: 35
+    - id: "npc_elena_companion_abbey_down"
+      name: "巡林者艾莲娜·迅箭"
+      image: "/assets/characters/card_elena_down.png"
+      side: "left"
+      category: "structure"
+      tag: "HP 0 力竭"
+      caption: "游侠重伤力竭 · 需休整恢复"
+      tooltip: "【定位】已入队的精灵远程游侠同伴 ｜【血量】0 HP（重伤力竭）｜【提示】在圣光祭坛休整即可令其重返战线"
+      condition:
+        variables:
+          ally_recruited: true
+          ally_hp:
+            lte: 0
     - id: "abbey_supply_crate"
       name: "北郡战备药箱"
       image: "/assets/items/northshire_order.png"
       side: "left"
       category: "env"
       tag: "军需补给"
-      caption: "北郡战备卷宗"
+      caption: "北郡战备卷宗 · 药剂补给"
       tooltip: "存放着暴风城军令状与红蓝恢复药剂的修道院补给箱"
+    - id: "npc_northshire_trial_foes"
+      name: "狗头人斥候与灰狼"
+      image: "/assets/characters/trial_scout.svg"
+      side: "right"
+      category: "env"
+      tag: "HP 70"
+      caption: "70HP斥候 · 矿镐突刺14伤"
+      tooltip: "【定位】修道院外围试炼敌军 ｜【属性】70/70 HP / 闪避 DC 9 / 攻击加值 +2 ｜【技能】狼扑与矿镐突刺（基础 14 伤）｜【战利品】狗头人蜡烛碎块、15 金币与 100 经验"
+      condition:
+        variables:
+          northshire_trial_done: false
 
 decorations: []
 
-npcs:
-  - id: "marshal_mcbride"
-    name: "治安官麦格布莱德"
-    avatar: "/assets/characters/marshal_mcbride.png"
-    greeting: "圣光保佑你，年轻的冒险者！先选定你的种族与职业之道，激活血量与魔法槽位，再完成北郡新兵试炼。切记带足红蓝药水，法戈第矿洞深处的蜘蛛领主绝非昔日可比！"
+npcs: []
 
 actions:
   - id: "choose_human_paladin"
     label: "【开局抉择】人类 · 圣骑士（115 HP / 110 圣能 · 十字军打击/圣光闪现/虔诚光环 Lv.1）"
     type: "interact"
-    target_npc: "marshal_mcbride"
     condition:
       variables:
         class_selected: false
@@ -83,8 +151,8 @@ actions:
           name: "虔诚光环"
           level: 1
           tag: "守护 · 光环"
-          desc: "展开白银之手神圣防御力场，持续守护自身与身旁同伴。"
-          effect: "常驻减免物理与毒素冲击伤害，提升正面抗压与体质检定表现。"
+          desc: "展开白银之手神圣防御力场，持续守护自身与身旁随行同伴。"
+          effect: "常驻物理/毒素减伤 -4（随行同伴艾莲娜额外享 -2 减伤），体质检定 +1。"
           cost: "常驻光环"
           cooldown: "持续生效"
       variables:
@@ -105,7 +173,6 @@ actions:
   - id: "choose_nightelf_hunter"
     label: "【开局抉择】暗夜精灵 · 猎人（105 HP / 100 集中 · 奥术射击/毒蛇钉刺/猎豹守护 Lv.1）"
     type: "interact"
-    target_npc: "marshal_mcbride"
     condition:
       variables:
         class_selected: false
@@ -152,7 +219,7 @@ actions:
           level: 1
           tag: "身法 · 守护"
           desc: "唤醒荒野猎豹的敏捷直觉，保持高度戒备与轻盈步法。"
-          effect: "常驻提升闪避反应、先手侦察感知与脱险速度，降低被偷袭风险。"
+          effect: "常驻回避 DC +1、敏捷/感知检定 +1，轻革皮甲提供 -2 物理减伤。"
           cost: "常驻守护"
           cooldown: "持续生效"
       variables:
@@ -173,7 +240,6 @@ actions:
   - id: "choose_gnome_mage"
     label: "【开局抉择】侏儒 · 法师（90 HP / 140 奥术法力 · 火球术/寒冰箭/奥术智慧 Lv.1）"
     type: "interact"
-    target_npc: "marshal_mcbride"
     condition:
       variables:
         class_selected: false
@@ -220,7 +286,7 @@ actions:
           level: 1
           tag: "奥术 · 增益"
           desc: "激发达拉然奥术符文强化心智，保持清醒专注的魔力感知。"
-          effect: "常驻提升法力上限与法术精准度，减缓毒雾造成的理智（SAN）流失。"
+          effect: "常驻智力检定 +1、布甲提供 -1 基础减伤，减缓毒雾造成的理智（SAN）流失。"
           cost: "常驻增益"
           cooldown: "持续生效"
       variables:
@@ -241,7 +307,6 @@ actions:
   - id: "choose_dwarf_warrior"
     label: "【开局抉择】矮人 · 战士（130 HP / 100 战意 · 英勇打击/雷霆一击/盾牌格挡 Lv.1）"
     type: "interact"
-    target_npc: "marshal_mcbride"
     condition:
       variables:
         class_selected: false
@@ -288,7 +353,7 @@ actions:
           level: 1
           tag: "防御 · 格挡"
           desc: "沉稳举起锻钢战盾架住正面猛袭，构筑钢铁防线。"
-          effect: "大幅吸收正面冲撞与利爪毒牙伤害，在险境中掩护队友并稳住战局。"
+          effect: "铁炉堡板甲常驻减伤 -5；施放盾牌格挡回合回避 DC +2 且额外减伤 -6，强制吸引单体仇恨护卫同伴。"
           cost: "10 怒气值"
           cooldown: "1 回合"
       variables:
@@ -309,7 +374,6 @@ actions:
   - id: "talk_mcbride_quest"
     label: "向治安官麦格布莱德请命，接取《清剿法戈第蛛灾》任务并领取军饷"
     type: "interact"
-    target_npc: "marshal_mcbride"
     condition:
       variables:
         class_selected: true
@@ -320,11 +384,11 @@ actions:
       variables:
         mcbride_quest_accepted: true
       visuals:
-        foreground: "/assets/characters/marshal_mcbride.png"
+        foreground: ""
       message: "麦格布莱德将盖有暴风城火漆的【北郡军令状】与 25 枚金币交到你手中：‘先在修道院外围磨炼技能，再前往艾尔文野外与斥候艾莲娜汇合！法戈第矿洞外围已被狗头人与护卫蛛封锁，清剿前哨小怪后才能挑战深处的蜘蛛领主！’"
 
   - id: "northshire_wolf_trial"
-    label: "【新手试炼】运用初始技能清剿修道院外围灰狼与狗头人斥候（消耗 15 MP）"
+    label: "【新手试炼 · 互攻判定】清剿修道院外围灰狼与狗头人斥候（敌 70 HP · 消耗 15 MP）"
     type: "check"
     skill: "perception"
     difficulty: 9
@@ -342,20 +406,20 @@ actions:
       gain_item: "狗头人蜡烛碎块"
       variables:
         northshire_trial_done: true
+        trial_foe_hp: 0
         xp: 100
       visuals:
         foreground: ""
         hero_image: "【战斗特写】修道院林边击溃偷蜡烛的狗头人斥候"
-      message: "你消耗 15 点魔法能量施展 Lv.1 职业技能，干净利落地击退了潜伏在修道院篱笆旁的森林灰狼与狗头人斥候（HP -8，MP -15）！积累战斗经验（XP +100）并缴获【狗头人蜡烛碎块】与 15 金币！"
+      message: "战斗按规则互攻结算：你消耗 15 MP 施展 Lv.1 职业技命中 70 HP 灰狼与狗头人斥候；敌方【狼扑与矿镐突刺(基础14伤)】经你的护甲减伤后造成 HP -8。你干净利落清剿敌群（XP +100）并缴获【狗头人蜡烛碎块】与 15 金币！"
     on_failure:
       hp_delta: -14
       mp_delta: -10
-      message: "狗头人趁你收招间隙挥舞矿镐偷袭，划伤了你的手臂（HP -14，MP -10）。调整呼吸或补充药水后可以再次发起清剿。"
+      message: "先手判定受挫！狗头人斥候抓住收招空隙发动【矿镐突刺】命中并划伤手臂（HP -14，MP -10）。调整呼吸或补充药水后可再次发起清剿。"
 
   - id: "upgrade_to_lv2"
     label: "【等级突破 Lv.1 → Lv.2】向麦格布莱德汇报战果（MaxHP +25 / MaxMP +20，全属性 +2）"
     type: "interact"
-    target_npc: "marshal_mcbride"
     condition:
       variables:
         class_selected: true
@@ -380,14 +444,13 @@ actions:
         skill_rank: 2
         skills: "初始职业三技能全面晋升至 Lv.2（威力公式阶跃提升）"
       visuals:
-        foreground: "/assets/characters/marshal_mcbride.png"
+        foreground: ""
         hero_image: "【等级跃升】金光涌动！角色晋升 Lv.2，血量与魔法上限提升，技能迈入 Lv.2"
       message: "麦格布莱德亲自指点你发力与魔力引导的窍门！你成功晋升至【Lv.2】！生命上限 +25、魔法上限 +20、全基础属性 +2，生命与魔法大幅恢复，所有职业技能正式突破至【Lv.2】！"
 
   - id: "buy_healing_potion_abbey"
     label: "【军需补给】花费 15 金币向北郡军需官购入【初级治疗药水】（HP +45）"
     type: "interact"
-    target_npc: "marshal_mcbride"
     condition:
       min_gold: 15
       not_has_item: "初级治疗药水"
@@ -401,7 +464,6 @@ actions:
   - id: "buy_mana_potion_abbey"
     label: "【军需补给】花费 15 金币向北郡军需官购入【初级法力药水】（MP +55）"
     type: "interact"
-    target_npc: "marshal_mcbride"
     condition:
       min_gold: 15
       not_has_item: "初级法力药水"
@@ -413,7 +475,7 @@ actions:
       message: "你向北郡后勤官支付 15 枚金币，购入了一瓶澄澈湛蓝的【初级法力药水】（MP +55）。"
 
   - id: "rest_abbey_chapel"
-    label: "【修道院休整】在圣光祭坛旁静坐祈祷与整备（恢复 60 HP / 60 MP）"
+    label: "【修道院全队休整】在圣光祭坛旁静坐祈祷与整备（主角 HP+60/MP+60 · 随行同伴同步恢复）"
     type: "interact"
     condition:
       variables:
@@ -422,10 +484,17 @@ actions:
       hp_delta: 60
       mp_delta: 60
       san_delta: 5
+      variables:
+        ally_status: "协同作战"
+        ally_web_trapped: false
+        ally_mark_active: false
+      variables_delta:
+        ally_hp: 60
+        ally_mp: 60
       visuals:
         foreground: ""
-        hero_image: "【安全区休整】圣光祭坛的暖光治愈伤痛并重聚魔力"
-      message: "你在北郡修道院安静的圣光祭坛旁调息休整，创伤逐渐愈合，魔力与斗志重新充盈（HP +60，MP +60）。"
+        hero_image: "【安全区休整】圣光祭坛的暖光治愈全队伤痛并重聚魔力"
+      message: "你在北郡修道院安静的圣光祭坛旁调息休整，创伤逐渐愈合，魔力与斗志重新充盈（主角 HP +60 / MP +60；若随行同伴已入队亦同步恢复 HP +60 / 集中值 +60）。"
 
   - id: "drink_healing_potion_village"
     label: "饮用随身携带的【初级治疗药水】恢复生命值（HP +45）"
@@ -454,7 +523,6 @@ actions:
   - id: "turn_in_boss_materials"
     label: "【凯旋交差】向麦格布莱德呈交蜘蛛领主掉落材料，锻造暴风城英雄披风"
     type: "interact"
-    target_npc: "marshal_mcbride"
     condition:
       has_item: "幽暗蛛王丝"
       variables:
@@ -475,7 +543,7 @@ actions:
       variables:
         quest_completed: true
       visuals:
-        foreground: "/assets/characters/marshal_mcbride.png"
+        foreground: ""
         hero_image: "【史诗成就】艾尔文英雄归来！法戈第矿洞危机彻底解除"
       message: "麦格布莱德接过珍贵的【幽暗蛛王丝】，高声赞叹你的勇武！修道院工匠连夜为你织就【蛛丝织锦·暴风城守望者披风】并赏赐 150 金币。北郡的钟声为你而鸣，艾泽拉斯记住了你的名字！"
 
@@ -486,3 +554,22 @@ actions:
     condition:
       variables:
         class_selected: true
+    on_success:
+      hud_widgets:
+        - id: "wilds_enemies_panel"
+          type: "panel"
+          title: "艾尔文野外敌军实时血量"
+          icon: "🐺"
+          tone: "amber"
+          when:
+            variables:
+              wilds_defias_cleared: false
+          bars:
+            - label: "艾尔文森林灰狼群"
+              value_ref: "variables.wilds_wolf_hp"
+              max: 110
+              color: "rose"
+            - label: "迪菲亚劫掠者小队"
+              value_ref: "variables.wilds_defias_hp"
+              max: 130
+              color: "amber"

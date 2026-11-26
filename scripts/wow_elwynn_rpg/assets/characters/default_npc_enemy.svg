@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 384">
+  <defs>
+    <radialGradient id="bg" cx="30%" cy="50%" r="72%">
+      <stop offset="0%" stop-color="#4c0519"/>
+      <stop offset="65%" stop-color="#1c0a13"/>
+      <stop offset="100%" stop-color="#09040a"/>
+    </radialGradient>
+  </defs>
+  <rect width="480" height="384" fill="url(#bg)"/>
+  <!-- Top HP Bar Strip -->
+  <rect x="0" y="0" width="480" height="44" fill="#12060b"/>
+  <line x1="0" y1="43" x2="480" y2="43" stroke="#f43f5e" stroke-width="2" opacity="0.7"/>
+  <text x="16" y="19" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="16" font-weight="bold" fill="#fff1f2">HP 100/100 · 敌对目标</text>
+  <rect x="14" y="25" width="452" height="13" rx="6" fill="#2a1019" stroke="#881337" stroke-width="1"/>
+  <rect x="15" y="26" width="450" height="11" rx="5" fill="#e11d48"/>
+  <!-- Left hostile silhouette -->
+  <polygon points="118,76 144,104 180,100 166,140 190,174 156,204 162,242 118,226 74,242 80,204 46,174 70,140 56,100 92,104" fill="#2a0a14" stroke="#e11d48" stroke-width="2.5"/>
+  <path d="M80 170 C80 118 156 118 156 170 L146 202 L90 202 Z" fill="#18080e" stroke="#fb7185" stroke-width="2.5"/>
+  <path d="M56 308 C66 240 88 206 118 206 C148 206 170 240 180 308 Z" fill="#1f0912" stroke="#e11d48" stroke-width="3"/>
+  <polygon points="94,158 112,165 96,170" fill="#fda4af"/>
+  <polygon points="142,158 124,165 140,170" fill="#fda4af"/>
+  <!-- Right text -->
+  <rect x="230" y="44" width="250" height="340" fill="#16070d" opacity="0.93"/>
+  <text x="246" y="84" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="24" font-weight="bold" fill="#fda4af">敌对 / 遭遇NPC</text>
+  <line x1="246" y1="98" x2="462" y2="98" stroke="#f43f5e" stroke-width="2" opacity="0.5"/>
+  <text x="246" y="136" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="20" fill="#fff1f2">危险敌方战斗单位</text>
+  <text x="246" y="172" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="20" fill="#fecdd3">交战须按规则互攻</text>
+  <text x="246" y="208" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="20" fill="#fecdd3">严格投骰计算承伤</text>
+  <text x="246" y="244" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="19" fill="#fb7185">通用敌方默认形象</text>
+</svg>

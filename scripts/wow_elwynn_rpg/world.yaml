@@ -1,6 +1,6 @@
 id: "wow_elwynn_rpg"
 title: "艾泽拉斯传说：法戈第矿洞之影"
-version: "1.1.0"
+version: "1.2.0"
 author: "AG-SLG Studio Co-pilot"
 icon: "⚔️"
 sort_order: 20
@@ -9,15 +9,65 @@ opening_narration: |
   晨祷钟声在艾尔文森林的薄雾中回荡，北郡修道院的石砌广场上战旗猎猎。
   作为艾泽拉斯的新兵，法戈第矿洞的危机正等待着你去平息！请先选择你的种族与职业之道，觉醒血量与能量槽位。
 dm_rules: |
-  - 【战斗伤害与职业公式】：玩家基础技能伤害 = (技能基础威力 + 主属性×2.5 + 技能等级×10)；若 Boss 处于甲壳硬化状态（`boss_armor_broken == false`），伤害须乘以 0.55（向上取整）。
-  - 【蜘蛛领主三阶段机制（必须严格遵守 Boss 魔法规则与状态流转）】：
-    1. 阶段一（Boss HP 360–241）：施放【甲壳硬化】（减伤45%）与【蛛网茧缚】（需 Boss MP >= 30，消耗 30 MP，造成 16 伤并置 `boss_web_trapped: true`）。
-    2. 阶段二（Boss HP <= 240 且 > 130）：进入阶段二时置 `boss_phase: 2`、若 `boss_mp >= 35` 消耗 35 MP 召唤 2 只毒囊幼蛛（`boss_minions: 2`）并蓄力【剧毒新星】（需 Boss MP >= 40，40 MP / 34 伤）。
-    3. 阶段三（Boss HP <= 130）：进入阶段三时置 `boss_phase: 3`、消耗 45 MP 触发【深渊狂暴】并重铸甲壳（`boss_armor_broken: false`），施放【暗影毒液狂潮】（40 伤 + 吸取玩家 15 MP）。
-    4. 魔力枯竭（Boss MP < 30）：Boss 无法施放高耗能技能（如蛛网茧缚/召唤幼蛛/剧毒新星），进入【魔力枯竭】状态仅能普攻，并每回合自动蓄力恢复 +35 MP。
-    5. 战斗修正：每只存活幼蛛增加 4 点毒伤并带来 -1 检定修正；`boss_web_trapped: true` 增加 5 点毒伤并带来 -2 检定修正；`antidote_active: true` 固定减免 6 点毒伤并带来 +1 检定修正。
-    6. 击败 Boss 后（`boss_hp <= 0`）：置 `boss_hp: 0, boss_mp: 0, boss_active: false, boss_defeated: true`，晋升 Lv.4（`level: 4, xp: 800, xp_next: 1400, skill_rank: 4, max_hp_delta: 30, max_mp_delta: 30`），掉落【幽暗蛛王丝】并通过 `remove_hud_widgets: ["arachnos_boss_panel"]` 撤除 Boss 战面板。
-  - 【AG-UI 专属界面调度】：进入前哨/Boss 战时请通过 `hud_widgets` 展示与更新追踪器或 Boss 面板，战斗结束时通过 `remove_hud_widgets` 及时撤除。
+  - 【核心铁律 · 严禁随意裁决与全员回合制互攻】：
+    任何战斗（新手试炼、艾尔文野外、矿洞前哨、蜘蛛领主 Boss 战）**绝对禁止**口头估算伤害、跳过投骰判定或直接“剧情杀”。
+    每一个战斗回合**必须**严格按以下 4 个阶段，对**所有参战存活角色（主角、随行 NPC、敌方小怪/Boss/幼蛛）**逐一执行技能选择、投骰判定、公式计算与属性/血蓝扣减，并在叙事末尾附上透明的【回合攻防判定结算单】，确保与 `state_delta` 数值 100% 吻合：
+    1. **阶段① · 主角行动判定**：检查主角资源（MP/道具）是否足够 → 投 `D20 + floor((主属性-10)/2) + 战场修正` vs 目标防御/闪避 DC → 按四阶倍率计算伤害与附加效果 → 严格扣减主角 MP 与敌方 HP/MP。
+    2. **阶段② · 随行 NPC（巡林者艾莲娜·迅箭）独立行动判定**：只要 `ally_recruited == true` 且 `ally_hp > 0` 且处于战斗场景，**必须**执行艾莲娜的独立回合！
+       - 若 `ally_web_trapped == true`，艾莲娜本回合检定 `-2`，或优先执行挣脱检定（`D20 + 敏捷修正` vs DC 10）。
+       - 若 `ally_mp < 15`，艾莲娜无法施放耗能战技，**强制**执行【稳步平射与调息】（0 耗蓝，判定 `D20 + 敏捷修正` vs 目标 DC，伤害 = `ceil((10 + ally_agility) × 破甲 × 印记 × 判定倍率)`，并恢复 `ally_mp +20`）。
+       - 否则从艾莲娜已记录技能中选择最合理技能，独立投骰并严格扣减 `ally_mp`、敌方 HP/MP，更新 `ally_last_action` / `ally_mark_active` / `ally_status`。
+       - 若 `ally_hp <= 0`，艾莲娜进入【重伤力竭】（`ally_status: "重伤力竭"`），跳过行动且全队失去【艾莲娜协同(+1)】并承受【同伴重伤力竭(-1)】惩罚，直至主角施以战地救援或战后休整。
+    3. **阶段③ · 敌方全员反击与技能判定**：所有存活敌方单位（小怪本体、Boss 本体、每只存活毒囊幼蛛）均须独立决定技能、消耗敌方 MP、选定目标并投骰判定！
+       - **目标仇恨分配**：仅主角在场时锁定主角；若艾莲娜存活参战，单体攻击若主角处于近战强攻/盾牌格挡/挑衅状态则优先锁主角，否则按 60% 主角 / 40% 艾莲娜 分配目标；**群体技能**（如【剧毒新星】【暗影毒液狂潮】【融蜡火球爆溅】）须**同时对主角与艾莲娜分别判定与扣血**！
+       - **敌方命中与防御判定**：`敌方命中总值 = D20 + 敌方攻击加值` vs `受击方回避 DC`（主角回避 DC = `10 + floor((agility-10)/2) + (猎人猎豹守护+1 / 战士盾牌格挡+2)`；艾莲娜回避 DC = `10 + floor((ally_agility-10)/2)`）。
+       - **敌方命中梯度倍率**：重击（总值 >= 回避DC + 5 或 Nat20）`×1.3`；普通命中（>= 回避DC）`×1.0`；擦伤（回避DC - 3 ~ 回避DC - 1）`×0.5`；完全闪避（< 回避DC - 3 或 Nat1）`×0`。
+       - **最终承伤公式**：`最终承伤 = max(1, ceil(技能基础伤害 × 命中倍率) - 防御减伤 - 抗毒减伤 + 幼蛛追加毒伤 + 茧缚易伤)`（完全闪避则为 0）。
+    4. **阶段④ · 状态精确同步**：在 `state_delta` 中逐项写入主角 `hp_delta` / `mp_delta`、随行同伴 `variables_delta`（`ally_hp`、`ally_mp`）与状态字段（`ally_status`、`ally_last_action`、`ally_mark_active`、`ally_web_trapped`）、敌方血蓝与阶段变量（`boss_hp`、`boss_mp`、`boss_minions`、`boss_phase`、`vanguard_*_hp/mp`）。
+
+  - 【通用四阶判定梯度与伤害公式】：
+    - 属性修正 = `floor((属性值 - 10) / 2)`。
+    - 四阶倍率：卓越成功（`Total >= DC + 5` 或 `Nat 20`）= `×1.35`（向上取整，且受反击伤减半）；顺利达成（`DC <= Total < DC + 5`）= `×1.0`；代价成功（`DC - 3 <= Total < DC`）= `×0.65`（向上取整，且敌方下一次反击命中 `+2`）；受挫转折（`Total < DC - 3` 或 `Nat 1`）= `×0.25` 擦伤或落空（Boss 战中可趁机消耗 30 MP 触发【蛛网茧缚】）。
+    - **主角技能伤害公式**：`ceil((技能基础威力 + 主属性×2.5 + 技能等级×10) × 破甲系数 × 印记系数 × 判定倍率)`。
+      - 破甲系数：Boss 处于甲壳硬化（`boss_armor_broken == false`）时为 `0.55`，破甲后或非硬化敌人为 `1.0`。
+      - 印记系数：目标挂有艾莲娜【猎人印记】（`ally_mark_active == true`）时为 `1.15`，否则为 `1.0`。
+    - **主角常驻护甲与职业减伤**：战士板甲 `-5`（施放【盾牌格挡】回合额外 `-6`）、圣骑士锁甲+虔诚光环 `-4`（虔诚光环同时令随行同伴受击额外 `-2`）、猎人皮甲 `-2`、法师布甲 `-1`；饮用【抗毒合剂】（`antidote_active: true`）对一切毒系伤害固定额外 `-6` 且检定 `+1`。
+
+  - 【随行 NPC（巡林者艾莲娜·迅箭）属性成长与技能记录表】：
+    - **成长档案**：
+      · Lv.2（初始招募）：HP 110 / 集中值(MP) 90 / 敏捷 15(+2) / 感知 14(+2) / 体质 12(+1) / 游侠皮甲减伤 `ally_defense = 5`。
+      · Lv.3（主角突破 Lv.3 同步晋升）：HP 130 / 集中值 110 / 敏捷 17(+3) / 感知 16(+3) / 体质 14(+2) / `ally_defense = 6`。
+      · Lv.4（击败蜘蛛领主同步晋升）：HP 155 / 集中值 135 / 敏捷 19(+4) / 感知 18(+4) / 体质 16(+3) / `ally_defense = 7`。
+    - **随行 NPC 伤害公式**：`ceil((技能基础威力 + 主属性×2.0 + ally_level×8) × 破甲系数 × 印记系数 × 判定倍率)`。
+    - **已记录技能表**：
+      1. 【迅捷连射】（消耗 `15 集中值` | 主属性：敏捷 | 目标 DC：小怪 11 / Boss 12 | 基础威力 `16`）：高机动双箭速射，稳定压低敌方血线。
+      2. 【猎人印记·照明破绽】（消耗 `20 集中值` | 主属性：感知 | 目标 DC：11 | 基础威力 `12`）：命中后置 `ally_mark_active: true`（全队攻击检定 `+2`、全队伤害 `×1.15`），并削减敌方 `15 MP`。
+      3. 【冰霜震荡箭】（消耗 `25 集中值` | 主属性：感知 | 目标 DC：12 | 基础威力 `14`）：极寒箭矢打断敌方蓄力（削减 Boss `30 MP` / 前哨小怪 `20 MP`），若场上有毒囊幼蛛可直接优先击杀 1 只并溅伤本体。
+      4. 【森林草药急救】（消耗 `15 集中值` | 主属性：感知 | 难度 DC：10）：当主角或艾莲娜自身 HP 低于 45% 或被蛛网困住时发动，恢复伤重者 `25 + ally_perception` 点 HP 并净化缠身蛛网（卓越成功额外 +10 HP）。
+      5. 【稳步平射与调息】（消耗 `0 集中值` | 主属性：敏捷 | 难度 DC：10）：`ally_mp < 15` 时强制执行，基础威力 `10`（伤害 `ceil((10 + ally_agility) × 破甲 × 印记 × 判定倍率)`）并恢复 `+20 集中值`。
+
+  - 【敌方全员属性、技能表与阶段规则】：
+    - **新手试炼 · 灰狼与狗头人斥候**：HP 70 / 闪避 DC 9 / 攻击加值 +2 / 技能【狼扑与矿镐突刺】（基础伤 14）。
+    - **艾尔文野外 · 森林灰狼群**：HP 110 / 闪避 DC 11 / 攻击加值 +3 / 技能【狼群合扑撕咬】（基础伤 16，若双人作战分别判定）。
+    - **艾尔文野外 · 迪菲亚强盗小队**：HP 130 / 闪避 DC 11 / 攻击加值 +3 / 技能【致盲飞沙与淬毒短匕】（基础伤 18，命中附带 2 点毒伤）。
+    - **矿洞前哨① · 狗头人矿工与地穴工头**：HP 140 / MP 60 / 闪避 DC 11 / 攻击加值 +4 / 技能：【铁镐重击】（0 MP，单体 18 伤）、【融蜡火球爆溅】（20 MP，群体 24 伤，对主角与艾莲娜分别判定）。
+    - **矿洞前哨② · 法戈第精英护卫蛛群（90×2）**：总 HP 180 / MP 80 / 闪避 DC 12 / 攻击加值 +4 / 技能：【双螯合扑】（0 MP，单体 20 伤）、【腐蚀毒液喷吐】（25 MP，群体 26 毒伤，受抗毒合剂减免）。
+    - **主巢穴 Boss · 蜘蛛领主三阶段机制（蜘蛛领主·阿拉克诺斯，360 HP / 180 MP / 闪避 DC 12 / 攻击加值 +5，必须严格遵守 Boss 魔法规则与全员互攻流转）**：
+      1. 阶段一（Boss HP 360–241）：常驻【甲壳硬化】（减伤 45%，即伤害 ×0.55）与【蛛网茧缚】（需 Boss MP >= 30，消耗 30 MP，单体基础 16 伤并令受击者陷入茧缚：`boss_web_trapped: true` 或 `ally_web_trapped: true`）。
+      2. 阶段二（Boss HP <= 240 且 > 130）：进入阶段二置 `boss_phase: 2`；若 `boss_mp >= 35` 消耗 35 MP 召唤 2 只毒囊幼蛛（`boss_minions: 2`，每只幼蛛 40 HP，攻击加值 +2，每回合追加 4 点毒伤并带来 -1 检定干扰）；并蓄力【剧毒新星】（需 Boss MP >= 40，消耗 40 MP，**全体 AOE 基础 34 毒伤**，须分别结算主角与艾莲娜的回避与承伤）。
+      3. 阶段三（Boss HP <= 130）：进入阶段三置 `boss_phase: 3`、消耗 45 MP 触发【深渊狂暴】并重铸甲壳（`boss_armor_broken: false`），施放【暗影毒液狂潮】（**全体 AOE 基础 40 毒伤 + 吸取受击者 15 MP/集中值**）。
+      4. 魔力枯竭（Boss MP < 30）：Boss 无法施放任何耗蓝技能，强制改为【螯肢普攻】（0 MP，单体基础 18 伤）并在回合末自动蓄力恢复 `+35 MP`。
+      5. 战斗修正汇总：每只存活幼蛛增加 4 点毒伤并带来 `-1` 检定修正；`boss_web_trapped: true` 增加 5 点毒伤并带来 `-2` 检定修正；`antidote_active: true` 固定减免 6 点毒伤并带来 `+1` 检定修正；`ally_mark_active: true` 带来全队 `+2` 检定修正与 `×1.15` 伤害增幅。
+      6. 击败 Boss 后（`boss_hp <= 0`）：置 `boss_hp: 0, boss_mp: 0, boss_active: false, boss_defeated: true, ally_mark_active: false, ally_web_trapped: false`，主角晋升 Lv.4（`level: 4, xp: 800, xp_next: 1400, skill_rank: 4, max_hp_delta: 30, max_mp_delta: 30`），若艾莲娜在队同步晋升 Lv.4（`ally_level: 4, ally_max_hp: 155, ally_hp: 155, ally_max_mp: 135, ally_mp: 135, ally_agility: 19, ally_perception: 18, ally_constitution: 16, ally_defense: 7, ally_status: "凯旋休整"`），掉落【幽暗蛛王丝】并通过 `remove_hud_widgets: ["arachnos_boss_panel"]` 撤除 Boss 面板（保留随行同伴面板 `ally_elena_panel`）。
+  - 【NPC 左右边栏常驻展示与默认形象铁律（必须严格遵守）】：
+    1. **凡有 NPC 出场，必在左右边栏现身（禁止启用右下角前景立绘框）**：左侧边栏（`side: "left"`，`category: "structure"`）专职展示友军、剧情中立人物与随行同伴（如治安官麦格布莱德、巡林者艾莲娜·迅箭）；右侧边栏（`side: "right"`，`category: "env"`）专职展示敌对人物、遭遇怪群与 Boss/召唤物（如森林灰狼群、迪菲亚劫掠者、狗头人矿工、护卫蛛群、蜘蛛领主与毒囊幼蛛）。**本剧本所有场景与回合中必须始终保持 `state_delta.visuals.foreground: ""`**，绝不要将艾莲娜、麦格布莱德或任何新 NPC 填入 `visuals.foreground`，防止右下角悬浮立绘框与右侧边栏图片卡片发生重叠遮挡！
+    2. **游玩期动态新增 NPC 必须同步挂载带血条与文字说明的边栏卡片**：若剧情中临时引入了场景预设之外的新 NPC（例如新兵卫兵、修道院牧师、旅商或伏兵），DM **必须**在 `state_delta.add_structures` 中补充一条记录（含 `id`、`name`、`image`、`side: "left"|"right"`、`category`、`tag`、`caption`、`tooltip`、`scene_id` 设为当前场景 ID），其中 `tag` 或 `caption` 必须标明当前血量（如 `HP 80/80`），若发生战斗扣血还应同步通过 `hud_widgets` 展示实时精确血条。
+    3. **绝不允许无头像/空白形象（强制带顶部血条与文字说明的默认形象兜底）**：
+       - 优先使用已有带顶部血条与文字说明的边栏形象卡：`/assets/characters/card_marshal_mcbride.png`（麦格布莱德）、`/assets/characters/card_elena_swiftarrow.png`（艾莲娜健康）/ `card_elena_hurt.png`（负伤）/ `card_elena_critical.png`（濒危）/ `card_elena_down.png`（力竭）、`/assets/characters/trial_scout.svg`（试炼斥候）、`/assets/characters/elwynn_wolf.svg`（灰狼群）、`/assets/characters/defias_bandit.svg`（迪菲亚劫掠者）、`/assets/characters/kobold_foreman.svg`（狗头人矿工）/ `kobold_foreman_hurt.svg`、`/assets/characters/broodguard_spider.svg`（精英护卫蛛）/ `broodguard_spider_hurt.svg`、`/assets/characters/venom_minion.svg`（毒囊幼蛛）、`/assets/characters/boss_arachnos.svg` / `boss_arachnos_p2.svg` / `boss_arachnos_p3.svg`（蜘蛛领主三阶段动态血条）。
+       - 若 NPC 无专属头像或立绘，**必须**采用剧本内置带顶部血条与文字说明的默认形象，严禁留空：
+         · 友军/中立/剧情 NPC 默认形象：`/assets/characters/default_npc_ally.svg`
+         · 敌对/怪物/伏兵 NPC 默认形象：`/assets/characters/default_npc_enemy.svg`
+  - 【AG-UI 专属界面调度】：招募随行同伴后持久展示 `ally_elena_panel` 实时刷新其血量、集中值、状态与技能记录；进入前哨/Boss 战时同步展示追踪器与 Boss 面板，战斗结束及时撤除敌方面板。
 
 attribute_labels:
   strength: "力量"
@@ -27,6 +77,36 @@ attribute_labels:
   perception: "感知"
 
 variable_bounds:
+  mcbride_hp:
+    min: 0
+    max: 260
+  trial_foe_hp:
+    min: 0
+    max: 70
+  wilds_wolf_hp:
+    min: 0
+    max: 110
+  wilds_defias_hp:
+    min: 0
+    max: 130
+  ally_hp:
+    min: 0
+    max_var: "ally_max_hp"
+  ally_mp:
+    min: 0
+    max_var: "ally_max_mp"
+  vanguard_kobold_hp:
+    min: 0
+    max: 140
+  vanguard_kobold_mp:
+    min: 0
+    max: 60
+  vanguard_spider_hp:
+    min: 0
+    max: 180
+  vanguard_spider_mp:
+    min: 0
+    max: 80
   boss_hp:
     min: 0
     max_var: "boss_max_hp"
@@ -105,10 +185,36 @@ adjudication_rules:
     label: "抗毒合剂护佑(+1)"
   - when:
       variables:
+        ally_recruited: true
+        ally_hp:
+          gt: 0
         coop_synergy: true
         boss_active: true
     mod: 1
-    label: "艾莲娜协同(+1)"
+    label: "艾莲娜存活协同(+1)"
+  - when:
+      variables:
+        ally_recruited: true
+        ally_hp:
+          gt: 0
+        ally_mark_active: true
+    mod: 2
+    label: "艾莲娜·猎人印记破绽(+2)"
+  - when:
+      variables:
+        ally_recruited: true
+        ally_hp:
+          lte: 0
+        boss_active: true
+    mod: -1
+    label: "同伴重伤力竭·孤军牵制(-1)"
+  - when:
+      variables:
+        ally_recruited: true
+        ally_web_trapped: true
+        boss_active: true
+    mod: -1
+    label: "艾莲娜蛛网受困·火力受阻(-1)"
   - when:
       variables:
         boss_active: true
@@ -122,6 +228,28 @@ adjudication_rules:
           gt: 0
     mod: -1
     label: "幼蛛群干扰(-1)"
+  - skill_in:
+      - "constitution"
+    when:
+      variables:
+        class_id: "paladin"
+    mod: 1
+    label: "虔诚光环护体(+1)"
+  - skill_in:
+      - "agility"
+      - "perception"
+    when:
+      variables:
+        class_id: "hunter"
+    mod: 1
+    label: "猎豹守护直觉(+1)"
+  - skill_in:
+      - "intelligence"
+    when:
+      variables:
+        class_id: "mage"
+    mod: 1
+    label: "奥术智慧增幅(+1)"
 
 default_fallback:
   branches:
@@ -130,7 +258,7 @@ default_fallback:
           boss_active: true
           boss_defeated: false
       narration: |
-        洞穴中回荡着蜘蛛领主的尖锐嘶鸣！你谨慎地尝试【{clean_action}】，同时紧盯阿拉克诺斯紫黑甲壳与毒腺的每一次波动。
+        洞穴中回荡着蜘蛛领主的尖锐嘶鸣！你谨慎地尝试【{clean_action}】，同时紧盯阿拉克诺斯紫黑甲壳、魔力波动与随行同伴艾莲娜的站位配合，严格等待下一轮全员攻防判定。
       delta:
         variables_delta:
           combat_round: 1
@@ -182,6 +310,64 @@ initial_player_state:
       desc: "鞋底钉有防滑铜钉的军旅皮靴，适合在碎石路与潮湿矿洞中行进。"
       tag: "防滑 · 鞋履"
   skills: []
+  hud_widgets:
+    - id: "ally_elena_panel"
+      type: "panel"
+      title: "随行同伴 · 巡林者艾莲娜·迅箭"
+      icon: "🏹"
+      tone: "emerald"
+      when:
+        variables:
+          ally_recruited: true
+      badges:
+        - text_ref: "Lv.{variables.ally_level} 游侠"
+          tone: "emerald"
+        - text_ref: "敏{variables.ally_agility} / 感{variables.ally_perception} / 体{variables.ally_constitution} / 甲-{variables.ally_defense}"
+          tone: "slate"
+        - text_ref: "状态: {variables.ally_status}"
+          tone: "sky"
+        - text: "🎯 猎人印记生效(全队检定+2/伤×1.15)"
+          tone: "amber"
+          when:
+            variables:
+              ally_mark_active: true
+        - text: "⚠ 蛛网受困(检定-2)"
+          tone: "purple"
+          when:
+            variables:
+              ally_web_trapped: true
+        - text: "💀 重伤力竭(需救援)"
+          tone: "danger"
+          when:
+            variables:
+              ally_hp:
+                lte: 0
+        - text_ref: "最近行动: {variables.ally_last_action}"
+          tone: "slate"
+      bars:
+        - label: "艾莲娜血量"
+          value_ref: "variables.ally_hp"
+          max_ref: "variables.ally_max_hp"
+          color: "emerald"
+        - label: "艾莲娜集中值"
+          value_ref: "variables.ally_mp"
+          max_ref: "variables.ally_max_mp"
+          color: "sky"
+      cards_title: "查看随行NPC技能与规则"
+      cards:
+        - title: "迅捷连射 (15 集中值 · 敏捷判定)"
+          desc: "伤害 = ceil((16 + 敏捷×2.0 + 同伴等级×8) × 破甲 × 印记 × 判定倍率)，稳定压低敌方血线。"
+          tone: "emerald"
+        - title: "猎人印记·照明破绽 (20 集中值 · 感知判定)"
+          desc: "伤害 = ceil((12 + 感知×1.5) × 破甲 × 判定倍率)，削敌 15 MP 并置全队检定 +2、伤害 ×1.15。"
+          tone: "amber"
+        - title: "冰霜震荡箭 (25 集中值 · 感知判定)"
+          desc: "伤害 = ceil((14 + 敏捷×1.8 + 等级×6) × 破甲 × 印记 × 判定倍率)，打断敌方蓄力(-30/-20 MP)或击杀 1 只幼蛛。"
+          tone: "sky"
+        - title: "森林草药急救 / 稳步平射回气 (15 / 0 集中值)"
+          desc: "急救：为伤重队友恢复 25+感知 HP 并解网；集中<15 时强制 0 耗蓝平射(10+敏捷)并回气 +20 集中值。"
+          tone: "purple"
+      footer: "全员互攻规则：每回合须独立判定【主角 → 艾莲娜 → 敌方全员】；艾莲娜回避 DC=10+敏捷修正，承伤减免 ally_defense(圣骑士光环再-2)；HP归零力竭失去协同。"
   variables:
     mp_label: "魔法值"
     class_selected: false
@@ -194,12 +380,36 @@ initial_player_state:
     skill_rank: 1
     skills: "尚未觉醒职业技能"
     northshire_trial_done: false
+    mcbride_hp: 260
+    trial_foe_hp: 70
     mcbride_quest_accepted: false
+    wilds_wolf_hp: 110
+    wilds_defias_hp: 130
     wilds_wolf_cleared: false
     wilds_defias_cleared: false
     ally_recruited: false
+    ally_name: "巡林者艾莲娜·迅箭"
+    ally_role: "精灵巡林者 · 远程游侠"
+    ally_level: 2
+    ally_hp: 110
+    ally_max_hp: 110
+    ally_mp: 90
+    ally_max_mp: 90
+    ally_agility: 15
+    ally_perception: 14
+    ally_constitution: 12
+    ally_defense: 5
+    ally_status: "哨岗待命"
+    ally_mark_active: false
+    ally_web_trapped: false
+    ally_last_action: "尚未入队"
+    ally_skills_record: "迅捷连射(15MP/敏捷) · 猎人印记·照明破绽(20MP/感知) · 冰霜震荡箭(25MP/感知) · 森林草药急救(15MP) / 稳步平射回气(0MP,+20MP)"
     antidote_prepared: false
     antidote_active: false
+    vanguard_kobold_hp: 140
+    vanguard_kobold_mp: 60
+    vanguard_spider_hp: 180
+    vanguard_spider_mp: 80
     cave_kobolds_cleared: false
     cave_spiders_cleared: false
     cave_vanguard_cleared: false
@@ -216,7 +426,7 @@ initial_player_state:
     boss_web_trapped: false
     boss_minions: 0
     boss_casting: "伺机潜伏"
-    boss_skills_summary: "甲壳硬化(30MP) / 蛛网茧缚(30MP) / 召唤幼蛛(35MP) / 剧毒新星(40MP) / 深渊狂暴(45MP)"
+    boss_skills_summary: "甲壳硬化(被动/减伤45%) / 蛛网茧缚(30MP/16伤) / 召唤幼蛛(35MP/×2) / 剧毒新星(40MP/全体34伤) / 深渊狂暴·暗影毒潮(45MP/全体40伤-15MP)"
     combat_round: 0
     boss_defeated: false
     quest_completed: false

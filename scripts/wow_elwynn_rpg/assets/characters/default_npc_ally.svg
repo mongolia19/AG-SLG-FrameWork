@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 384">
+  <defs>
+    <radialGradient id="bg" cx="30%" cy="50%" r="72%">
+      <stop offset="0%" stop-color="#1e3a5f"/>
+      <stop offset="65%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde68a"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+  </defs>
+  <rect width="480" height="384" fill="url(#bg)"/>
+  <!-- Top HP Bar Strip -->
+  <rect x="0" y="0" width="480" height="44" fill="#080d18"/>
+  <line x1="0" y1="43" x2="480" y2="43" stroke="#38bdf8" stroke-width="2" opacity="0.6"/>
+  <text x="16" y="19" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="16" font-weight="bold" fill="#f8fafc">HP 100/100 · 友军状态良好</text>
+  <rect x="14" y="25" width="452" height="13" rx="6" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <rect x="15" y="26" width="450" height="11" rx="5" fill="#10b981"/>
+  <!-- Left portrait -->
+  <path d="M118 96 L172 116 L164 192 C162 226 142 252 118 266 C94 252 74 226 72 192 L64 116 Z" fill="#1e293b" stroke="url(#gold)" stroke-width="3.5"/>
+  <circle cx="118" cy="162" r="26" fill="#cbd5e1"/>
+  <path d="M58 308 C64 242 86 212 118 212 C150 212 172 242 178 308 Z" fill="#334155" stroke="url(#gold)" stroke-width="3"/>
+  <!-- Right text -->
+  <rect x="230" y="44" width="250" height="340" fill="#0b1222" opacity="0.93"/>
+  <text x="246" y="84" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="24" font-weight="bold" fill="#7dd3fc">友军 / 剧情NPC</text>
+  <line x1="246" y1="98" x2="462" y2="98" stroke="#38bdf8" stroke-width="2" opacity="0.45"/>
+  <text x="246" y="136" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="20" fill="#f1f5f9">艾泽拉斯友善人物</text>
+  <text x="246" y="172" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="20" fill="#cbd5e1">提供剧情线索与情报</text>
+  <text x="246" y="208" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="20" fill="#cbd5e1">可交谈 · 补给 · 协防</text>
+  <text x="246" y="244" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="19" fill="#94a3b8">通用友军默认形象</text>
+</svg>

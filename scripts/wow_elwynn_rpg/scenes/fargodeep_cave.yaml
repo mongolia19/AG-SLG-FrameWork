@@ -1,52 +1,167 @@
 id: "fargodeep_cave"
 title: "洞穴 · 法戈第蛛网矿洞（Boss巢穴）"
 background: "【场景全景】阴暗潮湿的废弃矿洞深处，巨型蛛网悬垂于朽坏矿柱之间，幽绿毒雾在洞窟底部翻涌"
-foreground: "/assets/characters/elena_swiftarrow.png"
+foreground: ""
 hero_image: "【Boss 特写】法戈第蜘蛛领主·阿拉克诺斯 · 覆满紫黑甲壳与毒腺的巨型蛛王"
 music: "/assets/bgm/fargodeep_boss.mp3"
 
 description: |
   穿过前哨碎石拱门，刺骨的阴寒与腐败甜腻的毒雾扑面而来。最深处的巨型岩台上盘踞着令人窒息的巨兽——【蜘蛛领主·阿拉克诺斯（360 HP / 180 MP）】！
-  它覆满紫黑色硬化甲壳（未破甲前减免 45% 一切伤害），八只复眼闪烁着残忍的幽绿寒光。战斗将跨越三大阶段：
-  · 阶段一（360~241 HP）：施放【甲壳硬化】与【蛛网茧缚（30MP，16伤+缠绕减2）】；
-  · 阶段二（240~131 HP）：消耗 35MP【召唤毒囊幼蛛 ×2】并蓄力【剧毒新星（40MP，34伤）】；
-  · 阶段三（130~1 HP）：【深渊狂暴】重铸硬壳并引爆【暗影毒液狂潮（45MP，40伤+吸取15MP）】！
-  合理分配血量、魔法与打断/破甲时机，方能斩杀蛛王！
+  它覆满紫黑色硬化甲壳（未破甲前减免 45% 一切伤害），八只复眼闪烁着残忍的幽绿寒光。本场战斗严格执行【全员回合制互攻与规则判定】：每回合依次结算【主角行动 → 随行同伴艾莲娜独立技能判定 → Boss 本体与存活幼蛛反击】，绝不跳过任何角色的属性与伤害计算！
+  · 阶段一（360~241 HP）：施放【甲壳硬化】与【蛛网茧缚（30MP，单体16伤+缠绕减2）】；
+  · 阶段二（240~131 HP）：消耗 35MP【召唤毒囊幼蛛 ×2（40HP×2）】并蓄力【剧毒新星（40MP，全体34毒伤）】；
+  · 阶段三（130~1 HP）：【深渊狂暴】重铸硬壳并引爆【暗影毒液狂潮（45MP，全体40伤+吸取双方15MP）】！
+  合理统筹你与巡林者艾莲娜的血量、魔力/集中值、猎人印记、破甲与打断时机，方能斩杀蛛王！
 
 visuals:
   background: "【场景全景】阴暗潮湿的废弃矿洞深处，巨型蛛网悬垂于朽坏矿柱之间，幽绿毒雾在洞窟底部翻涌"
-  foreground: "/assets/characters/elena_swiftarrow.png"
+  foreground: ""
   hero_image: "【Boss 特写】法戈第蜘蛛领主·阿拉克诺斯 · 覆满紫黑甲壳与毒腺的巨型蛛王"
   atmosphere: "幽暗阴寒、蛛丝密布、杀机四伏"
   decorations:
+    - id: "npc_elena_cave_companion_full"
+      name: "巡林者艾莲娜·迅箭"
+      image: "/assets/characters/card_elena_swiftarrow.png"
+      side: "left"
+      category: "structure"
+      tag: "随行·健康"
+      caption: "Boss战同伴 · 印记/打断/连射"
+      tooltip: "【定位】Boss 决战随行精灵游侠 ｜【血量】健康（75%+，精确值见顶栏同伴血条）｜【技能】迅捷连射(15集中) / 猎人印记(20集中) / 冰霜震荡箭(25集中) / 森林草药急救"
+      condition:
+        variables:
+          ally_recruited: true
+          ally_hp:
+            gte: 75
+    - id: "npc_elena_cave_companion_hurt"
+      name: "巡林者艾莲娜·迅箭"
+      image: "/assets/characters/card_elena_hurt.png"
+      side: "left"
+      category: "structure"
+      tag: "随行·负伤"
+      caption: "同伴负伤 · 留意 Boss AOE"
+      tooltip: "【定位】Boss 决战随行精灵游侠 ｜【血量】负伤中段（精确值见顶栏同伴血条）｜【提示】若血量降至 55 以下可发动【战地救援】为其回血"
+      condition:
+        variables:
+          ally_recruited: true
+          ally_hp:
+            gt: 35
+            lt: 75
+    - id: "npc_elena_cave_companion_crit"
+      name: "巡林者艾莲娜·迅箭"
+      image: "/assets/characters/card_elena_critical.png"
+      side: "left"
+      category: "structure"
+      tag: "随行·濒危"
+      caption: "同伴濒危重伤 · 快战地救援!"
+      tooltip: "【定位】Boss 决战随行精灵游侠 ｜【血量】濒危红线（≤35 HP）｜【警告】请立刻发动【战地救援】避免其力竭失去协同加成"
+      condition:
+        variables:
+          ally_recruited: true
+          ally_hp:
+            gt: 0
+            lte: 35
+    - id: "npc_elena_cave_companion_down"
+      name: "巡林者艾莲娜·迅箭"
+      image: "/assets/characters/card_elena_down.png"
+      side: "left"
+      category: "structure"
+      tag: "HP 0 力竭"
+      caption: "同伴重伤力竭 · 急需救援!"
+      tooltip: "【定位】Boss 决战随行精灵游侠 ｜【血量】0 HP（重伤力竭，全队检定-1）｜【救援】消耗 15 MP 执行【战地救援】恢复 45 HP 并重返战线"
+      condition:
+        variables:
+          ally_recruited: true
+          ally_hp:
+            lte: 0
+    - id: "npc_elena_cave_scout"
+      name: "巡林者艾莲娜·迅箭"
+      image: "/assets/characters/card_elena_swiftarrow.png"
+      side: "left"
+      category: "structure"
+      tag: "HP 110"
+      caption: "巢穴斥候 · 洞口外围警戒"
+      tooltip: "【定位】在巢穴外缘戒备接应的精灵巡林者 ｜【血量】110/110 HP ｜【提示】返回森林哨岗结伴后可全程并肩参战"
+      condition:
+        variables:
+          ally_recruited: false
     - id: "fargodeep_ore_rocks"
       name: "矿洞玄武岩壁"
       image: "/assets/props/rocks.png"
       side: "left"
       category: "env"
       tag: "矿洞地形"
-      caption: "潮湿矿石壁"
+      caption: "潮湿玄武岩壁 · 掩体"
       tooltip: "残留着铜矿脉与腐蚀蛛液痕迹的深邃洞壁"
+    - id: "npc_cave_boss_arachnos_p1"
+      name: "蜘蛛领主·阿拉克诺斯"
+      image: "/assets/characters/boss_arachnos.svg"
+      side: "right"
+      category: "env"
+      tag: "P1 · ≤360HP"
+      caption: "360HP/180MP · 硬壳阶段一"
+      tooltip: "【定位】法戈第矿洞最终首领（阶段一）｜【血量】241~360 / 360 HP（精确实时血条见顶栏 Boss 面板）｜【机制】甲壳硬化(减伤45%) / 蛛网茧缚(30MP)"
+      condition:
+        variables:
+          boss_defeated: false
+          boss_hp:
+            gt: 240
+    - id: "npc_cave_boss_arachnos_p2"
+      name: "蜘蛛领主·阿拉克诺斯"
+      image: "/assets/characters/boss_arachnos_p2.svg"
+      side: "right"
+      category: "env"
+      tag: "P2 · ≤240HP"
+      caption: "阶段二毒潮 · 召唤幼蛛/毒星"
+      tooltip: "【定位】法戈第矿洞最终首领（阶段二）｜【血量】131~240 / 360 HP（精确实时血条见顶栏 Boss 面板）｜【机制】召唤毒囊幼蛛×2(35MP) / 剧毒新星全体34伤(40MP)"
+      condition:
+        variables:
+          boss_defeated: false
+          boss_hp:
+            gt: 130
+            lte: 240
+    - id: "npc_cave_boss_arachnos_p3"
+      name: "蜘蛛领主·阿拉克诺斯"
+      image: "/assets/characters/boss_arachnos_p3.svg"
+      side: "right"
+      category: "env"
+      tag: "P3 · ≤130HP"
+      caption: "三阶段残血狂暴 · 可绝杀!"
+      tooltip: "【定位】法戈第矿洞最终首领（阶段三狂暴）｜【血量】1~130 / 360 HP（精确实时血条见顶栏 Boss 面板）｜【机制】重铸硬壳 + 暗影毒液狂潮(45MP全体40伤-15MP)，可发动【三阶段绝杀】终结！"
+      condition:
+        variables:
+          boss_defeated: false
+          boss_hp:
+            lte: 130
+    - id: "npc_cave_venom_minions"
+      name: "毒囊幼蛛群"
+      image: "/assets/characters/venom_minion.svg"
+      side: "right"
+      category: "env"
+      tag: "HP 40/只"
+      caption: "40HP/只 · +4毒伤/检定-1"
+      tooltip: "【定位】蜘蛛领主二阶段孵化的毒囊幼蛛 ｜【血量】每只 40 HP / 攻击 +2 ｜【威胁】每只每回合追加 +4 毒伤并令全队检定 -1，建议优先清剿或令艾莲娜冰霜箭点杀"
+      condition:
+        variables:
+          boss_active: true
+          boss_defeated: false
+          boss_minions:
+            gt: 0
     - id: "fargodeep_boss_venom"
       name: "幽暗毒囊结晶"
       image: "/assets/items/venom_crystal.png"
       side: "right"
       category: "env"
       tag: "Boss 毒腺"
-      caption: "幽绿毒腺矿簇"
+      caption: "幽绿毒腺矿簇 · 稀有材料"
       tooltip: "蜘蛛领主在洞窟深处凝结的剧毒矿簇，散发着危险魔力"
 
 decorations: []
 
-npcs:
-  - id: "elena_swiftarrow"
-    name: "巡林者艾莲娜·迅箭"
-    avatar: "/assets/characters/elena_swiftarrow.png"
-    greeting: "Boss 甲壳没破前只能打出 55% 伤害！先破甲、及时清掉幼蛛和挣脱蛛网，再用打断技消耗它的魔法值，千万别硬吃剧毒新星！"
+npcs: []
 
 actions:
   - id: "engage_boss_arachnos"
-    label: "【唤醒 Boss 战】锁定蜘蛛领主·阿拉克诺斯，展开多阶段决战！"
+    label: "【唤醒 Boss 战 · 全员回合互攻】锁定蜘蛛领主·阿拉克诺斯，展开严格规则决战！"
     type: "interact"
     condition:
       min_hp: 1
@@ -65,13 +180,18 @@ actions:
         boss_armor_broken: false
         boss_web_trapped: false
         boss_minions: 0
+        ally_mark_active: false
+        ally_web_trapped: false
+        ally_status: "Boss 战协同就绪"
+        ally_last_action: "搭箭锁定阿拉克诺斯，准备独立回合出手"
         combat_round: 1
         boss_casting: "【阶段一】甲壳硬化（减伤45%）· 伺机蛛网茧缚（30MP）"
       visuals:
-        foreground: "/assets/characters/elena_swiftarrow.png"
+        foreground: ""
         hero_image: "【Boss 战开启】蜘蛛领主·阿拉克诺斯发出嘶鸣，360HP/180MP 压迫降临！"
       remove_hud_widgets:
         - "fargodeep_vanguard"
+        - "vanguard_enemies_panel"
       hud_widgets:
         - id: "arachnos_boss_panel"
           type: "panel"
@@ -118,23 +238,23 @@ actions:
               color: "violet"
           cards_title: "查看Boss技能"
           cards:
-            - title: "甲壳硬化 (被动/30MP)"
-              desc: "未破甲前减免伤害，需合作照明箭或强攻破甲。"
+            - title: "甲壳硬化 (被动/减伤45%)"
+              desc: "未破甲前全队伤害 ×0.55，需合作照明箭、火油炸药或强攻破甲。"
               tone: "danger"
-            - title: "蛛网茧缚 (30MP)"
-              desc: "缠住冒险者（检定-2），需及时挣脱或火攻烧断。"
+            - title: "蛛网茧缚 (30MP · 单体16伤)"
+              desc: "攻击主角或艾莲娜（受击者检定-2、易伤+5），需及时挣脱或火攻烧断。"
               tone: "purple"
-            - title: "召唤毒囊幼蛛 (35MP)"
-              desc: "二阶段孵化2只幼蛛协同撕咬，干扰命中与施法。"
+            - title: "召唤毒囊幼蛛 (35MP · 40HP×2)"
+              desc: "二阶段孵化2只幼蛛协同撕咬，每只每回合追加+4毒伤并令全队检定-1。"
               tone: "amber"
-            - title: "剧毒新星 (40MP)"
-              desc: "高伤毒爆蓄力，可趁蓄力间隙打断并反削Boss魔法。"
+            - title: "剧毒新星 (40MP · 全体AOE 34毒伤)"
+              desc: "高伤全体毒爆蓄力，须对主角与艾莲娜分别判定承伤，可提前打断削蓝。"
               tone: "fuchsia"
-            - title: "深渊狂暴 (45MP)"
-              desc: "低血量三阶段触发，同时腐蚀玩家血量与魔法。"
+            - title: "深渊狂暴·暗影毒潮 (45MP · 全体40伤-15MP)"
+              desc: "三阶段重铸硬壳并引爆全体毒潮，同时吸取主角与艾莲娜 15 MP/集中值。"
               tone: "red"
-          footer: "战斗公式：玩家技能伤 = (基础威力 + 主属性×2.5 + 技能等级×10) × 破甲(0.55/1.0) × 检定倍率 | Boss MP < 30 进入【魔力枯竭】并蓄力 +35MP | 幼蛛每只 +4 伤(-1检定) · 茧缚 +5 毒伤(-2检定) · 抗毒合剂 -6 毒伤(+1检定)"
-      message: "蜘蛛领主·阿拉克诺斯猛地从岩台跃起，紫黑甲壳泛起冷硬幽光！多阶段 Boss 战正式打响（Boss 360 HP / 180 MP），请先破除其硬化甲壳！"
+          footer: "全员互攻铁律：每回合按【主角 → 艾莲娜 → Boss/幼蛛】独立投骰与公式结算 | 主角伤=(基础+主属性×2.5+级×10)×破甲×印记×倍率 | 艾莲娜伤=(基础+主属性×2.0+级×8)×破甲×印记×倍率 | Boss MP<30 枯竭普攻并+35MP | 印记+2检定/×1.15伤"
+      message: "蜘蛛领主·阿拉克诺斯猛地从岩台跃起（360 HP / 180 MP）！全员回合制 Boss 战打响：每回合都将严格结算【主角行动 → 随行同伴艾莲娜独立行动 → Boss 与幼蛛反击】的投骰判定与伤害扣减！"
 
   - id: "use_antidote_before_boss"
     label: "【战前/战中准备】饮用【抗毒合剂】（HP +30 / MP +20，常驻减免6点毒伤）"
@@ -157,7 +277,7 @@ actions:
       message: "清凉的草药灵流流遍全身（HP +30，MP +20，体质 +2），你获得【抗毒护佑】：Boss 每次毒系攻击伤害减免 6 点，检定额外 +1！"
 
   - id: "coop_clear_webs"
-    label: "【合作破甲】消耗【照明信号箭】协同艾莲娜击碎 Boss 硬化甲壳（-15 MP）"
+    label: "【合作破甲】消耗【照明信号箭】协同艾莲娜击碎 Boss 硬化甲壳（主角 -15 MP · 艾莲娜 -15 集中）"
     type: "check"
     skill: "perception"
     difficulty: 10
@@ -167,6 +287,8 @@ actions:
       min_mp: 15
       variables:
         ally_recruited: true
+        ally_hp:
+          gt: 0
         boss_armor_broken: false
         boss_defeated: false
     on_success:
@@ -179,21 +301,146 @@ actions:
       variables:
         coop_synergy: true
         boss_armor_broken: true
+        ally_status: "协同作战"
+        ally_last_action: "借照明信号箭连珠三箭破甲(-15集中)"
         boss_casting: "甲壳碎裂 · 伺机蛛网反击（30MP）"
       variables_delta:
         boss_hp: -45
         boss_mp: -20
+        ally_hp: -8
+        ally_mp: -15
         combat_round: 1
       visuals:
-        foreground: "/assets/characters/elena_swiftarrow.png"
+        foreground: ""
         hero_image: "【合作破甲】照明信号箭焚毁巨网！蜘蛛领主腹部软甲暴露（全额100%伤害）"
-      message: "耀眼火光炸裂洞窟！艾莲娜借光连珠三箭精准轰碎蜘蛛领主背甲弱点（Boss HP -45，Boss MP -20；你承受余波 HP -10，MP -15）。【甲壳已破】，后续攻击将造成 100% 全额伤害！"
+      message: "全员互攻严格结算：耀眼火光炸裂洞窟！你消耗 15 MP 引爆信号箭，艾莲娜同步消耗 15 集中值发动【迅捷连射】轰碎背甲弱点（Boss -45 HP / -20 MP）；Boss 螯肢横扫余波分别命中你与艾莲娜（你 HP -10；艾莲娜 HP -8）。【甲壳已破】，全队伤害恢复 100%！"
     on_failure:
       hp_delta: -16
       mp_delta: -10
+      variables:
+        ally_last_action: "破甲箭偏斜并规避毒雾(-10集中)"
       variables_delta:
+        ally_hp: -10
+        ally_mp: -10
         combat_round: 1
-      message: "浓重毒雾遮挡了弹道（HP -16，MP -10），信号箭未能烧穿主甲壳，你们重新锁定角度准备再次破甲。"
+      message: "浓重毒雾干扰了瞄准判定！信号箭未能烧穿主甲壳，Boss 反扑分别波及你与艾莲娜（你 HP -16/MP -10；艾莲娜 HP -10/集中 -10）。"
+
+  - id: "elena_cast_hunters_mark"
+    label: "【同伴战技 · 艾莲娜】施放「猎人印记·照明破绽」（艾莲娜 -20 集中值 · 全队检定+2/伤×1.15）"
+    type: "check"
+    skill: "perception"
+    difficulty: 11
+    condition:
+      min_hp: 1
+      variables:
+        ally_recruited: true
+        ally_hp:
+          gt: 0
+        ally_mp:
+          gte: 20
+        ally_mark_active: false
+        boss_active: true
+        boss_defeated: false
+    on_success:
+      hp_delta: -12
+      variables:
+        ally_mark_active: true
+        ally_status: "印记锁定中"
+        ally_last_action: "猎人印记·照明破绽(-20集中)命中，全队检定+2/伤×1.15"
+        boss_casting: "弱点被标记 · 狂怒毒牙反击"
+      variables_delta:
+        boss_hp: -38
+        boss_mp: -15
+        ally_hp: -10
+        ally_mp: -20
+        combat_round: 1
+      visuals:
+        foreground: ""
+        hero_image: "【同伴战技】艾莲娜射出金色猎人印记箭，彻底标记阿拉克诺斯的脆弱毒腺！"
+      message: "全员互攻严格结算：艾莲娜消耗 20 集中值执行【猎人印记·照明破绽】感知判定命中，按同伴公式造成 38 点穿刺伤并削减 Boss 15 MP，成功挂上【猎人印记】（全队攻击检定 +2、伤害 ×1.15）！同时你以普攻策应并分担 Boss 反击（你 HP -12；艾莲娜 HP -10）。"
+    on_failure:
+      hp_delta: -18
+      variables:
+        ally_last_action: "猎人印记被甲壳弹开(-20集中)"
+      variables_delta:
+        boss_hp: -12
+        ally_hp: -14
+        ally_mp: -20
+        combat_round: 1
+      message: "印记箭擦过紫黑硬壳未能钉入弱点（艾莲娜集中 -20，仅擦伤 Boss 12 HP），蜘蛛领主借机反扫命中你与艾莲娜（你 HP -18；艾莲娜 HP -14）。"
+
+  - id: "elena_frost_interrupt"
+    label: "【同伴战技 · 艾莲娜】施放「冰霜震荡箭」打断 Boss 蓄力并清 1 幼蛛（艾莲娜 -25 集中值）"
+    type: "check"
+    skill: "perception"
+    difficulty: 12
+    condition:
+      min_hp: 1
+      variables:
+        ally_recruited: true
+        ally_hp:
+          gt: 0
+        ally_mp:
+          gte: 25
+        boss_active: true
+        boss_defeated: false
+    on_success:
+      hp_delta: -8
+      variables:
+        ally_status: "冰霜控场"
+        ally_last_action: "冰霜震荡箭(-25集中)打断Boss -30MP 并清剿幼蛛"
+        boss_casting: "寒冰震荡 · 蓄力中断"
+      variables_delta:
+        boss_hp: -52
+        boss_mp: -30
+        boss_minions: -1
+        ally_hp: -8
+        ally_mp: -25
+        combat_round: 1
+      visuals:
+        foreground: ""
+        hero_image: "【同伴控场】冰霜震荡箭冻结蛛王螯肢并轰碎毒囊幼蛛！"
+      message: "全员互攻严格结算：艾莲娜消耗 25 集中值射出【冰霜震荡箭】，判定命中！按同伴公式对 Boss 造成 52 点伤害、强效打断并削减 Boss 30 MP，同时冻结击杀 1 只毒囊幼蛛（若有）！Boss 被震慑后反击威势大减（你 HP -8；艾莲娜 HP -8）。"
+    on_failure:
+      hp_delta: -16
+      variables:
+        ally_last_action: "冰霜震荡箭未打断蓄力(-25集中)"
+      variables_delta:
+        boss_hp: -16
+        boss_mp: -10
+        ally_hp: -16
+        ally_mp: -25
+        combat_round: 1
+      message: "冰霜箭慢了一拍仅擦伤 Boss（-16 HP / -10 MP，艾莲娜集中 -25），蜘蛛领主趁势毒雾反扑命中双方（你 HP -16；艾莲娜 HP -16）。"
+
+  - id: "aid_ally_elena"
+    label: "【战地救援】消耗 15 MP 为重伤/力竭的艾莲娜急救并解网（艾莲娜 HP +45 / 集中 +20）"
+    type: "interact"
+    condition:
+      min_hp: 1
+      min_mp: 15
+      variables:
+        ally_recruited: true
+        ally_hp:
+          lte: 55
+        boss_active: true
+        boss_defeated: false
+    on_success:
+      hp_delta: -12
+      mp_delta: -15
+      variables:
+        ally_status: "协同作战"
+        ally_web_trapped: false
+        ally_last_action: "接受主角战地救援重返战线(+45 HP / +20 集中)"
+        boss_casting: "趁救援间隙扑击主角"
+      variables_delta:
+        ally_hp: 45
+        ally_mp: 20
+        combat_round: 1
+      visuals:
+        foreground: ""
+        hero_image: "【生死相托】你顶住毒牙冲锋将重伤的艾莲娜拉回战线！"
+      message: "你顶着蜘蛛领主的扑击替艾莲娜挡下正面利爪（你承受反击 HP -12，消耗 MP -15），迅速为其灌注急救能量并斩断蛛网！艾莲娜恢复 45 HP 与 20 集中值，重新搭箭投入全员合击！"
 
   - id: "throw_kobold_bomb_armor"
     label: "【道具破甲】投掷【狗头人火油炸药】炸碎 Boss 硬化甲壳并清场（0 MP）"
@@ -323,22 +570,28 @@ actions:
       mp_delta: -20
       variables:
         boss_casting: "承受圣光重创 · 准备毒液反扑"
+        ally_last_action: "迅捷连射(-15集中)协同集火 Boss"
       variables_delta:
         boss_hp: -88
         boss_mp: -20
+        ally_hp: -10
+        ally_mp: -15
         combat_round: 1
-      message: "金色战锤挟着 Lv.3 十字军打击的圣光烈焰怒砸而下，依据伤害公式重创蜘蛛领主（Boss -88 HP / -20 MP；受反击 HP -18，圣能 -20）！"
+      message: "全员互攻严格结算：金色战锤挟 Lv.3 十字军打击重创蛛王（消耗 20 圣能），艾莲娜同步消耗 15 集中值施放【迅捷连射】补伤（合计 Boss -88 HP / -20 MP）；Boss 反击经圣光虔诚光环与皮甲减伤后分别命中双方（你 HP -18；艾莲娜 HP -10）！"
     on_failure:
       hp_delta: -28
       mp_delta: -20
       variables:
         boss_web_trapped: true
         boss_casting: "【蛛网茧缚】喷吐粘丝缠住冒险者（-30MP）"
+        ally_last_action: "稳步平射掩护并承受毒雾(-10集中)"
       variables_delta:
         boss_hp: -25
         boss_mp: -30
+        ally_hp: -14
+        ally_mp: -10
         combat_round: 1
-      message: "蜘蛛领主侧身避开战锤核心，甩出【蛛网茧缚】缠住你的双膝并猛撞而来（HP -28，圣能 -20，陷入茧缚）！"
+      message: "蜘蛛领主侧身避开战锤核心，消耗 30 MP 甩出【蛛网茧缚】缠住你的双膝并反击波及侧翼（你 HP -28/圣能 -20/陷入茧缚；艾莲娜 HP -14/集中 -10）！"
 
   - id: "paladin_flash_of_light"
     label: "【圣骑士 · 圣光闪现】圣光急救回复生命并净化蛛网（消耗 25 圣能）"
@@ -380,22 +633,28 @@ actions:
       mp_delta: -20
       variables:
         boss_casting: "复眼受创 · 蓄力毒潮反击"
+        ally_last_action: "迅捷连射(-15集中)双弓共鸣齐射"
       variables_delta:
         boss_hp: -88
         boss_mp: -25
+        ally_hp: -12
+        ally_mp: -15
         combat_round: 1
-      message: "你与艾莲娜双弓共鸣，Lv.3 奥术射击精准贯穿蛛王关节与复眼（Boss -88 HP / -25 MP；受毒雾反噬 HP -16，集中值 -20）！"
+      message: "全员互攻严格结算：你消耗 20 集中值施放 Lv.3 奥术射击，艾莲娜同步消耗 15 集中值施放【迅捷连射】双弓齐发（合计 Boss -88 HP / -25 MP）；双方经皮甲与敏捷回避结算 Boss 毒雾反噬（你 HP -16；艾莲娜 HP -12）！"
     on_failure:
       hp_delta: -26
       mp_delta: -20
       variables:
         boss_web_trapped: true
         boss_casting: "【蛛网茧缚】喷射粘丝封锁走位（-30MP）"
+        ally_last_action: "箭矢偏斜并遭受毒雾反击(-10集中)"
       variables_delta:
         boss_hp: -25
         boss_mp: -30
+        ally_hp: -14
+        ally_mp: -10
         combat_round: 1
-      message: "蜘蛛领主喷吐浓雾遮蔽弹道，反手喷出【蛛网茧缚】封住你的步伐（HP -26，集中值 -20，陷入茧缚）！"
+      message: "蜘蛛领主喷吐浓雾干扰弹道，消耗 30 MP 反手喷出【蛛网茧缚】封住你的步伐并波及艾莲娜（你 HP -26/集中 -20/陷入茧缚；艾莲娜 HP -14/集中 -10）！"
 
   - id: "hunter_serpent_sting"
     label: "【猎人 · 毒蛇钉刺】精准打断 Boss 施法并高机动规避（消耗 15 集中值）"
@@ -446,22 +705,28 @@ actions:
       variables:
         boss_web_trapped: false
         boss_casting: "毒囊遭火引爆 · 狂怒反扑"
+        ally_last_action: "迅捷连射(-15集中)补射火球灼裂处"
       variables_delta:
         boss_hp: -85
         boss_mp: -20
+        ally_hp: -12
+        ally_mp: -15
         combat_round: 1
-      message: "炽烈火球在蜘蛛领主腹腔正中炸裂，顺带烧净缠身蛛丝（Boss -85 HP / -20 MP；承受热浪与毒溅 HP -18，法力 -25）！"
+      message: "全员互攻严格结算：炽烈火球消耗 25 法力轰裂蛛王腹腔并烧净蛛丝，艾莲娜同步消耗 15 集中值施放【迅捷连射】精准追击（合计 Boss -85 HP / -20 MP）；Boss 狂怒毒液飞溅分别命中双方（你 HP -18；艾莲娜 HP -12）！"
     on_failure:
       hp_delta: -30
       mp_delta: -25
       variables:
         boss_web_trapped: true
         boss_casting: "【蛛网茧缚】打断施法并缚住法师（-30MP）"
+        ally_last_action: "掩护法师并承受震荡余波(-10集中)"
       variables_delta:
         boss_hp: -30
         boss_mp: -30
+        ally_hp: -14
+        ally_mp: -10
         combat_round: 1
-      message: "洞顶落石干扰了咒文吟唱，Boss 瞬间甩出【蛛网茧缚】并重击而来（HP -30，法力 -25，陷入茧缚）！"
+      message: "洞顶落石干扰咒文吟唱，Boss 消耗 30 MP 甩出【蛛网茧缚】并重击你与侧翼艾莲娜（你 HP -30/法力 -25/陷入茧缚；艾莲娜 HP -14/集中 -10）！"
 
   - id: "interrupt_boss_cast"
     label: "【法术/战技打断】强效打断 Boss 高危蓄力并削减其魔法（消耗 20 MP，Boss -35 MP）"
@@ -521,6 +786,19 @@ actions:
         boss_minions: 0
         boss_web_trapped: false
         boss_casting: "已伏诛"
+        ally_mark_active: false
+        ally_web_trapped: false
+        ally_level: 4
+        ally_max_hp: 155
+        ally_hp: 155
+        ally_max_mp: 135
+        ally_mp: 135
+        ally_agility: 19
+        ally_perception: 18
+        ally_constitution: 16
+        ally_defense: 7
+        ally_status: "Lv.4 凯旋英雄"
+        ally_last_action: "绝杀连携钉死蛛王核心 · 同步晋升 Lv.4"
         level: 4
         xp: 800
         xp_next: 1400
@@ -531,8 +809,8 @@ actions:
       remove_hud_widgets:
         - "arachnos_boss_panel"
       visuals:
-        hero_image: "【Boss 战胜利】绝杀连携轰碎阿拉克诺斯核心，幽暗蛛王丝散落岩台！"
-      message: "艾莲娜以精准箭矢钉死蛛王最后一处关节！你抓住绝杀破绽倾尽全力贯穿其核心，轰然终结蜘蛛领主·阿拉克诺斯！你晋升至【Lv.4】（MaxHP/MaxMP +30，全技能 Lv.4），拾获【幽暗蛛王丝】！"
+        hero_image: "【Boss 战胜利】全员绝杀连携轰碎阿拉克诺斯核心，幽暗蛛王丝散落岩台！"
+      message: "全员终结判定达成！艾莲娜以精准箭矢钉死蛛王最后一处关节，你抓住绝杀破绽倾尽全力贯穿其核心，轰然终结蜘蛛领主·阿拉克诺斯！你晋升至【Lv.4】（MaxHP/MaxMP +30，全技能 Lv.4），随行同伴艾莲娜同步晋升【Lv.4】（155 HP / 135 集中值），拾获【幽暗蛛王丝】！"
     on_failure:
       hp_delta: -28
       mp_delta: -20
@@ -589,22 +867,28 @@ actions:
       mp_delta: -20
       variables:
         boss_casting: "甲壳受创震颤 · 螯肢反击"
+        ally_last_action: "迅捷连射(-15集中)依托战士防线输出"
       variables_delta:
         boss_hp: -92
         boss_mp: -20
+        ally_hp: -6
+        ally_mp: -15
         combat_round: 1
-      message: "铁炉堡战斧携雷霆万钧之势重劈而下（Boss -92 HP / -20 MP；重甲硬抗反击 HP -16，战意 -20）！"
+      message: "全员互攻严格结算：铁炉堡战斧消耗 20 战意裂甲重劈并稳稳吸住正面仇恨，艾莲娜在掩护下消耗 15 集中值施放【迅捷连射】火力全开（合计 Boss -92 HP / -20 MP）；你凭板甲硬抗主力反击（HP -16），艾莲娜仅受流溅轻伤（HP -6）！"
     on_failure:
       hp_delta: -24
       mp_delta: -20
       variables:
         boss_web_trapped: true
         boss_casting: "【蛛网茧缚】强行缠住矮人战士（-30MP）"
+        ally_last_action: "掩护射击牵制蛛王扑击(-10集中)"
       variables_delta:
         boss_hp: -25
         boss_mp: -30
+        ally_hp: -10
+        ally_mp: -10
         combat_round: 1
-      message: "蜘蛛领主贴地闪开重劈，吐出厚重【蛛网茧缚】缠住战靴并撞击盾牌（HP -24，战意 -20，陷入茧缚）！"
+      message: "蜘蛛领主贴地闪开重劈，消耗 30 MP 吐出【蛛网茧缚】缠住战靴并横扫波及后排（你 HP -24/战意 -20/陷入茧缚；艾莲娜 HP -10/集中 -10）！"
 
   - id: "warrior_thunder_shield"
     label: "【战士 · 盾牌格挡 & 雷霆一击】稳守反震、削弱幼蛛并打断施法（消耗 15 战意）"
@@ -639,7 +923,7 @@ actions:
       message: "巨力冲击震麻了你的持盾手臂（HP -16，战意 -15），勉强稳住防线。"
 
   - id: "desperate_basic_attack"
-    label: "【基础普攻 / 战术调息】稳扎稳打挥击并回复魔法能量（0 MP 消耗，回复 +25 MP）"
+    label: "【基础普攻 / 全队回气调息】稳扎稳打挥击并回复能量（主角 +25 MP · 艾莲娜稳步平射 +20 集中值）"
     type: "interact"
     condition:
       min_hp: 1
@@ -649,11 +933,15 @@ actions:
     on_success:
       hp_delta: -14
       mp_delta: 25
+      variables:
+        ally_last_action: "稳步平射与调息(0耗蓝/+20集中)"
       variables_delta:
         boss_hp: -35
         boss_mp: -10
+        ally_hp: -8
+        ally_mp: 20
         combat_round: 1
-      message: "你暂缓高耗能爆发，借艾莲娜掩护稳步换血并引导呼吸回蓝（MP +25，承受 Boss 普攻 HP -14；磨掉 Boss 35 HP）！"
+      message: "全员低耗回气回合：你稳步普攻并引导呼吸回蓝（MP +25，承伤 HP -14），艾莲娜同步执行 0 耗蓝【稳步平射与调息】（集中值 +20，承伤 HP -8），合击磨掉 Boss 35 HP / 10 MP！"
 
   - id: "drink_healing_potion_cave"
     label: "【战中急救】饮用【初级治疗药水】恢复生命值（HP +45）"
@@ -705,13 +993,19 @@ actions:
         boss_armor_broken: false
         boss_web_trapped: false
         boss_minions: 0
+        ally_mark_active: false
+        ally_web_trapped: false
+        ally_hp: 95
+        ally_mp: 90
+        ally_status: "脱险整备中"
+        ally_last_action: "随炉石脱险返回北郡修道院"
         combat_round: 0
         boss_casting: "伺机潜伏"
       remove_hud_widgets:
         - "arachnos_boss_panel"
       visuals:
         background: "【场景全景】艾尔文森林·北郡修道院晨光广场，石砌钟楼与圣光旗帜矗立在绿茵山谷之中"
-        foreground: "/assets/characters/marshal_mcbride.png"
+        foreground: ""
         hero_image: "【炉石脱险】蓝白传送符文将重伤的你拉回北郡圣光祭坛"
         atmosphere: "晨光熹微、重整旗鼓"
       message: "在意识陷入黑暗的最后一瞬，胸前的【炉石】骤然亮起温暖蓝白光辉将你拉回北郡修道院！修道院牧师为你紧急疗伤（HP/MP 恢复至 85），准备好药水后再战法戈第！"

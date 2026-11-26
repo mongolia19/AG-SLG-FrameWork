@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 384">
+  <defs>
+    <radialGradient id="bg" cx="28%" cy="48%" r="72%">
+      <stop offset="0%" stop-color="#365314"/>
+      <stop offset="60%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </radialGradient>
+  </defs>
+  <rect width="480" height="384" fill="url(#bg)"/>
+  <!-- Top HP Bar Strip -->
+  <rect x="0" y="0" width="480" height="44" fill="#0f1708"/>
+  <line x1="0" y1="43" x2="480" y2="43" stroke="#84cc16" stroke-width="2" opacity="0.7"/>
+  <text x="16" y="19" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="16" font-weight="bold" fill="#f7fee7">HP 40/40 (每只) · Boss召唤幼蛛</text>
+  <rect x="14" y="25" width="452" height="13" rx="6" fill="#1a2e05" stroke="#4d7c0f" stroke-width="1"/>
+  <rect x="15" y="26" width="450" height="11" rx="5" fill="#84cc16"/>
+  <!-- Left hatchlings -->
+  <g stroke="#a3e635" stroke-width="3.5" fill="none" stroke-linecap="round">
+    <path d="M74 162 L40 136 L32 164 M74 180 L36 190 L34 218"/>
+    <path d="M114 162 L148 136 L156 164 M114 180 L152 190 L154 218"/>
+    <path d="M128 226 L96 208 L90 232 M164 226 L196 208 L202 232"/>
+  </g>
+  <ellipse cx="94" cy="174" rx="28" ry="24" fill="#1a2e05" stroke="#a3e635" stroke-width="2.5"/>
+  <circle cx="84" cy="172" r="5" fill="#bef264"/>
+  <circle cx="104" cy="172" r="5" fill="#bef264"/>
+  <ellipse cx="146" cy="234" rx="24" ry="20" fill="#1a2e05" stroke="#84cc16" stroke-width="2.5"/>
+  <circle cx="138" cy="232" r="4.5" fill="#d9f99d"/>
+  <circle cx="154" cy="232" r="4.5" fill="#d9f99d"/>
+  <!-- Right text -->
+  <rect x="230" y="44" width="250" height="340" fill="#101a08" opacity="0.93"/>
+  <text x="246" y="84" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="24" font-weight="bold" fill="#d9f99d">毒囊幼蛛群</text>
+  <line x1="246" y1="98" x2="462" y2="98" stroke="#84cc16" stroke-width="2" opacity="0.5"/>
+  <text x="246" y="136" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="20" fill="#f7fee7">每只 40 HP · 攻击 +2</text>
+  <text x="246" y="172" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="20" fill="#d9f99d">每存活1只：+4 毒伤</text>
+  <text x="246" y="208" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="20" fill="#d9f99d">并干扰全队检定 -1</text>
+  <text x="246" y="244" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="19" fill="#a3e635">优先清场或冰箭点杀</text>
+</svg>

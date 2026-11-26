@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 384">
+  <defs>
+    <radialGradient id="bg" cx="28%" cy="48%" r="72%">
+      <stop offset="0%" stop-color="#7f1d1d"/>
+      <stop offset="55%" stop-color="#3b0764"/>
+      <stop offset="100%" stop-color="#09040f"/>
+    </radialGradient>
+  </defs>
+  <rect width="480" height="384" fill="url(#bg)"/>
+  <!-- Top Boss HP Bar Strip (Phase 3: <=130 Enrage!) -->
+  <rect x="0" y="0" width="480" height="44" fill="#1f050b"/>
+  <line x1="0" y1="43" x2="480" y2="43" stroke="#f43f5e" stroke-width="2.5"/>
+  <text x="16" y="19" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="16" font-weight="bold" fill="#ffe4e6">BOSS HP 阶段三残血 (≤130/360) 狂暴!</text>
+  <rect x="14" y="25" width="452" height="13" rx="6" fill="#2a0a14" stroke="#e11d48" stroke-width="1.5"/>
+  <rect x="15" y="26" width="128" height="11" rx="5" fill="#f43f5e"/>
+  <!-- Left Boss Enraged -->
+  <g stroke="#fb7185" stroke-width="5.5" fill="none" stroke-linecap="round">
+    <path d="M80 158 L32 108 L18 154"/>
+    <path d="M76 182 L24 172 L14 216"/>
+    <path d="M80 206 L32 228 L24 270"/>
+    <path d="M156 158 L204 108 L218 154"/>
+    <path d="M160 182 L212 172 L222 216"/>
+    <path d="M156 206 L204 228 L212 270"/>
+  </g>
+  <path d="M78 148 L94 106 L118 124 L142 106 L158 148 Z" fill="#881337" stroke="#fda4af" stroke-width="2.5"/>
+  <ellipse cx="118" cy="192" rx="50" ry="44" fill="#4c0519" stroke="#fb7185" stroke-width="3"/>
+  <circle cx="100" cy="190" r="8" fill="#fef08a"/>
+  <circle cx="136" cy="190" r="8" fill="#fef08a"/>
+  <path d="M94 228 L106 262 L116 234 M142 228 L130 262 L120 234" fill="#ffe4e6" stroke="#f43f5e" stroke-width="2"/>
+  <!-- Right text -->
+  <rect x="230" y="44" width="250" height="340" fill="#1a060e" opacity="0.93"/>
+  <text x="246" y="84" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="24" font-weight="bold" fill="#fda4af">阿拉克诺斯 · 狂暴!</text>
+  <line x1="246" y1="98" x2="462" y2="98" stroke="#f43f5e" stroke-width="2" opacity="0.7"/>
+  <text x="246" y="136" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="20" fill="#ffe4e6">残血 ≤130 · 可绝杀!</text>
+  <text x="246" y="172" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="20" fill="#fecdd3">重铸硬壳 · 暗影毒潮</text>
+  <text x="246" y="208" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="20" fill="#fecdd3">全体40伤+吸双方15蓝</text>
+  <text x="246" y="244" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="19" fill="#fb7185">发动【三阶段绝杀合击】!</text>
+</svg>

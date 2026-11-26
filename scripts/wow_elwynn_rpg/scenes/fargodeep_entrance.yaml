@@ -1,7 +1,7 @@
 id: "fargodeep_entrance"
 title: "矿洞前哨 · 法戈第外围坑道"
 background: "【场景全景】法戈第矿洞外围幽暗坑道，锈蚀矿车与摇曳火把间潜伏着狗头人矿工与护卫蛛群"
-foreground: "/assets/characters/elena_swiftarrow.png"
+foreground: ""
 hero_image: "【前哨战局】拦在蜘蛛领主巢穴前的狗头人矿工小队与精英护卫蛛群"
 music: "/assets/bgm/elwynn_forest.mp3"
 
@@ -12,38 +12,191 @@ description: |
 
 visuals:
   background: "【场景全景】法戈第矿洞外围幽暗坑道，锈蚀矿车与摇曳火把间潜伏着狗头人矿工与护卫蛛群"
-  foreground: "/assets/characters/elena_swiftarrow.png"
+  foreground: ""
   hero_image: "【前哨战局】拦在蜘蛛领主巢穴前的狗头人矿工小队与精英护卫蛛群"
   atmosphere: "矿道回响、火把摇曳、伏兵拦路"
   decorations:
+    - id: "npc_elena_entrance_companion_full"
+      name: "巡林者艾莲娜·迅箭"
+      image: "/assets/characters/card_elena_swiftarrow.png"
+      side: "left"
+      category: "structure"
+      tag: "随行·健康"
+      caption: "协同游侠 · 印记/冰箭压制"
+      tooltip: "【定位】前哨战随行同伴 ｜【血量】健康（75%+，精确值见顶栏同伴血条）｜【技能】迅捷连射 / 猎人印记 / 冰霜震荡箭 / 森林草药急救"
+      condition:
+        variables:
+          ally_recruited: true
+          ally_hp:
+            gte: 75
+    - id: "npc_elena_entrance_companion_hurt"
+      name: "巡林者艾莲娜·迅箭"
+      image: "/assets/characters/card_elena_hurt.png"
+      side: "left"
+      category: "structure"
+      tag: "随行·负伤"
+      caption: "随行游侠负伤 · 可掩体调息"
+      tooltip: "【定位】前哨战随行同伴 ｜【血量】负伤中段（精确值见顶栏同伴血条）｜【提示】可使用【战地救援】或掩体调息恢复血量"
+      condition:
+        variables:
+          ally_recruited: true
+          ally_hp:
+            gt: 35
+            lt: 75
+    - id: "npc_elena_entrance_companion_crit"
+      name: "巡林者艾莲娜·迅箭"
+      image: "/assets/characters/card_elena_critical.png"
+      side: "left"
+      category: "structure"
+      tag: "随行·濒危"
+      caption: "游侠重伤濒危 · 速施救援!"
+      tooltip: "【定位】前哨战随行同伴 ｜【血量】濒危红线（≤35 HP）｜【提示】请立即执行【战地救援】避免其重伤力竭"
+      condition:
+        variables:
+          ally_recruited: true
+          ally_hp:
+            gt: 0
+            lte: 35
+    - id: "npc_elena_entrance_companion_down"
+      name: "巡林者艾莲娜·迅箭"
+      image: "/assets/characters/card_elena_down.png"
+      side: "left"
+      category: "structure"
+      tag: "HP 0 力竭"
+      caption: "游侠力竭 · 请立即战地救援"
+      tooltip: "【定位】前哨战随行同伴 ｜【血量】0 HP（重伤力竭）｜【提示】消耗 15 MP 执行【战地救援】即可恢复 45 HP 重返战线"
+      condition:
+        variables:
+          ally_recruited: true
+          ally_hp:
+            lte: 0
+    - id: "npc_elena_entrance_scout"
+      name: "巡林者艾莲娜·迅箭"
+      image: "/assets/characters/card_elena_swiftarrow.png"
+      side: "left"
+      category: "structure"
+      tag: "HP 110"
+      caption: "侦察斥候 · 矿道情报支援"
+      tooltip: "【定位】矿洞外围侦察精灵巡林者 ｜【血量】110/110 HP ｜【提示】返回艾尔文密林哨岗与其结伴可正式加入随行小队并获得照明信号箭"
+      condition:
+        variables:
+          ally_recruited: false
     - id: "entrance_kobold_candles"
       name: "狗头人矿道残烛"
       image: "/assets/items/kobold_candle.png"
       side: "left"
       category: "env"
       tag: "前哨警示"
-      caption: "狗头人哨卡火烛"
+      caption: "狗头人哨卡火烛 · 交战区"
       tooltip: "狗头人矿工视若珍宝的照明蜡烛，标志着外围坑道已进入交战区"
+    - id: "npc_entrance_kobold_squad_full"
+      name: "狗头人矿工与工头"
+      image: "/assets/characters/kobold_foreman.svg"
+      side: "right"
+      category: "env"
+      tag: "HP 140"
+      caption: "140HP/60MP · 铁镐与火球"
+      tooltip: "【定位】矿洞前哨第一波守卫 ｜【属性】140 HP / 60 MP / 闪避 DC 11 / 攻击 +4 ｜【技能】铁镐重击(0MP 单体 18 伤) / 融蜡火球爆溅(20MP 全体 24 伤) ｜【掉落】狗头人火油炸药"
+      condition:
+        variables:
+          cave_kobolds_cleared: false
+          vanguard_kobold_hp:
+            gte: 100
+    - id: "npc_entrance_kobold_squad_hurt"
+      name: "狗头人矿工与工头"
+      image: "/assets/characters/kobold_foreman_hurt.svg"
+      side: "right"
+      category: "env"
+      tag: "HP 受损"
+      caption: "阵线受损(<100HP) · 乘胜追击"
+      tooltip: "【定位】矿洞前哨第一波守卫（已受损）｜【血量】精确剩余血蓝见顶栏前哨敌军面板 ｜【提示】继续集火即可彻底击溃并缴获火油炸药"
+      condition:
+        variables:
+          cave_kobolds_cleared: false
+          vanguard_kobold_hp:
+            lt: 100
+    - id: "npc_entrance_broodguard_full"
+      name: "法戈第精英护卫蛛群"
+      image: "/assets/characters/broodguard_spider.svg"
+      side: "right"
+      category: "env"
+      tag: "HP 180"
+      caption: "180HP/80MP · 双螯与群毒"
+      tooltip: "【定位】矿洞前哨第二波精英守卫（90×2）｜【属性】180 HP / 80 MP / 闪避 DC 12 / 攻击 +4 ｜【技能】双螯合扑(0MP 单体 20 伤) / 腐蚀毒液喷吐(25MP 全体 26 毒伤) ｜【解锁】清剿后开放 Boss 主巢穴"
+      condition:
+        variables:
+          cave_kobolds_cleared: true
+          cave_spiders_cleared: false
+          vanguard_spider_hp:
+            gte: 130
+    - id: "npc_entrance_broodguard_hurt"
+      name: "法戈第精英护卫蛛群"
+      image: "/assets/characters/broodguard_spider_hurt.svg"
+      side: "right"
+      category: "env"
+      tag: "HP 受损"
+      caption: "蛛群负伤(<130HP) · 即将突破"
+      tooltip: "【定位】矿洞前哨第二波精英守卫（已受创）｜【血量】精确剩余血蓝见顶栏前哨敌军面板 ｜【提示】乘胜追击即可打通 Boss 主巢穴通道"
+      condition:
+        variables:
+          cave_kobolds_cleared: true
+          cave_spiders_cleared: false
+          vanguard_spider_hp:
+            lt: 130
     - id: "entrance_ore_rocks"
       name: "崩裂矿石堆"
       image: "/assets/props/rocks.png"
       side: "right"
       category: "env"
       tag: "掩体地形"
-      caption: "坑道碎石掩体"
+      caption: "坑道碎石掩体 · 可调息"
       tooltip: "可用于躲避投掷物与休整喘息的天然矿石掩体"
 
 decorations: []
 
-npcs:
-  - id: "elena_swiftarrow"
-    name: "巡林者艾莲娜·迅箭"
-    avatar: "/assets/characters/elena_swiftarrow.png"
-    greeting: "前方的狗头人和护卫蛛都是蜘蛛领主的耳目。按照战法稳步清掉两波守卫、保留好血量和魔法状态，再踏入深处的主巢穴！"
+npcs: []
 
 actions:
+  - id: "elena_vanguard_mark"
+    label: "【同伴战术技能】令艾莲娜施放「猎人印记·照明破绽」锁定前哨强敌（艾莲娜 -20 集中值，全队检定+2/伤×1.15）"
+    type: "check"
+    skill: "perception"
+    difficulty: 11
+    condition:
+      min_hp: 1
+      variables:
+        ally_recruited: true
+        ally_hp:
+          gt: 0
+        ally_mp:
+          gte: 20
+        ally_mark_active: false
+        cave_vanguard_cleared: false
+    on_success:
+      hp_delta: -6
+      variables:
+        ally_mark_active: true
+        ally_last_action: "猎人印记(-20集中)命中前哨敌首"
+      variables_delta:
+        ally_hp: -8
+        ally_mp: -20
+        vanguard_kobold_hp: -34
+        vanguard_kobold_mp: -15
+      visuals:
+        foreground: ""
+        hero_image: "【同伴战技】艾莲娜射出猎人印记箭矢，前哨强敌弱点全面暴露！"
+      message: "全员互攻结算：艾莲娜消耗 20 集中值发动【猎人印记·照明破绽】判定命中，削减前哨敌方血蓝（-34 HP / -15 MP）并挂上【猎人印记】（全队检定 +2、伤害 ×1.15）！敌方反击铁镐/毒液分别被你与艾莲娜的护甲减免后造成轻伤（你 HP -6；艾莲娜 HP -8）。"
+    on_failure:
+      hp_delta: -12
+      variables:
+        ally_last_action: "猎人印记被掩体遮挡(-20集中)"
+      variables_delta:
+        ally_hp: -14
+        ally_mp: -20
+      message: "矿道火光晃动导致印记箭偏离目标！敌方抓住空隙发起反击判定（你 HP -12；艾莲娜 HP -14，集中值 -20）。"
+
   - id: "clear_kobold_vanguard"
-    label: "【Boss前小怪战 ① · 正面强攻】清剿狗头人矿工与地穴工头（敌方 140 HP · 消耗 20 MP）"
+    label: "【Boss前小怪战 ① · 正面强攻】与艾莲娜合击狗头人矿工与地穴工头（敌 140 HP/60 MP · 主角 -20 MP）"
     type: "check"
     skill: "strength"
     difficulty: 11
@@ -59,18 +212,32 @@ actions:
       mp_delta: -20
       variables:
         cave_kobolds_cleared: true
+        vanguard_kobold_hp: 0
+        vanguard_kobold_mp: 0
+        ally_mark_active: false
+        ally_last_action: "迅捷连射(-15集中)击毙狗头人工头"
         xp: 450
+      variables_delta:
+        ally_hp: -12
+        ally_mp: -15
       visuals:
         foreground: ""
-        hero_image: "【前哨胜果】击溃狗头人矿工小队，缴获矿洞火油炸药"
-      message: "‘休想抢走我们的蜡烛！’狗头人地穴工头挥舞矿镐咆哮扑来，你消耗 20 点魔法施展职业技强攻（HP -16，MP -20），正面轰碎狗头人防线！缴获【狗头人火油炸药】与 25 金币，XP 升至 450！"
+        hero_image: "【前哨胜果】全员合击击溃狗头人矿工小队，缴获矿洞火油炸药"
+      message: "‘休想抢走我们的蜡烛！’全员回合严格结算：你消耗 20 MP 施展职业技重创地穴工头，艾莲娜同步消耗 15 集中值施放【迅捷连射】收割残敌；狗头人反击释放【融蜡火球爆溅(20MP)】经护甲减伤后分别命中双方（你 HP -16/MP -20；艾莲娜 HP -12/集中 -15）！140 HP 狗头人小队全灭，缴获【狗头人火油炸药】与 25 金币，XP 升至 450！"
     on_failure:
       hp_delta: -24
       mp_delta: -15
-      message: "狗头人矿工趁乱投掷融蜡火球炸伤了你的肩甲（HP -24，MP -15），你退回矿石掩体后重整架势。"
+      variables:
+        ally_last_action: "迅捷连射掩护撤离(-15集中)"
+      variables_delta:
+        ally_hp: -16
+        ally_mp: -15
+        vanguard_kobold_hp: -45
+        vanguard_kobold_mp: -20
+      message: "正面突进受挫！狗头人工头消耗 20 MP 掷出【融蜡火球爆溅】同时灼伤你与艾莲娜（你 HP -24/MP -15；艾莲娜 HP -16/集中 -15），但艾莲娜的掩护箭仍磨掉了敌方 45 HP，退回掩体可继续压制。"
 
   - id: "clear_kobold_vanguard_tactical"
-    label: "【Boss前小怪战 ① · 法术/精准引爆】引燃狗头人火油桶清剿矿工小队（敌方 140 HP · 消耗 20 MP）"
+    label: "【Boss前小怪战 ① · 法术/精准引爆】引燃火油桶合击狗头人小队（敌 140 HP/60 MP · 主角 -20 MP）"
     type: "check"
     skill: "intelligence"
     difficulty: 11
@@ -86,18 +253,32 @@ actions:
       mp_delta: -20
       variables:
         cave_kobolds_cleared: true
+        vanguard_kobold_hp: 0
+        vanguard_kobold_mp: 0
+        ally_mark_active: false
+        ally_last_action: "冰霜震荡箭(-20集中)打断狗头人投火"
         xp: 450
+      variables_delta:
+        ally_hp: -10
+        ally_mp: -20
       visuals:
         foreground: ""
-        hero_image: "【前哨胜果】精准引爆矿道火油桶，击溃狗头人矿工小队"
-      message: "你消耗 20 点魔法精准引爆狗头人哨卡旁的油桶并顺势清场（HP -14，MP -20），成功击溃 140 HP 的狗头人矿工小队！缴获【狗头人火油炸药】与 25 金币，XP 升至 450！"
+        hero_image: "【前哨胜果】精准引爆矿道火油桶，全员配合击溃狗头人小队"
+      message: "全员互攻严格结算：你消耗 20 MP 精准引爆哨卡油桶，艾莲娜同步以【冰霜震荡箭】压制工头反扑（艾莲娜集中 -20，承伤 HP -10；你承受飞溅与铁镐反击 HP -14/MP -20），干净利落清剿 140 HP 狗头人小队！缴获【狗头人火油炸药】与 25 金币，XP 升至 450！"
     on_failure:
       hp_delta: -22
       mp_delta: -15
-      message: "火油溅射偏移，狗头人矿工借机投出融蜡火球击中了你（HP -22，MP -15）。"
+      variables:
+        ally_last_action: "迅捷连射压制火油反冲(-15集中)"
+      variables_delta:
+        ally_hp: -14
+        ally_mp: -15
+        vanguard_kobold_hp: -40
+        vanguard_kobold_mp: -20
+      message: "火油溅射偏移！狗头人矿工消耗 20 MP 投出融蜡火球命中你与艾莲娜（你 HP -22/MP -15；艾莲娜 HP -14/集中 -15），敌方受损 40 HP。"
 
   - id: "clear_broodguard_pack"
-    label: "【Boss前小怪战 ② · 灵巧合击】突破法戈第精英护卫蛛群（敌方 90×2 HP · 消耗 25 MP）"
+    label: "【Boss前小怪战 ② · 灵巧合击】与艾莲娜突破精英护卫蛛群（敌 180 HP/80 MP · 主角 -25 MP）"
     type: "check"
     skill: "agility"
     difficulty: 12
@@ -115,18 +296,32 @@ actions:
       variables:
         cave_spiders_cleared: true
         cave_vanguard_cleared: true
+        vanguard_spider_hp: 0
+        vanguard_spider_mp: 0
+        ally_mark_active: false
+        ally_last_action: "冰霜震荡箭(-25集中)打断毒液喷吐并斩杀护卫蛛"
         xp: 600
+      variables_delta:
+        ally_hp: -16
+        ally_mp: -25
       visuals:
-        foreground: "/assets/characters/elena_swiftarrow.png"
-        hero_image: "【通道打通】精英护卫蛛群伏诛，蜘蛛领主主巢穴大门敞开！"
-      message: "两只覆满毒毛的精英护卫蛛从矿顶骤然扑下！你消耗 25 点魔法与艾莲娜的冰霜箭雨前后合击（HP -20，MP -25），成功斩杀护卫蛛群并打通前往主巢穴的通道！在矿工遗留背包中拾获【初级法力药水】与 30 金币（XP 达 600）！"
+        foreground: ""
+        hero_image: "【通道打通】全员合力斩杀精英护卫蛛群，蜘蛛领主主巢穴大门敞开！"
+      message: "两只 90 HP 精英护卫蛛骤然扑下！全员互攻严格结算：你消耗 25 MP 施展职业爆发斩裂左翼护卫蛛，艾莲娜消耗 25 集中值射出【冰霜震荡箭】打断毒腺喷吐并击杀右翼护卫蛛；护卫蛛临死喷出的【腐蚀毒液(25MP)】经防御减免后同时灼伤双方（你 HP -20/MP -25；艾莲娜 HP -16/集中 -25）！前哨彻底打通，拾获【初级法力药水】与 30 金币（XP 达 600）！"
     on_failure:
       hp_delta: -28
       mp_delta: -18
-      message: "护卫蛛群喷吐腐蚀毒液封锁了矿轨，你闪避不及被利爪擦伤（HP -28，MP -18）！"
+      variables:
+        ally_last_action: "迅捷连射牵制护卫蛛毒牙(-15集中)"
+      variables_delta:
+        ally_hp: -20
+        ally_mp: -15
+        vanguard_spider_hp: -55
+        vanguard_spider_mp: -25
+      message: "护卫蛛群消耗 25 MP 喷吐【腐蚀毒液喷吐】封锁矿轨，命中你与艾莲娜（你 HP -28/MP -18；艾莲娜 HP -20/集中 -15），双方反击已削减蛛群 55 HP！"
 
   - id: "clear_broodguard_pack_perception"
-    label: "【Boss前小怪战 ② · 破绽截杀】洞察倒悬护卫蛛群弱点施放职业爆发（敌方 90×2 HP · 消耗 25 MP）"
+    label: "【Boss前小怪战 ② · 破绽截杀】洞察倒悬护卫蛛弱点全员齐射（敌 180 HP/80 MP · 主角 -25 MP）"
     type: "check"
     skill: "perception"
     difficulty: 12
@@ -144,18 +339,53 @@ actions:
       variables:
         cave_spiders_cleared: true
         cave_vanguard_cleared: true
+        vanguard_spider_hp: 0
+        vanguard_spider_mp: 0
+        ally_mark_active: false
+        ally_last_action: "迅捷连射(-15集中)精准点杀倒悬护卫蛛"
         xp: 600
+      variables_delta:
+        ally_hp: -14
+        ally_mp: -15
       visuals:
-        foreground: "/assets/characters/elena_swiftarrow.png"
+        foreground: ""
         hero_image: "【通道打通】精准截杀倒悬护卫蛛群，主巢穴碎石拱门敞开！"
-      message: "你提前识破矿柱顶部的伏击丝线，消耗 25 点魔法与艾莲娜的箭雨同步齐射（HP -18，MP -25），干净利落地斩杀两只 90 HP 精英护卫蛛！拾获【初级法力药水】与 30 金币（XP 达 600）！"
+      message: "全员互攻严格结算：你提前识破矿柱顶部的伏击丝线（消耗 25 MP），与艾莲娜的【迅捷连射】（消耗 15 集中值）同步齐射！双方分别承受护卫蛛濒死毒液反击（你 HP -18/MP -25；艾莲娜 HP -14/集中 -15），成功斩杀两只 90 HP 精英护卫蛛！拾获【初级法力药水】与 30 金币（XP 达 600）！"
     on_failure:
       hp_delta: -26
       mp_delta: -18
-      message: "毒雾遮蔽了矿顶视线，护卫蛛群趁机俯冲撕咬（HP -26，MP -18），你迅速后撤重整防线！"
+      variables:
+        ally_last_action: "掩护射击并承受俯冲毒咬(-15集中)"
+      variables_delta:
+        ally_hp: -18
+        ally_mp: -15
+        vanguard_spider_hp: -50
+        vanguard_spider_mp: -25
+      message: "毒雾遮蔽矿顶视线，护卫蛛群消耗 25 MP 俯冲撕咬与喷毒同时命中你们二人（你 HP -26/MP -18；艾莲娜 HP -18/集中 -15），敌方受损 50 HP！"
+
+  - id: "aid_elena_entrance"
+    label: "【战地救援】为随行同伴艾莲娜紧急包扎回血（主角 -15 MP · 艾莲娜 HP +45 / 解除力竭）"
+    type: "interact"
+    condition:
+      min_hp: 1
+      min_mp: 15
+      variables:
+        ally_recruited: true
+        ally_hp:
+          lte: 70
+    on_success:
+      mp_delta: -15
+      variables:
+        ally_status: "协同作战"
+        ally_web_trapped: false
+        ally_last_action: "接受战地包扎重返战线"
+      variables_delta:
+        ally_hp: 45
+        ally_mp: 15
+      message: "你迅速依托矿石掩体为艾莲娜止血包扎并灌注能量（主角 -15 MP；艾莲娜 HP +45、集中 +15），她重新搭箭上弦恢复战力！"
 
   - id: "entrance_tactical_recover"
-    label: "【小怪战调息】依托矿石掩体回气蓄能（HP +15 / MP +25）"
+    label: "【全队掩体调息】依托矿石掩体回气蓄能（主角 HP+15/MP+25 · 艾莲娜 HP+20/集中+25）"
     type: "interact"
     condition:
       min_hp: 1
@@ -164,10 +394,16 @@ actions:
     on_success:
       hp_delta: 15
       mp_delta: 25
-      message: "你靠在矿石掩体后短暂平息呼吸，重新凝聚魔法与体能以应对前哨守卫（HP +15，MP +25）。"
+      variables:
+        ally_status: "协同作战"
+        ally_last_action: "矿石掩体后调息回气"
+      variables_delta:
+        ally_hp: 20
+        ally_mp: 25
+      message: "你与艾莲娜靠在矿石掩体后短暂平息呼吸、重新凝聚魔力与集中值（主角 HP +15/MP +25；艾莲娜 HP +20/集中 +25）。"
 
   - id: "rest_before_boss"
-    label: "【Boss 战前整备】清空前哨后在安全火盆旁大休整（HP +40 / MP +50）"
+    label: "【Boss 战前全队整备】清空前哨后在安全火盆旁大休整（主角 HP+40/MP+50 · 艾莲娜 HP+50/集中+50）"
     type: "interact"
     condition:
       min_hp: 1
@@ -180,10 +416,17 @@ actions:
       san_delta: 5
       variables:
         pre_boss_rest_done: true
+        ally_status: "巅峰迎战"
+        ally_web_trapped: false
+        ally_mark_active: false
+        ally_last_action: "战前休整完毕 · 箭袋与集中值回满"
+      variables_delta:
+        ally_hp: 50
+        ally_mp: 50
       visuals:
-        foreground: "/assets/characters/elena_swiftarrow.png"
-        hero_image: "【战前整备】两位战友在矿洞火盆旁检修装备、回复状态，准备决战蜘蛛领主"
-      message: "前哨小怪已尽数肃清。你与艾莲娜借着矿道火盆包扎伤口、冥想回蓝（HP +40，MP +50），状态重回巅峰，随时准备踏入蜘蛛领主的深渊巢穴！"
+        foreground: ""
+        hero_image: "【战前整备】主角与艾莲娜在矿洞火盆旁检修装备、回复全队状态，准备决战蜘蛛领主"
+      message: "前哨小怪已尽数肃清。你与艾莲娜借着矿道火盆包扎伤口、冥想回蓝并清点箭矢（主角 HP +40/MP +50；艾莲娜 HP +50/集中 +50），全队状态重回巅峰！"
 
   - id: "drink_healing_potion_entrance"
     label: "饮用【初级治疗药水】恢复生命值（HP +45）"
@@ -234,11 +477,12 @@ actions:
         boss_casting: "【阶段一】甲壳硬化（减伤45%）· 伺机蛛网茧缚（30MP）"
       visuals:
         background: "【场景全景】阴暗潮湿的废弃矿洞深处，巨型蛛网悬垂于朽坏矿柱之间，幽绿毒雾在洞窟底部翻涌"
-        foreground: "/assets/characters/elena_swiftarrow.png"
+        foreground: ""
         hero_image: "【Boss 特写】法戈第蜘蛛领主·阿拉克诺斯 · 360HP/180MP 三阶段巨型蛛王"
         atmosphere: "幽暗阴寒、蛛丝密布、杀机四伏"
       remove_hud_widgets:
         - "fargodeep_vanguard"
+        - "vanguard_enemies_panel"
       hud_widgets:
         - id: "arachnos_boss_panel"
           type: "panel"
@@ -300,7 +544,7 @@ actions:
             - title: "深渊狂暴 (45MP)"
               desc: "低血量三阶段触发，同时腐蚀玩家血量与魔法。"
               tone: "red"
-          footer: "战斗公式：玩家技能伤 = (基础威力 + 主属性×2.5 + 技能等级×10) × 破甲(0.55/1.0) × 检定倍率 | Boss MP < 30 进入【魔力枯竭】并蓄力 +35MP | 幼蛛每只 +4 伤(-1检定) · 茧缚 +5 毒伤(-2检定) · 抗毒合剂 -6 毒伤(+1检定)"
+          footer: "全员互攻铁律：每回合按【主角 → 艾莲娜 → Boss/幼蛛】独立投骰与公式结算 | 主角伤=(基础+主属性×2.5+级×10)×破甲×印记×倍率 | 艾莲娜伤=(基础+主属性×2.0+级×8)×破甲×印记×倍率 | Boss MP<30 枯竭普攻并+35MP | 印记+2检定/×1.15伤"
 
   - id: "reenter_fargodeep_cave_cleared"
     label: "穿过碎石拱门，重返【洞穴深处 · 已清剿的蛛王巢穴】"
@@ -316,10 +560,11 @@ actions:
         boss_active: false
       remove_hud_widgets:
         - "fargodeep_vanguard"
+        - "vanguard_enemies_panel"
         - "arachnos_boss_panel"
       visuals:
         background: "【场景全景】阴暗潮湿的废弃矿洞深处，巨型蛛网悬垂于朽坏矿柱之间，幽绿毒雾在洞窟底部翻涌"
-        foreground: "/assets/characters/elena_swiftarrow.png"
+        foreground: ""
         hero_image: "【战后余晖】蜘蛛领主已伏诛，矿洞深处恢复宁静"
         atmosphere: "幽暗阴寒、战后余烟"
 
@@ -327,3 +572,6 @@ actions:
     label: "退出矿洞前哨，返回【野外 · 艾尔文密林与哨岗】"
     type: "transition"
     target_scene: "elwynn_wilds"
+    on_success:
+      remove_hud_widgets:
+        - "vanguard_enemies_panel"

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 384">
+  <defs>
+    <radialGradient id="bg" cx="28%" cy="44%" r="72%">
+      <stop offset="0%" stop-color="#7c2d12"/>
+      <stop offset="55%" stop-color="#292524"/>
+      <stop offset="100%" stop-color="#0c0a09"/>
+    </radialGradient>
+  </defs>
+  <rect width="480" height="384" fill="url(#bg)"/>
+  <!-- Top HP Bar Strip (Damaged) -->
+  <rect x="0" y="0" width="480" height="44" fill="#1a0d08"/>
+  <line x1="0" y1="43" x2="480" y2="43" stroke="#fb923c" stroke-width="2" opacity="0.8"/>
+  <text x="16" y="19" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="16" font-weight="bold" fill="#ffedd5">HP 受损 (&lt;100/140) · 残血交战中</text>
+  <rect x="14" y="25" width="452" height="13" rx="6" fill="#292524" stroke="#9a3412" stroke-width="1"/>
+  <rect x="15" y="26" width="235" height="11" rx="5" fill="#f97316"/>
+  <!-- Left Kobold -->
+  <rect x="106" y="102" width="24" height="40" rx="4" fill="#fef3c7" stroke="#d97706" stroke-width="2.5"/>
+  <path d="M118 66 C130 82 129 98 118 102 C107 98 106 82 118 66 Z" fill="#f97316"/>
+  <polygon points="70,168 38,146 66,190" fill="#92400e" stroke="#f59e0b" stroke-width="2.5"/>
+  <polygon points="166,168 198,146 170,190" fill="#92400e" stroke="#f59e0b" stroke-width="2.5"/>
+  <ellipse cx="118" cy="190" rx="50" ry="42" fill="#78350f" stroke="#d97706" stroke-width="3"/>
+  <circle cx="98" cy="180" r="7" fill="#fef08a"/>
+  <circle cx="138" cy="180" r="7" fill="#fef08a"/>
+  <path d="M68 308 C76 254 92 234 118 234 C144 234 160 254 168 308 Z" fill="#44403c" stroke="#d97706" stroke-width="2.5"/>
+  <!-- Right text -->
+  <rect x="230" y="44" width="250" height="340" fill="#18120c" opacity="0.93"/>
+  <text x="246" y="84" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="24" font-weight="bold" fill="#fdba74">狗头人 · 阵线受损</text>
+  <line x1="246" y1="98" x2="462" y2="98" stroke="#fb923c" stroke-width="2" opacity="0.5"/>
+  <text x="246" y="136" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="20" fill="#fffbeb">血量已受损 · 见顶栏</text>
+  <text x="246" y="172" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="20" fill="#fed7aa">继续集火即可清剿!</text>
+  <text x="246" y="208" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="20" fill="#fed7aa">提防融蜡火球群伤</text>
+  <text x="246" y="244" font-family="Hiragino Sans GB, PingFang SC, sans-serif" font-size="19" fill="#fdba74">掉落：狗头人火油炸药</text>
+</svg>

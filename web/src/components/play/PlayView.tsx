@@ -7,6 +7,7 @@ import {
   ActionOption,
   DiceCheckEvent,
   VisualLayer,
+  SaveSlotSummary,
 } from '../../types';
 import GameHUD from './GameHUD';
 import StoryStream from './StoryStream';
@@ -832,6 +833,120 @@ export default function PlayView({
     executeTurn(text, undefined, undefined, { base: lastTurn.base, regenerate: true });
   };
 
+  // 手动存档：列表 / 保存 / 读取 / 删除
+  const handleListSaves = async (): Promise<SaveSlotSummary[]> => {
+    const res = await fetch(`/api/scenarios/${scenarioId}/saves`);
+    if (!res.ok) throw new Error(`读取存档列表失败 (${res.status})`);
+    const data = await res.json();
+    return Array.isArray(data.saves) ? data.saves : [];
+  };
+
+  const handleCreateSave = async (name: string): Promise<SaveSlotSummary> => {
+    if (!playerState || !scenario) throw new Error('剧本尚未加载完成');
+    if (isStreaming) throw new Error('当前回合正在推演中，请等待完成后再保存');
+    const res = await fetch(`/api/scenarios/${scenarioId}/saves`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: name.trim() || undefined,
+        scene_title: currentScene?.title || currentSceneId,
+        player_state: playerState,
+        messages,
+        active_visuals: activeVisuals,
+        dynamic_actions: dynamicActions,
+        last_turn: lastTurn,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.detail || `保存失败 (${res.status})`);
+    }
+    const data = await res.json();
+    setSyncFeedback(`已保存进度：${data.save?.name || '新存档'}`);
+    setTimeout(() => setSyncFeedback(null), 2500);
+    return data.save;
+  };
+
+  const handleLoadSave = async (saveId: string): Promise<void> => {
+    if (!scenario) throw new Error('剧本尚未加载完成');
+    const res = await fetch(`/api/scenarios/${scenarioId}/saves/${encodeURIComponent(saveId)}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.detail || `读取存档失败 (${res.status})`);
+    }
+    const data = await res.json();
+    const save = data.save;
+    if (!save || !save.player_state || !Array.isArray(save.messages)) {
+      throw new Error('存档数据格式无效');
+    }
+
+    const savedSceneId = save.player_state.current_scene;
+    if (!savedSceneId || !scenario.scenes[savedSceneId]) {
+      throw new Error(`存档场景「${savedSceneId || '未知'}」已不存在于当前剧本`);
+    }
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    sessionEpochRef.current += 1;
+
+    const now = Date.now();
+    // 分配新的 threadId，让下一次行动在服务端按存档快照干净重建 GameSession
+    const newThreadId = `session-${scenarioId}-${now}-${Math.random().toString(36).slice(2, 6)}`;
+    resetAtRef.current = now;
+    lastLocalSaveAtRef.current = now;
+    threadIdRef.current = newThreadId;
+
+    const restoredState = hydrateMissingStateDefaults(save.player_state, scenario);
+    const restoredVisuals = save.active_visuals || null;
+    const restoredActions = Array.isArray(save.dynamic_actions) ? save.dynamic_actions : null;
+    const restoredLastTurn = save.last_turn || null;
+
+    try {
+      localStorage.setItem(
+        saveKey,
+        JSON.stringify({
+          scenarioId,
+          threadId: newThreadId,
+          writerTabId: tabInstanceIdRef.current,
+          resetAt: now,
+          savedAt: now,
+          playerState: restoredState,
+          messages: save.messages,
+          activeVisuals: restoredVisuals,
+          dynamicActions: restoredActions,
+          lastTurn: restoredLastTurn,
+        })
+      );
+    } catch (e) {
+      console.warn('Persist loaded save to localStorage failed:', e);
+    }
+
+    setIsStreaming(false);
+    setStreamingText('');
+    setDiceEvent(null);
+    setEditingTurn(false);
+    setPlayerState(restoredState);
+    setMessages(save.messages);
+    setActiveVisuals(restoredVisuals);
+    setDynamicActions(restoredActions);
+    setLastTurn(restoredLastTurn);
+    latestSceneIdRef.current = restoredState.current_scene;
+    setSyncFeedback(`已读取存档：${save.name || saveId}`);
+    setTimeout(() => setSyncFeedback(null), 2500);
+  };
+
+  const handleDeleteSave = async (saveId: string): Promise<void> => {
+    const res = await fetch(`/api/scenarios/${scenarioId}/saves/${encodeURIComponent(saveId)}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      throw new Error(err?.detail || `删除失败 (${res.status})`);
+    }
+  };
+
   if (!playerState || !scenario) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
@@ -852,6 +967,11 @@ export default function PlayView({
         onSyncScenario={() => refreshScenario(true)}
         isSyncing={isSyncing}
         syncFeedback={syncFeedback}
+        isStreaming={isStreaming}
+        onListSaves={handleListSaves}
+        onCreateSave={handleCreateSave}
+        onLoadSave={handleLoadSave}
+        onDeleteSave={handleDeleteSave}
       />
 
       {/* 剧情主视窗与立绘图层 */}

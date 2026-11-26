@@ -222,4 +222,16 @@ export interface LintReport {
   issues: LintIssue[];
 }
 
+export interface SaveSlotSummary {
+  id: string;
+  name: string;
+  scenario_id: string;
+  scene_id: string;
+  scene_title: string;
+  player_name: string;
+  hp: number;
+  max_hp: number;
+  saved_at: number;
+}
+
 

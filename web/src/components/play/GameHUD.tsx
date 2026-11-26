@@ -6,6 +6,7 @@ import {
   SkillItem,
   WorldSpec,
   HUDWidget,
+  SaveSlotSummary,
 } from '../../types';
 import {
   evaluateActionCondition,
@@ -41,6 +42,9 @@ import {
   ChevronUp,
   Skull,
   Flame,
+  Save,
+  Trash2,
+  FolderOpen,
 } from 'lucide-react';
 
 interface OutfitSlotMeta {
@@ -447,6 +451,11 @@ interface GameHUDProps {
   onSyncScenario?: () => void;
   isSyncing?: boolean;
   syncFeedback?: string | null;
+  isStreaming?: boolean;
+  onListSaves?: () => Promise<SaveSlotSummary[]>;
+  onCreateSave?: (name: string) => Promise<SaveSlotSummary>;
+  onLoadSave?: (saveId: string) => Promise<void>;
+  onDeleteSave?: (saveId: string) => Promise<void>;
 }
 
 export default function GameHUD({
@@ -457,10 +466,21 @@ export default function GameHUD({
   onSyncScenario,
   isSyncing = false,
   syncFeedback = null,
+  isStreaming = false,
+  onListSaves,
+  onCreateSave,
+  onLoadSave,
+  onDeleteSave,
 }: GameHUDProps) {
   const [showInventory, setShowInventory] = useState(false);
   const [showOutfit, setShowOutfit] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
+  const [showSaves, setShowSaves] = useState(false);
+  const [saveList, setSaveList] = useState<SaveSlotSummary[]>([]);
+  const [saveName, setSaveName] = useState('');
+  const [savesLoading, setSavesLoading] = useState(false);
+  const [saveBusy, setSaveBusy] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [expandedPanels, setExpandedPanels] = useState<Record<string, boolean>>({});
   const [skillsBarExpanded, setSkillsBarExpanded] = useState(true);
   const [hoveredItem, setHoveredItem] = useState<InventoryItem | null>(null);
@@ -469,6 +489,67 @@ export default function GameHUD({
 
   const togglePanel = (id: string) => {
     setExpandedPanels((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const openSavesModal = async () => {
+    setShowSaves(true);
+    setSaveError(null);
+    if (!onListSaves) return;
+    setSavesLoading(true);
+    try {
+      setSaveList(await onListSaves());
+    } catch (e: any) {
+      setSaveError(e?.message || '读取存档列表失败');
+    } finally {
+      setSavesLoading(false);
+    }
+  };
+
+  const handleSaveNow = async () => {
+    if (!onCreateSave || saveBusy || isStreaming) return;
+    setSaveBusy(true);
+    setSaveError(null);
+    try {
+      const created = await onCreateSave(saveName);
+      setSaveName('');
+      if (onListSaves) {
+        setSaveList(await onListSaves());
+      } else if (created) {
+        setSaveList((prev) => [created, ...prev]);
+      }
+    } catch (e: any) {
+      setSaveError(e?.message || '保存失败');
+    } finally {
+      setSaveBusy(false);
+    }
+  };
+
+  const handleLoadSlot = async (slot: SaveSlotSummary) => {
+    if (!onLoadSave || saveBusy) return;
+    setSaveBusy(true);
+    setSaveError(null);
+    try {
+      await onLoadSave(slot.id);
+      setShowSaves(false);
+    } catch (e: any) {
+      setSaveError(e?.message || '读取失败');
+    } finally {
+      setSaveBusy(false);
+    }
+  };
+
+  const handleDeleteSlot = async (slot: SaveSlotSummary) => {
+    if (!onDeleteSave || saveBusy) return;
+    setSaveBusy(true);
+    setSaveError(null);
+    try {
+      await onDeleteSave(slot.id);
+      setSaveList((prev) => prev.filter((item) => item.id !== slot.id));
+    } catch (e: any) {
+      setSaveError(e?.message || '删除失败');
+    } finally {
+      setSaveBusy(false);
+    }
   };
 
   const skillsList: SkillItem[] = Array.isArray(playerState.skills)
@@ -706,6 +787,17 @@ export default function GameHUD({
               </span>
             )}
           </button>
+
+          {onListSaves && (
+            <button
+              onClick={openSavesModal}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-sky-600/20 hover:bg-sky-600/30 text-sky-200 rounded-md border border-sky-500/40 transition shadow-sm"
+              title="保存或读取当前剧本游玩进度"
+            >
+              <Save className="w-3.5 h-3.5 text-sky-400" />
+              <span className="hidden sm:inline">存档</span>
+            </button>
+          )}
 
           {onSyncScenario && (
             <button
@@ -1221,6 +1313,128 @@ export default function GameHUD({
                   setShowOutfit(false);
                   setHoveredOutfit(null);
                 }}
+                className="px-4 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md transition"
+              >
+                关闭
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 存档管理弹窗（保存 / 读取 / 删除） */}
+      {showSaves && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-150"
+          onClick={() => setShowSaves(false)}
+        >
+          <div
+            className="bg-[#161a24] border border-sky-500/30 rounded-xl shadow-2xl w-full max-w-lg p-5 animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2 text-sky-300 font-semibold text-base">
+                <Save className="w-5 h-5 text-sky-400" />
+                <span>游玩进度存档 ({saveList.length})</span>
+              </div>
+              <button
+                onClick={() => setShowSaves(false)}
+                className="text-slate-400 hover:text-slate-200 p-1 rounded-md hover:bg-slate-800 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* 保存当前进度 */}
+            <div className="py-3 border-b border-slate-800/80 flex items-center gap-2">
+              <input
+                type="text"
+                value={saveName}
+                onChange={(e) => setSaveName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleSaveNow();
+                }}
+                placeholder={`存档备注（可选，默认：${currentSceneTitle || '当前场景'}）`}
+                disabled={saveBusy || isStreaming}
+                className="flex-1 min-w-0 bg-slate-900 border border-slate-700 focus:border-sky-500/70 rounded-lg px-3 py-1.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none disabled:opacity-50"
+              />
+              <button
+                onClick={handleSaveNow}
+                disabled={saveBusy || isStreaming}
+                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white rounded-lg transition"
+                title={isStreaming ? '回合推演中暂不可保存' : '将当前场景、属性、背包与剧情保存为新存档'}
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>{saveBusy ? '处理中...' : '保存当前进度'}</span>
+              </button>
+            </div>
+
+            {saveError && (
+              <div className="mt-2.5 px-3 py-1.5 text-xs text-rose-200 bg-rose-950/70 border border-rose-700/60 rounded-lg">
+                {saveError}
+              </div>
+            )}
+
+            {/* 已有存档列表 */}
+            <div className="py-3 min-h-[160px] max-h-[340px] overflow-y-auto space-y-2">
+              {savesLoading ? (
+                <div className="h-32 flex items-center justify-center text-slate-400 text-xs">
+                  正在读取存档列表...
+                </div>
+              ) : saveList.length === 0 ? (
+                <div className="h-32 flex flex-col items-center justify-center text-slate-500 text-xs">
+                  <FolderOpen className="w-7 h-7 mb-2 opacity-40" />
+                  <span>暂无手动存档，点击上方「保存当前进度」创建检查点</span>
+                </div>
+              ) : (
+                saveList.map((slot) => (
+                  <div
+                    key={slot.id}
+                    className="p-3 bg-slate-900/75 hover:bg-slate-800/80 border border-slate-700/70 rounded-lg flex items-center justify-between gap-3 transition"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-semibold text-sky-200 truncate">
+                        {slot.name}
+                      </div>
+                      <div className="text-[11px] text-slate-400 mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                        <span>{slot.scene_title || slot.scene_id}</span>
+                        <span>·</span>
+                        <span>
+                          {slot.player_name} (HP {slot.hp}/{slot.max_hp})
+                        </span>
+                        <span>·</span>
+                        <span className="text-slate-500">
+                          {slot.saved_at ? new Date(slot.saved_at).toLocaleString() : ''}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() => handleLoadSlot(slot)}
+                        disabled={saveBusy}
+                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-emerald-600/20 hover:bg-emerald-600/35 text-emerald-200 border border-emerald-500/40 rounded-md transition disabled:opacity-50"
+                        title="读取此存档并恢复当时进度"
+                      >
+                        <FolderOpen className="w-3.5 h-3.5" />
+                        <span>读取</span>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteSlot(slot)}
+                        disabled={saveBusy}
+                        className="p-1.5 text-slate-400 hover:text-rose-300 hover:bg-rose-950/40 border border-slate-700/60 hover:border-rose-700/50 rounded-md transition disabled:opacity-50"
+                        title="删除此存档"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="pt-3 border-t border-slate-800 text-right">
+              <button
+                onClick={() => setShowSaves(false)}
                 className="px-4 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md transition"
               >
                 关闭

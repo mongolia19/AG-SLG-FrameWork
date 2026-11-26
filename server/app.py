@@ -1,16 +1,19 @@
 """FastAPI AG-UI Bridge Server for AG-SLG-FrameWork."""
 
 from contextlib import asynccontextmanager
+import json
 import os
 from pathlib import Path
+import re
 import tempfile
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
+import uuid
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from ag_ui.core import RunAgentInput
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from server.agent_driver import AgyDriver, CodexDriver, MockAgentDriver, BaseAgentDriver
 from server.agui_bridge import AGUIBridge
@@ -155,6 +158,127 @@ def lint_scenario_endpoint(scenario_id: str):
         return report.model_dump()
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Scenario not found")
+
+
+SAVES_DIR = BASE_DIR / "saves"
+_SAFE_SAVE_ID_RE = re.compile(r"^[a-zA-Z0-9_\-]+$")
+
+
+class SaveProgressRequest(BaseModel):
+    name: Optional[str] = None
+    scene_title: Optional[str] = None
+    player_state: Dict[str, Any]
+    messages: List[Dict[str, Any]] = Field(default_factory=list)
+    active_visuals: Optional[Dict[str, Any]] = None
+    dynamic_actions: Optional[List[Dict[str, Any]]] = None
+    last_turn: Optional[Dict[str, Any]] = None
+
+
+def _validate_scenario_for_save(scenario_id: str):
+    if not _SAFE_SAVE_ID_RE.match(scenario_id):
+        raise HTTPException(status_code=400, detail="Invalid scenario_id")
+    try:
+        return scenario_manager.load_scenario(scenario_id)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Scenario not found")
+
+
+def _resolve_save_file(scenario_id: str, save_id: str) -> Path:
+    if not _SAFE_SAVE_ID_RE.match(save_id):
+        raise HTTPException(status_code=400, detail="Invalid save_id")
+    _validate_scenario_for_save(scenario_id)
+    return SAVES_DIR / scenario_id / f"{save_id}.json"
+
+
+def _build_save_summary(data: Dict[str, Any]) -> Dict[str, Any]:
+    ps = data.get("player_state") or {}
+    return {
+        "id": data.get("id", ""),
+        "name": data.get("name", "未命名存档"),
+        "scenario_id": data.get("scenario_id", ""),
+        "scene_id": data.get("scene_id") or ps.get("current_scene", ""),
+        "scene_title": data.get("scene_title") or data.get("scene_id") or "",
+        "player_name": data.get("player_name") or ps.get("name", ""),
+        "hp": data.get("hp", ps.get("hp", 0)),
+        "max_hp": data.get("max_hp", ps.get("max_hp", 100)),
+        "saved_at": int(data.get("saved_at", 0) or 0),
+    }
+
+
+@app.get("/api/scenarios/{scenario_id}/saves")
+def list_scenario_saves(scenario_id: str) -> Dict[str, Any]:
+    _validate_scenario_for_save(scenario_id)
+    target_dir = SAVES_DIR / scenario_id
+    if not target_dir.exists():
+        return {"saves": []}
+    summaries: List[Dict[str, Any]] = []
+    for path in target_dir.glob("*.json"):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                data.setdefault("id", path.stem)
+                summaries.append(_build_save_summary(data))
+        except Exception:
+            continue
+    summaries.sort(key=lambda s: s["saved_at"], reverse=True)
+    return {"saves": summaries}
+
+
+@app.post("/api/scenarios/{scenario_id}/saves")
+def create_scenario_save(scenario_id: str, req: SaveProgressRequest) -> Dict[str, Any]:
+    spec = _validate_scenario_for_save(scenario_id)
+    target_dir = SAVES_DIR / scenario_id
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    now_ms = int(time.time() * 1000)
+    save_id = f"save_{now_ms}_{uuid.uuid4().hex[:6]}"
+    scene_id = str(req.player_state.get("current_scene") or spec.world.initial_scene)
+    scene_node = spec.scenes.get(scene_id)
+    scene_title = (req.scene_title or (scene_node.title if scene_node else scene_id)).strip()
+    custom_name = (req.name or "").strip()
+    save_name = custom_name or f"{scene_title} · {time.strftime('%m-%d %H:%M')}"
+
+    payload: Dict[str, Any] = {
+        "id": save_id,
+        "name": save_name,
+        "scenario_id": scenario_id,
+        "scene_id": scene_id,
+        "scene_title": scene_title,
+        "player_name": str(req.player_state.get("name") or spec.world.initial_player_state.name),
+        "hp": int(req.player_state.get("hp", 0) or 0),
+        "max_hp": int(req.player_state.get("max_hp", 100) or 100),
+        "saved_at": now_ms,
+        "player_state": req.player_state,
+        "messages": req.messages,
+        "active_visuals": req.active_visuals,
+        "dynamic_actions": req.dynamic_actions,
+        "last_turn": req.last_turn,
+    }
+    (target_dir / f"{save_id}.json").write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    return {"save": _build_save_summary(payload)}
+
+
+@app.get("/api/scenarios/{scenario_id}/saves/{save_id}")
+def get_scenario_save(scenario_id: str, save_id: str) -> Dict[str, Any]:
+    save_file = _resolve_save_file(scenario_id, save_id)
+    if not save_file.exists():
+        raise HTTPException(status_code=404, detail="Save not found")
+    try:
+        data = json.loads(save_file.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Corrupted save file: {exc}")
+    return {"save": data}
+
+
+@app.delete("/api/scenarios/{scenario_id}/saves/{save_id}")
+def delete_scenario_save(scenario_id: str, save_id: str) -> Dict[str, Any]:
+    save_file = _resolve_save_file(scenario_id, save_id)
+    if not save_file.exists():
+        raise HTTPException(status_code=404, detail="Save not found")
+    save_file.unlink()
+    return {"status": "ok", "id": save_id}
 
 
 @app.get("/api/scenarios/{scenario_id}/export")
